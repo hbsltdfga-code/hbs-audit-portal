@@ -1,20 +1,30 @@
-# HBS Audit Portal - 3 Engineers, Photos, Manager Dashboard
-.
-## Deploy
-1. Run `sql/schema.sql` in Cloudflare D1.
-2. Pages > Get started > Drag and drop your files.
-3. Upload a ZIP containing these root items: `index.html`, `functions`, `sql`, `wrangler.toml`, `README.md`.
-4. Pages Project > Settings > Bindings > D1 database:
-   - Variable name: `DB`
-   - Database: `hbsaudits`
-5. Redeploy after adding the binding.
+# HBS Audit Portal Phase 2
 
-## Starter logins
-- peter@hbs.local / 1234 - Manager
-- compliance@hbs.local / 1234 - Manager
-- engineer1@hbs.local / 1234 - Engineer
-- engineer2@hbs.local / 1234 - Engineer
-- engineer3@hbs.local / 1234 - Engineer
+This version works with the existing D1 tables you have already created:
+users, audits, audit_photos, training_records, competency_records and reaudits.
 
-## Notes
-Photos are compressed in the browser and stored in D1 as data URLs for a small 3 engineer team. For larger usage use Cloudflare R2.
+## Upload to GitHub
+Replace the current repository files with these root items:
+- index.html
+- functions/
+- sql/
+- wrangler.toml
+- README.md
+
+Commit to `main`. Cloudflare Pages should automatically redeploy.
+
+## Login
+- peter@hbs.local / 1234
+- engineer1@hbs.local / 1234
+- engineer2@hbs.local / 1234
+- engineer3@hbs.local / 1234
+
+## Features added
+- Full engineer audit capture form
+- Weighted question scoring
+- Automatic audit outcome
+- Photo upload from iPad/phone
+- Automatic training record for scores below 85%
+- Automatic 30-day re-audit record for scores below 85%
+- Manager dashboard
+- Printable PDF audit booklet using browser print/save as PDF
