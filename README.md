@@ -1,5 +1,5 @@
 # HBS Audit Portal - 3 Engineers, Photos, Manager Dashboard
-
+.
 ## Deploy
 1. Run `sql/schema.sql` in Cloudflare D1.
 2. Pages > Get started > Drag and drop your files.
