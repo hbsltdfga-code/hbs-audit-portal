@@ -1,0 +1,8 @@
+name = "hbs-audit-portal"
+compatibility_date = "2026-06-17"
+pages_build_output_dir = "."
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hbsaudits"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
