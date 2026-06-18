@@ -1,4 +1,4 @@
-/<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -21,7 +21,9 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
    <label>Audit Date<br><input id="date" type="date"></label>
    <label>Auditor<br><input id="auditor"></label>
    <label>Appliance Type<br><select id="applianceType"><option>Boiler</option><option>Water Heater</option><option>Gas Train</option><option>AHU</option><option>Warm Air Heater</option><option>Radiant Tube Heater</option><option>Plant Room</option><option>Other</option></select></label>
- 
+   <label>Model / Equipment Reference<br>
+<input id="appliance"
+       placeholder="GB402, S-CB+ 400, Evomod 750, GTH 400 etc.">
    <label>Manufacturer<br><select id="manufacturer"><option value="">Select Manufacturer</option><option>ACV</option><option>Adveco</option><option>Andrews</option><option>AO Smith</option><option>Atag</option><option>Baxi</option><option>Benson</option><option>Buderus</option><option>Carrier</option><option>Combat</option><option>De Dietrich</option><option>Elco</option><option>Ferroli</option><option>Hamworthy</option><option>Hoval</option><option>Ideal</option><option>Intergas</option><option>Keston</option><option>Lochinvar</option><option>MHS</option><option>Nu-Way</option><option>Potterton</option><option>Powrmatic</option><option>Reznor</option><option>Remeha</option><option>Riello</option><option>Robur</option><option>Sime</option><option>Stokvis</option><option>Strebel</option><option>Vaillant</option><option>Viessmann</option><option>Vokera</option><option>Weishaupt</option><option>Winterwarm</option><option>Worcester Bosch</option><option>Other</option></select></label>
    <label>Model<br><input id="model" placeholder="Model / range"></label>
    <label>Serial Number<br><input id="serial" placeholder="Serial number"></label>
@@ -35,7 +37,7 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
   <button onclick="saveAudit()">Save Audit Centrally</button><p id="saveMsg"></p>
  </div>
  <div id="dashboard" class="card"><h2>Manager Dashboard / Audit Register</h2><button class="noprint" onclick="loadAudits()">Refresh</button><div id="stats"></div><h3>Engineer League Table</h3><div id="leagueTable"></div><h3>Monthly Audit Trend</h3><div id="trendTable"></div><h3>Common Failed / Improvement Questions</h3><div id="failAnalysis"></div><h3>Audit Register</h3><table><thead><tr><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Manufacturer</th><th>Model</th><th>Score</th><th>Result</th><th>Booklet</th></tr></thead><tbody id="auditRows"></tbody></table></div>
- <div id="trainingView" class="card hide"><h2>Training / Re-audit Tracking</h2><div class="grid"><div><h3>Training Records</h3><table><thead><tr><th>Engineer</th><th>Training</th><th>Assigned</th><th>Status</th></tr></thead><tbody id="trainingRows"></tbody></table></div><div><h3>Open Re-audits</h3><table><thead><tr><th>Audit</th><th>Engineer</th><th>Due</th><th>Status</th></tr></thead><tbody id="reauditRows"></tbody></table></div></div></div>
+ <div id="trainingView" class="card hide"><h2>Training / Re-audit Tracking</h2><div class="grid"><div><h3>Training Records</h3><table><thead><tr><th>Engineer</th><th>Training</th><th>Assigned</th><th>Status</th><th>Action</th></tr></thead><tbody id="trainingRows"></tbody></table></div><div><h3>Open Re-audits</h3><table><thead><tr><th>Audit</th><th>Engineer</th><th>Due</th><th>Status</th><th>Action</th></tr></thead><tbody id="reauditRows"></tbody></table></div></div></div>
  <div id="userAdmin" class="card hide"><h2>Engineer / User Management</h2><div class="grid noprint"><input type="hidden" id="userId"><label>Name<br><input id="userName" placeholder="Engineer name"></label><label>Email<br><input id="userEmail" placeholder="name@hbs.local"></label><label>PIN<br><input id="userPin" placeholder="1234"></label><label>Role<br><select id="userRole"><option>engineer</option><option>manager</option></select></label><label>Active<br><select id="userActive"><option value="1">Active</option><option value="0">Inactive</option></select></label><label><br><button onclick="saveUser()">Save User</button><button onclick="clearUserForm()">Clear</button></label></div><p id="userMsg"></p><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Active</th><th>Action</th></tr></thead><tbody id="userRows"></tbody></table></div>
  <div id="booklet" class="card hide"><h2>Audit Booklet</h2><div id="bookletBody"></div><button class="noprint" onclick="window.print()">Print / Save PDF</button></div>
 </section>
@@ -50,7 +52,7 @@ function logout(){location.reload()} function show(id){['auditForm','dashboard',
 async function loadUsers(){const j=await api('/api/users'); users=j.users; const eng=users.filter(u=>u.role==='engineer'&&Number(u.active)!==0); qs('engineer').innerHTML=eng.map(u=>`<option value="${u.email}" data-name="${u.name}">${u.name}</option>`).join('')}
 async function fileToDataUrl(file){return new Promise(res=>{const img=new Image(), fr=new FileReader(); fr.onload=e=>{img.onload=()=>{const c=document.createElement('canvas'); const max=900, s=Math.min(1,max/Math.max(img.width,img.height)); c.width=img.width*s; c.height=img.height*s; c.getContext('2d').drawImage(img,0,0,c.width,c.height); res({filename:file.name,mime_type:'image/jpeg',data_url:c.toDataURL('image/jpeg',0.65)})}; img.src=e.target.result}; fr.readAsDataURL(file)})}
 function collectQuestions(){const arr=[]; auditQuestions.forEach((sec,si)=>sec.slice(1).forEach((q,qi)=>{const id=`q_${si}_${qi}`; arr.push({section:sec[0],question:q,score:qs(id).value,note:qs(id+'_note').value})})); return arr}
-async function saveAudit(){try{const opt=qs('engineer').selectedOptions[0]; if(!opt) throw new Error('No engineer selected.'); const photos=[]; for(const f of [...qs('photos').files].slice(0,6)) photos.push(await fileToDataUrl(f)); const sr=calcScore(); const body={engineer_email:qs('engineer').value,engineer_name:opt.dataset.name,manager_email:user.email,manager_name:user.name,site_name:qs('site').value,client_name:qs('client').value,audit_date:qs('date').value,auditor:qs('auditor').value,appliance_type:qs('applianceType').value,manufacturer:qs('manufacturer').value,model:qs('model').value,serial_number:qs('serial').value,asset_number:qs('asset').value,score:sr.score,result:sr.result,questions:collectQuestions(),actions_required:qs('actions').value,training_required:qs('training').value,signature:qs('signature').value,photos}; const j=await api('/api/audits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); qs('saveMsg').textContent=`Saved Audit ID ${j.id} - ${j.result}`; await loadAudits()}catch(e){qs('saveMsg').textContent=e.message}}
+async function saveAudit(){try{const opt=qs('engineer').selectedOptions[0]; if(!opt) throw new Error('No engineer selected.'); const photos=[]; for(const f of [...qs('photos').files].slice(0,6)) photos.push(await fileToDataUrl(f)); const sr=calcScore(); const body={engineer_email:qs('engineer').value,engineer_name:opt.dataset.name,manager_email:user.email,manager_name:user.name,site_name:qs('site').value,client_name:qs('client').value,audit_date:qs('date').value,auditor:qs('auditor').value,appliance_type:qs('applianceType').value,appliance_details:qs('appliance').value,manufacturer:qs('manufacturer').value,model:qs('model').value,serial_number:qs('serial').value,asset_number:qs('asset').value,score:sr.score,result:sr.result,questions:collectQuestions(),actions_required:qs('actions').value,training_required:qs('training').value,signature:qs('signature').value,photos}; const j=await api('/api/audits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); qs('saveMsg').textContent=`Saved Audit ID ${j.id} - ${j.result}`; await loadAudits()}catch(e){qs('saveMsg').textContent=e.message}}
 async function loadAudits(){
   show('dashboard');
   const j=await api(`/api/audits?email=${encodeURIComponent(user.email)}&role=${user.role}`);
@@ -90,7 +92,7 @@ async function loadAudits(){
   renderTrends(rows);
   renderFailureAnalysis(rows);
 
-  qs('auditRows').innerHTML=rows.map(a=>{let d={};try{d=JSON.parse(a.audit_json||'{}')}catch(e){};return `<tr><td>HBS-${a.id}</td><td>${a.audit_date||''}</td><td>${a.engineer_name||''}</td><td>${a.site_name||''}</td><td>${d.manufacturer||''}</td><td>${d.model||''}</td><td>${a.score||0}%</td><td><span class="pill ${a.result==='Excellent'?'excellent':a.result==='Pass'?'pass':a.result==='Fail'?'fail':'warn'}">${a.result||''}</span></td><td><button onclick="booklet(${a.id})">Open</button></td></tr>`}).join('')
+  qs('auditRows').innerHTML=rows.map(a=>{let d={};try{d=JSON.parse(a.audit_json||'{}')}catch(e){};return `<tr><td>HBS-${a.id}</td><td>${a.audit_date||''}</td><td>${a.engineer_name||''}</td><td>${a.site_name||''}</td><td>${d.manufacturer||''}</td><td>${d.appliance_type||d.appliance_details||''}</td><td>${a.score||0}%</td><td><span class="pill ${a.result==='Excellent'?'excellent':a.result==='Pass'?'pass':a.result==='Fail'?'fail':'warn'}">${a.result||''}</span></td><td><button onclick="booklet(${a.id})">Open</button></td></tr>`}).join('')
 }
 
 function renderLeague(rows){
@@ -139,12 +141,44 @@ function renderFailureAnalysis(rows){
   const list=Object.values(counts).sort((a,b)=>b.total-a.total).slice(0,10);
   qs('failAnalysis').innerHTML=list.length?`<table><thead><tr><th>Question / Audit Area</th><th>Total Issues</th><th>Fails</th><th>Improvements</th></tr></thead><tbody>${list.map(x=>`<tr><td>${x.question}</td><td>${x.total}</td><td>${x.fail}</td><td>${x.improve}</td></tr>`).join('')}</tbody></table>`:'<p class="muted">No failed or improvement questions recorded yet.</p>';
 }
-async function loadTraining(){show('trainingView'); const t=await api('/api/training'); const r=await api('/api/reaudits'); qs('trainingRows').innerHTML=(t.training||[]).map(x=>`<tr><td>${x.engineer_name}</td><td>${x.training_type}</td><td>${x.assigned_date}</td><td>${x.status}</td></tr>`).join(''); qs('reauditRows').innerHTML=(r.reaudits||[]).map(x=>`<tr><td>HBS-${x.audit_id}</td><td>${x.engineer_name}</td><td>${x.due_date}</td><td>${x.status}</td></tr>`).join('')}
+async function loadTraining(){
+  show('trainingView');
+  const t=await api('/api/training');
+  const r=await api('/api/reaudits');
+
+  qs('trainingRows').innerHTML=(t.training||[]).map(x=>{
+    const status=(x.status||'Open');
+    const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
+    const btn=done?'<span class="muted">Closed</span>':`<button onclick="completeTraining(${x.id})">Mark Complete</button>`;
+    return `<tr><td>${x.engineer_name||''}</td><td>${x.training_type||''}</td><td>${x.assigned_date||''}</td><td>${status}</td><td>${btn}</td></tr>`;
+  }).join('');
+
+  qs('reauditRows').innerHTML=(r.reaudits||[]).map(x=>{
+    const status=(x.status||'Open');
+    const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
+    const btn=done?'<span class="muted">Closed</span>':`<button onclick="completeReaudit(${x.id})">Mark Complete</button>`;
+    return `<tr><td>HBS-${x.audit_id||''}</td><td>${x.engineer_name||''}</td><td>${x.due_date||''}</td><td>${status}</td><td>${btn}</td></tr>`;
+  }).join('');
+}
+
+async function completeTraining(id){
+  if(!confirm('Mark this training record as completed?')) return;
+  await api('/api/training',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed'})});
+  await loadTraining();
+  await loadAudits();
+}
+
+async function completeReaudit(id){
+  if(!confirm('Mark this re-audit as completed?')) return;
+  await api('/api/reaudits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed'})});
+  await loadTraining();
+  await loadAudits();
+}
 async function loadUserAdmin(){show('userAdmin'); await loadUsers(); qs('userRows').innerHTML=users.map(u=>`<tr><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td>${Number(u.active)!==0?'Yes':'No'}</td><td><button onclick='editUser(${JSON.stringify(u).replaceAll("'","&#39;")})'>Edit</button></td></tr>`).join('')}
 function editUser(u){qs('userId').value=u.id; qs('userName').value=u.name||''; qs('userEmail').value=u.email||''; qs('userPin').value=''; qs('userRole').value=u.role||'engineer'; qs('userActive').value=String(Number(u.active)!==0?1:0); qs('userMsg').textContent='Leave PIN blank only if you intend to reset it to 1234 in this simple version.'}
 function clearUserForm(){['userId','userName','userEmail','userPin'].forEach(id=>qs(id).value=''); qs('userRole').value='engineer'; qs('userActive').value='1'; qs('userMsg').textContent=''}
 async function saveUser(){try{const body={id:qs('userId').value||undefined,name:qs('userName').value,email:qs('userEmail').value,pin:qs('userPin').value||'1234',role:qs('userRole').value,active:Number(qs('userActive').value)}; await api('/api/users',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); qs('userMsg').textContent='User saved.'; clearUserForm(); await loadUserAdmin()}catch(e){qs('userMsg').textContent=e.message}}
-async function booklet(id){const j=await api('/api/audit?id='+encodeURIComponent(id)); const a=j.audit, data=JSON.parse(a.audit_json||'{}'); show('booklet'); qs('bookletBody').innerHTML=`<h3>HBS-${a.id}</h3><p><b>Engineer:</b> ${a.engineer_name}<br><b>Auditor:</b> ${a.auditor||''}<br><b>Site:</b> ${a.site_name}<br><b>Client:</b> ${data.client_name||''}<br><b>Date:</b> ${a.audit_date}<br><b>Appliance Type:</b> ${data.appliance_type||''}<br><b>Manufacturer:</b> ${data.manufacturer||''}<br><b>Model:</b> ${data.model||''}<br><b>Serial Number:</b> ${data.serial_number||''}<br><b>Asset Number:</b> ${data.asset_number||''}<br><b>Score:</b> ${a.score}% - ${a.result}</p><h3>Audit Questions</h3><table><tr><th>Section</th><th>Question</th><th>Score</th><th>Notes</th></tr>${(data.questions||[]).map(q=>`<tr><td>${q.section}</td><td>${q.question}</td><td>${q.score}</td><td>${q.note||''}</td></tr>`).join('')}</table><h3>Findings / Actions</h3><p>${(data.actions_required||'').replaceAll('\n','<br>')}</p><h3>Training / Re-audit</h3><p>${(data.training_required||'').replaceAll('\n','<br>')}</p><h3>Photos</h3>${(j.photos||[]).map(p=>`<img class=photo src="${p.photo_url}">`).join('')}<h3>Signed</h3><p>${data.signature||''}</p>`}
+async function booklet(id){const j=await api('/api/audit?id='+encodeURIComponent(id)); const a=j.audit, data=JSON.parse(a.audit_json||'{}'); show('booklet'); qs('bookletBody').innerHTML=`<h3>HBS-${a.id}</h3><p><b>Engineer:</b> ${a.engineer_name}<br><b>Auditor:</b> ${a.auditor||''}<br><b>Site:</b> ${a.site_name}<br><b>Client:</b> ${data.client_name||''}<br><b>Date:</b> ${a.audit_date}<br><b>Appliance Type:</b> ${data.appliance_type||''}<br><b>Manufacturer:</b> ${data.manufacturer||''}<br><b>Model:</b> ${data.model||''}<br><b>Serial Number:</b> ${data.serial_number||''}<br><b>Asset Number:</b> ${data.asset_number||''}<br><b>Model / Equipment Reference:</b> ${data.appliance_details||''}<br><b>Score:</b> ${a.score}% - ${a.result}</p><h3>Audit Questions</h3><table><tr><th>Section</th><th>Question</th><th>Score</th><th>Notes</th></tr>${(data.questions||[]).map(q=>`<tr><td>${q.section}</td><td>${q.question}</td><td>${q.score}</td><td>${q.note||''}</td></tr>`).join('')}</table><h3>Findings / Actions</h3><p>${(data.actions_required||'').replaceAll('\n','<br>')}</p><h3>Training / Re-audit</h3><p>${(data.training_required||'').replaceAll('\n','<br>')}</p><h3>Photos</h3>${(j.photos||[]).map(p=>`<img class=photo src="${p.photo_url}">`).join('')}<h3>Signed</h3><p>${data.signature||''}</p>`}
 </script>
 </body>
 </html>
