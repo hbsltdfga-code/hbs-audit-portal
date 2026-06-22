@@ -12,7 +12,11 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
 <div class="top"><h1>HBS Gas Audit Portal</h1><p>PDA/iPad audit capture, photo upload, central saving, manager dashboard, engineer management, audit trends, league tables and printable PDF booklet.</p></div>
 <section id="login" class="card"><h2>Login</h2><p class="muted">Use your HBS portal email and PIN.</p><div class="grid"><label>Email<br><input id="email" value="peter@hbs.local"></label><label>PIN<br><input id="pin" type="password" value="1234"></label><label><br><button onclick="login()">Login</button></label></div><p id="loginMsg" class="muted"></p></section>
 <section id="app" class="hide">
- <div class="card noprint toolbar"><b id="who"></b> <button onclick="newAudit()">New Audit</button> <button onclick="loadAudits()">Dashboard</button> <button onclick="loadTraining()">Training / Re-audits</button> <button onclick="openToolboxTest()">Toolbox Test</button> <button onclick="loadUserAdmin()">Users</button> <button onclick="logout()">Logout</button></div>
+ <div class="card noprint toolbar"><b id="who"></b> <button class="managerOnly" onclick="newAudit()">New Audit</button> <button onclick="loadAudits()">My Dashboard</button> <button onclick="loadTraining()">Training / Re-audits</button> <button onclick="openToolboxTest()">Toolbox Test</button> <button class="managerOnly" onclick="loadUserAdmin()">Users</button> <button onclick="logout()">Logout</button></div>
+ <div id="trainingNotice" class="card hide">
+  <h2>Outstanding Training Action</h2>
+  <div id="trainingNoticeBody"></div>
+ </div>
  <div id="auditForm" class="card hide"><h2>New Engineer Gas Audit</h2>
   <div class="grid">
    <label>Engineer<br><select id="engineer"></select></label>
@@ -33,7 +37,7 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
   <p><label>Auditor / Engineer signature note<br><input id="signature" style="width:100%" placeholder="Typed signature / confirmation"></label></p>
   <button onclick="saveAudit()">Save Audit Centrally</button><p id="saveMsg"></p>
  </div>
- <div id="dashboard" class="card"><h2>Manager Dashboard / Audit Register</h2><button class="noprint" onclick="loadAudits()">Refresh</button><div id="stats"></div><h3>Engineer League Table</h3><div id="leagueTable"></div><h3>Engineer Performance Graph</h3><div id="performanceGraph"></div><h3>Monthly Audit Trend</h3><div id="trendTable"></div><h3>Common Failed / Improvement Questions</h3><div id="failAnalysis"></div><h3>Audit Register</h3><table><thead><tr><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Manufacturer</th><th>Model</th><th>Score</th><th>Result</th><th>Booklet</th><th>Toolbox Test</th></tr></thead><tbody id="auditRows"></tbody></table></div>
+ <div id="dashboard" class="card"><h2>Manager Dashboard / Audit Register</h2><button class="noprint" onclick="loadAudits()">Refresh</button><div id="stats"></div><h3>Engineer League Table</h3><div id="leagueTable"></div><h3>Engineer Performance Graph</h3><div id="performanceGraph"></div><h3>Monthly Audit Trend</h3><div id="trendTable"></div><h3>Common Failed / Improvement Questions</h3><div id="failAnalysis"></div><h3>Audit Register</h3><table><thead><tr><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Manufacturer</th><th>Model</th><th>Score</th><th>Result</th><th>Booklet</th></tr></thead><tbody id="auditRows"></tbody></table></div>
  <div id="trainingView" class="card hide"><h2>Training / Re-audit Tracking</h2><div class="grid"><div><h3>Training Records</h3><table><thead><tr><th>Engineer</th><th>Training</th><th>Assigned</th><th>Status</th><th>Action</th></tr></thead><tbody id="trainingRows"></tbody></table></div><div><h3>Open Re-audits</h3><table><thead><tr><th>Audit</th><th>Engineer</th><th>Due</th><th>Status</th><th>Action</th></tr></thead><tbody id="reauditRows"></tbody></table></div></div></div>
  <div id="userAdmin" class="card hide"><h2>Engineer / User Management</h2><div class="grid noprint"><input type="hidden" id="userId"><label>Name<br><input id="userName" placeholder="Engineer name"></label><label>Email<br><input id="userEmail" placeholder="name@hbs.local"></label><label>PIN<br><input id="userPin" placeholder="1234"></label><label>Role<br><select id="userRole"><option>engineer</option><option>manager</option></select></label><label>Active<br><select id="userActive"><option value="1">Active</option><option value="0">Inactive</option></select></label><label><br><button onclick="saveUser()">Save User</button><button onclick="clearUserForm()">Clear</button></label></div><p id="userMsg"></p><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Active</th><th>Action</th></tr></thead><tbody id="userRows"></tbody></table></div>
 
@@ -41,7 +45,8 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
   <h2>Post Audit Toolbox Talk Test</h2>
   <p class="muted">For engineers who have failed an audit or require post-audit refresher training. NCS has been removed from this test; unsafe classifications used are ID and AR.</p>
   <div class="grid">
-    <label>Audit Ref<br><input id="tbAuditId" placeholder="Example: 6"></label>
+    <label>Training Record ID<br><input id="tbTrainingId" readonly></label>
+    <label>Audit Ref<br><input id="tbAuditId" readonly></label>
     <label>Engineer<br><input id="tbEngineer" readonly></label>
     <label>Date<br><input id="tbDate" type="date"></label>
   </div>
@@ -59,9 +64,15 @@ const auditQuestions=[['Safety & Compliance','Risk assessment / dynamic risk ass
 function renderQuestions(){let html=''; auditQuestions.forEach((sec,si)=>{html+=`<h3 class="section-title">${sec[0]}</h3>`; sec.slice(1).forEach((q,qi)=>{const id=`q_${si}_${qi}`; html+=`<div class="q"><label>${q}</label><select id="${id}" onchange="calcScore()"><option value="10">Pass / Compliant</option><option value="5">Partial / Improvement Required</option><option value="0">Fail / Not Evidenced</option><option value="na">N/A</option></select><br><textarea id="${id}_note" rows="2" style="width:100%" placeholder="Optional notes"></textarea></div>`})}); qs('questions').innerHTML=html; calcScore()}
 function calcScore(){let total=0,max=0; auditQuestions.forEach((sec,si)=>sec.slice(1).forEach((q,qi)=>{const v=qs(`q_${si}_${qi}`)?.value; if(v!=='na'){max+=10; total+=Number(v||0)}})); const score=max?Math.round((total/max)*100):100; qs('scoreOut').textContent=score; const res=score>=95?'Excellent':score>=85?'Pass':score>=75?'Improvement Required':'Fail'; qs('resultOut').textContent=res; if(score<85 && !qs('training').value) qs('training').value='Post-audit refresher training / toolbox talk required. Re-audit to be completed within 30 days.'; return {score,result:res}}
 async function api(url,opts){const r=await fetch(url,opts); const t=await r.text(); if(!t) throw new Error('No response from backend function.'); let j; try{j=JSON.parse(t)}catch(e){throw new Error(t.slice(0,250))} if(!j.ok) throw new Error(j.error||'Request failed'); return j}
-async function login(){try{const j=await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:qs('email').value,pin:qs('pin').value})}); user=j.user; qs('login').classList.add('hide'); qs('app').classList.remove('hide'); qs('who').textContent=`Logged in: ${user.name} (${user.role})`; qs('auditor').value=user.name; await loadUsers(); renderQuestions(); await loadAudits()}catch(e){qs('loginMsg').textContent=e.message}}
-function logout(){location.reload()} function show(id){['auditForm','dashboard','booklet','trainingView','userAdmin','toolboxTest'].forEach(x=>qs(x).classList.add('hide')); qs(id).classList.remove('hide')} function newAudit(){show('auditForm'); qs('saveMsg').textContent=''}
-async function loadUsers(){const j=await api('/api/users'); users=j.users; const eng=users.filter(u=>u.role==='engineer'&&Number(u.active)!==0); qs('engineer').innerHTML=eng.map(u=>`<option value="${u.email}" data-name="${u.name}">${u.name}</option>`).join('')}
+async function login(){try{const j=await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:qs('email').value,pin:qs('pin').value})}); user=j.user; qs('login').classList.add('hide'); qs('app').classList.remove('hide'); qs('who').textContent=`Logged in: ${user.name} (${user.role})`; qs('auditor').value=user.name; applyRoleVisibility(); await loadUsers(); renderQuestions(); await loadAudits(); await loadMyTrainingNotice()}catch(e){qs('loginMsg').textContent=e.message}}
+function applyRoleVisibility(){
+  const isManager = user && user.role === 'manager';
+  document.querySelectorAll('.managerOnly').forEach(el=>el.style.display=isManager?'':'none');
+  const h=qs('dashboard')?.querySelector('h2');
+  if(h) h.textContent = isManager ? 'Manager Dashboard / Audit Register' : 'My Audit Results / Training Dashboard';
+}
+function logout(){location.reload()} function show(id){['auditForm','dashboard','booklet','trainingView','userAdmin','toolboxTest'].forEach(x=>qs(x).classList.add('hide')); qs(id).classList.remove('hide')} function newAudit(){if(!user || user.role!=='manager'){alert('Manager access only');return;} show('auditForm'); qs('saveMsg').textContent=''}
+async function loadUsers(){const j=await api(`/api/users?email=${encodeURIComponent(user.email)}&role=${user.role}`); users=j.users; const eng=users.filter(u=>u.role==='engineer'&&Number(u.active)!==0); qs('engineer').innerHTML=eng.map(u=>`<option value="${u.email}" data-name="${u.name}">${u.name}</option>`).join('')}
 async function fileToDataUrl(file){return new Promise(res=>{const img=new Image(), fr=new FileReader(); fr.onload=e=>{img.onload=()=>{const c=document.createElement('canvas'); const max=900, s=Math.min(1,max/Math.max(img.width,img.height)); c.width=img.width*s; c.height=img.height*s; c.getContext('2d').drawImage(img,0,0,c.width,c.height); res({filename:file.name,mime_type:'image/jpeg',data_url:c.toDataURL('image/jpeg',0.65)})}; img.src=e.target.result}; fr.readAsDataURL(file)})}
 function collectQuestions(){const arr=[]; auditQuestions.forEach((sec,si)=>sec.slice(1).forEach((q,qi)=>{const id=`q_${si}_${qi}`; arr.push({section:sec[0],question:q,score:qs(id).value,note:qs(id+'_note').value})})); return arr}
 async function saveAudit(){try{const opt=qs('engineer').selectedOptions[0]; if(!opt) throw new Error('No engineer selected.'); const photos=[]; for(const f of [...qs('photos').files].slice(0,6)) photos.push(await fileToDataUrl(f)); const sr=calcScore(); const body={engineer_email:qs('engineer').value,engineer_name:opt.dataset.name,manager_email:user.email,manager_name:user.name,site_name:qs('site').value,client_name:qs('client').value,audit_date:qs('date').value,auditor:qs('auditor').value,appliance_type:qs('applianceType').value,manufacturer:qs('manufacturer').value,model:qs('model').value,serial_number:qs('serial').value,asset_number:qs('asset').value,score:sr.score,result:sr.result,questions:collectQuestions(),actions_required:qs('actions').value,training_required:qs('training').value,signature:qs('signature').value,photos}; const j=await api('/api/audits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); qs('saveMsg').textContent=`Saved Audit ID ${j.id} - ${j.result}`; await loadAudits()}catch(e){qs('saveMsg').textContent=e.message}}
@@ -104,7 +115,7 @@ async function loadAudits(){
   renderTrends(rows);
   renderFailureAnalysis(rows);
 
-  qs('auditRows').innerHTML=rows.map(a=>{let d={};try{d=JSON.parse(a.audit_json||'{}')}catch(e){};return `<tr><td>HBS-${a.id}</td><td>${a.audit_date||''}</td><td>${a.engineer_name||''}</td><td>${a.site_name||''}</td><td>${d.manufacturer||''}</td><td>${d.model||''}</td><td>${a.score||0}%</td><td><span class="pill ${a.result==='Excellent'?'excellent':a.result==='Pass'?'pass':a.result==='Fail'?'fail':'warn'}">${a.result||''}</span></td><td><button onclick="booklet(${a.id})">Open</button></td><td>${a.result==="Fail"?`<button onclick="openToolboxTest(${a.id})">Test</button>`:""}</td></tr>`}).join('')
+  qs('auditRows').innerHTML=rows.map(a=>{let d={};try{d=JSON.parse(a.audit_json||'{}')}catch(e){};return `<tr><td>HBS-${a.id}</td><td>${a.audit_date||''}</td><td>${a.engineer_name||''}</td><td>${a.site_name||''}</td><td>${d.manufacturer||''}</td><td>${d.model||''}</td><td>${a.score||0}%</td><td><span class="pill ${a.result==='Excellent'?'excellent':a.result==='Pass'?'pass':a.result==='Fail'?'fail':'warn'}">${a.result||''}</span></td><td><button onclick="booklet(${a.id})">Open</button></td></tr>`}).join('')
 }
 
 function renderLeague(rows){
@@ -156,14 +167,15 @@ function renderFailureAnalysis(rows){
 }
 async function loadTraining(){
   show('trainingView');
-  const t=await api('/api/training');
-  const r=await api('/api/reaudits');
+  const t=await api(`/api/training?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
+  const r=await api(`/api/reaudits?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
 
   qs('trainingRows').innerHTML=(t.training||[]).map(x=>{
     const status=(x.status||'Open');
     const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
+    const testBtn=done?'<span class="muted">Closed</span>':`<button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||'').replaceAll("'","&#39;")}')">Start Test</button>`;
     const btn=done?'<span class="muted">Closed</span>':`<button onclick="completeTraining(${x.id})">Mark Complete</button>`;
-    return `<tr><td>${x.engineer_name||''}</td><td>${x.training_type||''}</td><td>${x.assigned_date||''}</td><td>${status}</td><td>${btn}</td></tr>`;
+    return `<tr><td>${x.engineer_name||''}</td><td>${x.training_type||''}</td><td>${x.assigned_date||''}</td><td>${status}</td><td>${testBtn} ${btn}</td></tr>`;
   }).join('');
 
   qs('reauditRows').innerHTML=(r.reaudits||[]).map(x=>{
@@ -174,19 +186,6 @@ async function loadTraining(){
   }).join('');
 }
 
-async function completeTraining(id){
-  if(!confirm('Mark this training record as completed?')) return;
-  await api('/api/training',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed'})});
-  await loadTraining();
-  await loadAudits();
-}
-
-async function completeReaudit(id){
-  if(!confirm('Mark this re-audit as completed?')) return;
-  await api('/api/reaudits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed'})});
-  await loadTraining();
-  await loadAudits();
-}
 
 const toolboxQuestions=[
  {q:'Under GSIUR, who is responsible for leaving the gas installation safe after attending site?',a:'Gas Engineer',opts:['Client','Building Manager','Gas Engineer','Manufacturer']},
@@ -206,10 +205,22 @@ const toolboxQuestions=[
  {q:'If an engineer is unsure of a classification or safety decision, what should they do?',a:'Stop and contact technical support or compliance management',opts:['Guess','Ignore it','Stop and contact technical support or compliance management','Ask the client to decide']}
 ];
 
-function openToolboxTest(auditId=''){
+async function loadMyTrainingNotice(){
+  try{
+    if(!user || user.role!=='engineer') return;
+    const t=await api('/api/training?engineer='+encodeURIComponent(user.name));
+    const open=(t.training||[]).filter(x=>!['complete','completed','closed','cancelled'].includes((x.status||'Open').toLowerCase()));
+    if(!open.length){qs('trainingNotice').classList.add('hide');return;}
+    qs('trainingNotice').classList.remove('hide');
+    qs('trainingNoticeBody').innerHTML=open.map(x=>`<p><b>${x.training_type||'Post audit training required'}</b><br>Status: ${x.status||'Open'}<br>Assigned: ${x.assigned_date||''}<br><button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||user.name).replaceAll("'","&#39;")}')">Start Toolbox Test</button></p>`).join('');
+  }catch(e){}
+}
+
+function openToolboxTest(trainingId='', auditId='', engineerName=''){
   show('toolboxTest');
+  qs('tbTrainingId').value = trainingId || '';
   qs('tbAuditId').value = auditId || '';
-  qs('tbEngineer').value = user ? user.name : '';
+  qs('tbEngineer').value = engineerName || (user?user.name:'');
   qs('tbDate').value = new Date().toISOString().slice(0,10);
   renderToolboxQuestions();
   qs('tbMsg').textContent='';
@@ -237,15 +248,29 @@ async function submitToolboxTest(){
   try{
     const sr=calcToolboxScore();
     const answers=toolboxQuestions.map((x,i)=>({question:x.q,selected:qs('tbq_'+i).value,correct:x.a,pass:qs('tbq_'+i).value===x.a}));
-    const body={audit_id:qs('tbAuditId').value,engineer_name:qs('tbEngineer').value,test_date:qs('tbDate').value,score:sr.score,result:sr.result,answers};
+    const body={training_id:qs('tbTrainingId').value,audit_id:qs('tbAuditId').value,engineer_name:qs('tbEngineer').value,test_date:qs('tbDate').value,score:sr.score,result:sr.result,answers};
     const j=await api('/api/toolbox-test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     qs('tbMsg').textContent=`Toolbox test saved. Result: ${j.result}, Score: ${j.score}/15`;
     await loadTraining();
     await loadAudits();
+    await loadMyTrainingNotice();
   }catch(e){qs('tbMsg').textContent=e.message}
 }
 
-async function loadUserAdmin(){show('userAdmin'); await loadUsers(); qs('userRows').innerHTML=users.map(u=>`<tr><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td>${Number(u.active)!==0?'Yes':'No'}</td><td><button onclick='editUser(${JSON.stringify(u).replaceAll("'","&#39;")})'>Edit</button></td></tr>`).join('')}
+async function completeTraining(id){
+  if(!confirm('Mark this training record as completed?')) return;
+  await api('/api/training',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed'})});
+  await loadTraining();
+  await loadAudits();
+}
+
+async function completeReaudit(id){
+  if(!confirm('Mark this re-audit as completed?')) return;
+  await api('/api/reaudits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed'})});
+  await loadTraining();
+  await loadAudits();
+}
+async function loadUserAdmin(){if(!user || user.role!=='manager'){alert('Manager access only');return;} show('userAdmin'); await loadUsers(); qs('userRows').innerHTML=users.map(u=>`<tr><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td>${Number(u.active)!==0?'Yes':'No'}</td><td><button onclick='editUser(${JSON.stringify(u).replaceAll("'","&#39;")})'>Edit</button></td></tr>`).join('')}
 function editUser(u){qs('userId').value=u.id; qs('userName').value=u.name||''; qs('userEmail').value=u.email||''; qs('userPin').value=''; qs('userRole').value=u.role||'engineer'; qs('userActive').value=String(Number(u.active)!==0?1:0); qs('userMsg').textContent='Leave PIN blank only if you intend to reset it to 1234 in this simple version.'}
 function clearUserForm(){['userId','userName','userEmail','userPin'].forEach(id=>qs(id).value=''); qs('userRole').value='engineer'; qs('userActive').value='1'; qs('userMsg').textContent=''}
 async function saveUser(){try{const body={id:qs('userId').value||undefined,name:qs('userName').value,email:qs('userEmail').value,pin:qs('userPin').value||'1234',role:qs('userRole').value,active:Number(qs('userActive').value)}; await api('/api/users',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); qs('userMsg').textContent='User saved.'; clearUserForm(); await loadUserAdmin()}catch(e){qs('userMsg').textContent=e.message}}
