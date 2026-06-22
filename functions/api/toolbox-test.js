@@ -12,21 +12,29 @@ export async function onRequestPost({ request, env }) {
     const body = await request.json();
     const score = Number(body.score || 0);
     const result = score >= 12 ? 'PASS' : 'FAIL';
+    const trainingId = body.training_id ? Number(body.training_id) : null;
     const auditId = body.audit_id ? Number(body.audit_id) : null;
     const engineer = body.engineer_name || '';
     const testDate = body.test_date || new Date().toISOString().slice(0,10);
     const answers = JSON.stringify(body.answers || []);
 
     const ins = await env.DB.prepare(`INSERT INTO toolbox_results
-      (audit_id, engineer_name, test_date, score, result, answers_json)
-      VALUES (?,?,?,?,?,?)`)
-      .bind(auditId, engineer, testDate, score, result, answers).run();
+      (training_id, audit_id, engineer_name, test_date, score, result, answers_json)
+      VALUES (?,?,?,?,?,?,?)`)
+      .bind(trainingId, auditId, engineer, testDate, score, result, answers).run();
 
     if (result === 'PASS') {
-      await env.DB.prepare(`UPDATE training_records
-        SET status='Completed', completion_date=?
-        WHERE engineer_name=? AND lower(status) IN ('open','in progress','pending')`)
-        .bind(testDate, engineer).run();
+      if (trainingId) {
+        await env.DB.prepare(`UPDATE training_records
+          SET status='Completed', completion_date=?
+          WHERE id=?`)
+          .bind(testDate, trainingId).run();
+      } else {
+        await env.DB.prepare(`UPDATE training_records
+          SET status='Completed', completion_date=?
+          WHERE engineer_name=? AND lower(status) IN ('open','in progress','pending')`)
+          .bind(testDate, engineer).run();
+      }
     }
 
     return Response.json({ ok:true, id:ins.meta?.last_row_id, score, result });
