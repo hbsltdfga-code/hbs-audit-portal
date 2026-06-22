@@ -92,11 +92,11 @@ async function loadAudits(){
 
   let openTraining=0, openReaudits=0;
   try{
-    const t=await api('/api/training');
+    const t=await api(`/api/training?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
     openTraining=(t.training||[]).filter(x=>(x.status||'').toLowerCase()!=='closed' && (x.status||'').toLowerCase()!=='complete' && (x.status||'').toLowerCase()!=='completed').length;
   }catch(e){}
   try{
-    const r=await api('/api/reaudits');
+    const r=await api(`/api/reaudits?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
     openReaudits=(r.reaudits||[]).filter(x=>(x.status||'').toLowerCase()!=='closed' && (x.status||'').toLowerCase()!=='complete' && (x.status||'').toLowerCase()!=='completed').length;
   }catch(e){}
 
@@ -208,7 +208,7 @@ const toolboxQuestions=[
 async function loadMyTrainingNotice(){
   try{
     if(!user || user.role!=='engineer') return;
-    const t=await api('/api/training?engineer='+encodeURIComponent(user.name));
+    const t=await api(`/api/training?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
     const open=(t.training||[]).filter(x=>!['complete','completed','closed','cancelled'].includes((x.status||'Open').toLowerCase()));
     if(!open.length){qs('trainingNotice').classList.add('hide');return;}
     qs('trainingNotice').classList.remove('hide');
