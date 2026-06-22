@@ -93,11 +93,11 @@ async function loadAudits(){
   let openTraining=0, openReaudits=0;
   try{
     const t=await api(`/api/training?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
-    openTraining=(t.training||[]).filter(x=>(x.status||'').toLowerCase()!=='closed' && (x.status||'').toLowerCase()!=='complete' && (x.status||'').toLowerCase()!=='completed').length;
+    openTraining=(t.training||[]).filter(x=>user.role==='manager'||(x.engineer_name||'').toLowerCase()===(user.name||'').toLowerCase()).filter(x=>(x.status||'').toLowerCase()!=='closed' && (x.status||'').toLowerCase()!=='complete' && (x.status||'').toLowerCase()!=='completed').length;
   }catch(e){}
   try{
     const r=await api(`/api/reaudits?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
-    openReaudits=(r.reaudits||[]).filter(x=>(x.status||'').toLowerCase()!=='closed' && (x.status||'').toLowerCase()!=='complete' && (x.status||'').toLowerCase()!=='completed').length;
+    openReaudits=(r.reaudits||[]).filter(x=>user.role==='manager'||(x.engineer_name||'').toLowerCase()===(user.name||'').toLowerCase()).filter(x=>(x.status||'').toLowerCase()!=='closed' && (x.status||'').toLowerCase()!=='complete' && (x.status||'').toLowerCase()!=='completed').length;
   }catch(e){}
 
   qs('stats').innerHTML=`<div class="grid">
@@ -170,7 +170,10 @@ async function loadTraining(){
   const t=await api(`/api/training?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
   const r=await api(`/api/reaudits?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
 
-  qs('trainingRows').innerHTML=(t.training||[]).map(x=>{
+  const trainingList=(t.training||[]).filter(x=>user.role==='manager'||(x.engineer_name||'').toLowerCase()===(user.name||'').toLowerCase());
+  const reauditList=(r.reaudits||[]).filter(x=>user.role==='manager'||(x.engineer_name||'').toLowerCase()===(user.name||'').toLowerCase());
+
+  qs('trainingRows').innerHTML=trainingList.map(x=>{
     const status=(x.status||'Open');
     const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
     const testBtn=done?'<span class="muted">Closed</span>':`<button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||'').replaceAll("'","&#39;")}')">Start Test</button>`;
@@ -178,7 +181,7 @@ async function loadTraining(){
     return `<tr><td>${x.engineer_name||''}</td><td>${x.training_type||''}</td><td>${x.assigned_date||''}</td><td>${status}</td><td>${testBtn} ${btn}</td></tr>`;
   }).join('');
 
-  qs('reauditRows').innerHTML=(r.reaudits||[]).map(x=>{
+  qs('reauditRows').innerHTML=reauditList.map(x=>{
     const status=(x.status||'Open');
     const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
     const btn=done?'<span class="muted">Closed</span>':`<button onclick="completeReaudit(${x.id})">Mark Complete</button>`;
@@ -209,7 +212,7 @@ async function loadMyTrainingNotice(){
   try{
     if(!user || user.role!=='engineer') return;
     const t=await api(`/api/training?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
-    const open=(t.training||[]).filter(x=>!['complete','completed','closed','cancelled'].includes((x.status||'Open').toLowerCase()));
+    const open=(t.training||[]).filter(x=>(x.engineer_name||'').toLowerCase()===(user.name||'').toLowerCase()).filter(x=>!['complete','completed','closed','cancelled'].includes((x.status||'Open').toLowerCase()));
     if(!open.length){qs('trainingNotice').classList.add('hide');return;}
     qs('trainingNotice').classList.remove('hide');
     qs('trainingNoticeBody').innerHTML=open.map(x=>`<p><b>${x.training_type||'Post audit training required'}</b><br>Status: ${x.status||'Open'}<br>Assigned: ${x.assigned_date||''}<br><button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||user.name).replaceAll("'","&#39;")}')">Start Toolbox Test</button></p>`).join('');
