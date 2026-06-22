@@ -12,14 +12,19 @@ function addDays(days) {
 export async function onRequestGet({ request, env }) {
   try {
     const url = new URL(request.url);
-    const email = url.searchParams.get('email') || '';
+    const email = (url.searchParams.get('email') || '').toLowerCase();
     const role = url.searchParams.get('role') || 'engineer';
     let rows;
-    if (role === 'engineer') {
-      rows = await env.DB.prepare(`SELECT * FROM audits WHERE audit_json LIKE ? OR lower(engineer_name)=lower(?) ORDER BY created_at DESC`).bind('%' + email + '%', email).all();
-    } else {
+
+    if (role === 'manager') {
       rows = await env.DB.prepare('SELECT * FROM audits ORDER BY created_at DESC').all();
+    } else {
+      rows = await env.DB.prepare(`SELECT * FROM audits
+        WHERE lower(audit_json) LIKE ?
+        ORDER BY created_at DESC`)
+        .bind('%"engineer_email":"' + email + '"%').all();
     }
+
     return Response.json({ ok:true, audits: rows.results || [] });
   } catch (e) {
     return Response.json({ ok:false, error:e.message }, { status:500 });

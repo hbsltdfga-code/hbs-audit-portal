@@ -1,6 +1,17 @@
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ request, env }) {
   try {
-    const rows = await env.DB.prepare('SELECT * FROM toolbox_results ORDER BY created_at DESC').all();
+    const url = new URL(request.url);
+    const role = url.searchParams.get('role') || 'manager';
+    const engineer = url.searchParams.get('engineer') || '';
+    let rows;
+
+    if (role === 'engineer') {
+      rows = await env.DB.prepare('SELECT * FROM toolbox_results WHERE lower(engineer_name)=lower(?) ORDER BY created_at DESC')
+        .bind(engineer).all();
+    } else {
+      rows = await env.DB.prepare('SELECT * FROM toolbox_results ORDER BY created_at DESC').all();
+    }
+
     return Response.json({ ok:true, results: rows.results || [] });
   } catch (e) {
     return Response.json({ ok:false, error:e.message }, { status:500 });
@@ -25,13 +36,10 @@ export async function onRequestPost({ request, env }) {
 
     if (result === 'PASS') {
       if (trainingId) {
-        await env.DB.prepare(`UPDATE training_records
-          SET status='Completed', completion_date=?
-          WHERE id=?`)
+        await env.DB.prepare(`UPDATE training_records SET status='Completed', completion_date=? WHERE id=?`)
           .bind(testDate, trainingId).run();
       } else {
-        await env.DB.prepare(`UPDATE training_records
-          SET status='Completed', completion_date=?
+        await env.DB.prepare(`UPDATE training_records SET status='Completed', completion_date=?
           WHERE engineer_name=? AND lower(status) IN ('open','in progress','pending')`)
           .bind(testDate, engineer).run();
       }
