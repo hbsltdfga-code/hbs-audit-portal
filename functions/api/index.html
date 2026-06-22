@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HBS Gas Audit Portal</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top{background:linear-gradient(90deg,#123d68,#2369a7);color:#fff;padding:22px 26px}.card{background:#fff;margin:14px;padding:16px;border:1px solid #d3dfed;border-radius:12px;box-shadow:0 1px 4px #0001}input,select,textarea,button{font:inherit;padding:10px;border-radius:8px;border:1px solid #b8c8d8;box-sizing:border-box}button{background:#123f6d;color:white;border:0;font-weight:700;cursor:pointer;margin:2px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.hide{display:none}.muted{color:#52677f;font-size:13px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e3eaf2;text-align:left;padding:8px;vertical-align:top}th{background:#eef4fb}.pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#e6eef8;margin:2px}.fail{background:#ffe0e0}.pass{background:#ddf5e4}.warn{background:#fff1c9}.excellent{background:#dcecff}.photo{max-width:180px;max-height:130px;margin:4px;border-radius:8px;border:1px solid #ddd}.q{border:1px solid #e5edf5;border-radius:10px;padding:10px;margin:8px 0}.q label{display:block;font-weight:700}.scorebox{font-size:22px;font-weight:700}.section-title{background:#eef4fb;border-radius:8px;padding:8px;margin-top:12px}.danger{background:#8b1e1e}.small{font-size:12px}.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.barrow{display:grid;grid-template-columns:220px 1fr 70px;gap:8px;align-items:center;margin:8px 0}.barwrap{background:#e6eef8;border-radius:10px;overflow:hidden;height:26px}.barfill{background:#123f6d;color:#fff;height:26px;line-height:26px;text-align:right;padding-right:8px;min-width:28px;box-sizing:border-box}.barname{font-weight:700}.barvalue{text-align:right;font-weight:700}@media print{.noprint,.top button{display:none!important}.card{box-shadow:none;border:1px solid #999;margin:8px}body{background:white}.top{color:#000;background:#fff;border-bottom:2px solid #000}.photo{max-width:240px;max-height:180px}}
+</style>
+</head>
+<body>
+<div class="top"><h1>HBS Gas Audit Portal</h1><p>PDA/iPad audit capture, photo upload, central saving, manager dashboard, engineer management, audit trends, league tables and printable PDF booklet.</p></div>
+<section id="login" class="card"><h2>Login</h2><p class="muted">Use your HBS portal email and PIN.</p><div class="grid"><label>Email<br><input id="email" value="peter@hbs.local"></label><label>PIN<br><input id="pin" type="password" value="1234"></label><label><br><button onclick="login()">Login</button></label></div><p id="loginMsg" class="muted"></p></section>
+<section id="app" class="hide">
+ <div class="card noprint toolbar"><b id="who"></b> <button onclick="newAudit()">New Audit</button> <button onclick="loadAudits()">Dashboard</button> <button onclick="loadTraining()">Training / Re-audits</button> <button onclick="openToolboxTest()">Toolbox Test</button> <button onclick="loadUserAdmin()">Users</button> <button onclick="logout()">Logout</button></div>
+ <div id="trainingNotice" class="card hide">
+  <h2>Outstanding Training Action</h2>
+  <div id="trainingNoticeBody"></div>
+ </div>
+ <div id="auditForm" class="card hide"><h2>New Engineer Gas Audit</h2>
+  <div class="grid">
+   <label>Engineer<br><select id="engineer"></select></label>
+   <label>Site Name<br><input id="site" placeholder="Site / hotel / client site"></label>
+   <label>Client<br><input id="client"></label>
+   <label>Audit Date<br><input id="date" type="date"></label>
+   <label>Auditor<br><input id="auditor"></label>
+   <label>Appliance Type<br><select id="applianceType"><option>Boiler</option><option>Water Heater</option><option>Gas Train</option><option>AHU</option><option>Warm Air Heater</option><option>Radiant Tube Heater</option><option>Plant Room</option><option>Other</option></select></label>
+   <label>Manufacturer<br><select id="manufacturer"><option value="">Select Manufacturer</option><option>ACV</option><option>Adveco</option><option>Andrews</option><option>AO Smith</option><option>Atag</option><option>Baxi</option><option>Benson</option><option>Buderus</option><option>Carrier</option><option>Combat</option><option>De Dietrich</option><option>Elco</option><option>Ferroli</option><option>Hamworthy</option><option>Hoval</option><option>Ideal</option><option>Intergas</option><option>Keston</option><option>Lochinvar</option><option>MHS</option><option>Nu-Way</option><option>Potterton</option><option>Powrmatic</option><option>Reznor</option><option>Remeha</option><option>Riello</option><option>Robur</option><option>Sime</option><option>Stokvis</option><option>Strebel</option><option>Vaillant</option><option>Viessmann</option><option>Vokera</option><option>Weishaupt</option><option>Winterwarm</option><option>Worcester Bosch</option><option>Other</option></select></label>
+   <label>Model<br><input id="model" placeholder="Model / range"></label>
+   <label>Serial Number<br><input id="serial" placeholder="Serial number"></label>
+   <label>Asset Number<br><input id="asset" placeholder="Client/HBS asset ref"></label>
+  </div>
+  <div id="questions"></div><p class="scorebox">Calculated Score: <span id="scoreOut">100</span>% - <span id="resultOut">Excellent</span></p>
+  <p><label>Findings / Corrective Actions<br><textarea id="actions" rows="4" style="width:100%" placeholder="Record all audit findings and required corrective actions"></textarea></label></p>
+  <p><label>Training Required<br><textarea id="training" rows="2" style="width:100%" placeholder="Auto-populated for failed/improvement audits, but can be edited"></textarea></label></p>
+  <p><label>Photos from iPad/Phone<br><input id="photos" type="file" accept="image/*" multiple></label></p>
+  <p><label>Auditor / Engineer signature note<br><input id="signature" style="width:100%" placeholder="Typed signature / confirmation"></label></p>
+  <button onclick="saveAudit()">Save Audit Centrally</button><p id="saveMsg"></p>
+ </div>
+ <div id="dashboard" class="card"><h2>Manager Dashboard / Audit Register</h2><button class="noprint" onclick="loadAudits()">Refresh</button><div id="stats"></div><h3>Engineer League Table</h3><div id="leagueTable"></div><h3>Engineer Performance Graph</h3><div id="performanceGraph"></div><h3>Monthly Audit Trend</h3><div id="trendTable"></div><h3>Common Failed / Improvement Questions</h3><div id="failAnalysis"></div><h3>Audit Register</h3><table><thead><tr><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Manufacturer</th><th>Model</th><th>Score</th><th>Result</th><th>Booklet</th></tr></thead><tbody id="auditRows"></tbody></table></div>
+ <div id="trainingView" class="card hide"><h2>Training / Re-audit Tracking</h2><div class="grid"><div><h3>Training Records</h3><table><thead><tr><th>Engineer</th><th>Training</th><th>Assigned</th><th>Status</th><th>Action</th></tr></thead><tbody id="trainingRows"></tbody></table></div><div><h3>Open Re-audits</h3><table><thead><tr><th>Audit</th><th>Engineer</th><th>Due</th><th>Status</th><th>Action</th></tr></thead><tbody id="reauditRows"></tbody></table></div></div></div>
+ <div id="userAdmin" class="card hide"><h2>Engineer / User Management</h2><div class="grid noprint"><input type="hidden" id="userId"><label>Name<br><input id="userName" placeholder="Engineer name"></label><label>Email<br><input id="userEmail" placeholder="name@hbs.local"></label><label>PIN<br><input id="userPin" placeholder="1234"></label><label>Role<br><select id="userRole"><option>engineer</option><option>manager</option></select></label><label>Active<br><select id="userActive"><option value="1">Active</option><option value="0">Inactive</option></select></label><label><br><button onclick="saveUser()">Save User</button><button onclick="clearUserForm()">Clear</button></label></div><p id="userMsg"></p><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Active</th><th>Action</th></tr></thead><tbody id="userRows"></tbody></table></div>
+
+ <div id="toolboxTest" class="card hide">
+  <h2>Post Audit Toolbox Talk Test</h2>
+  <p class="muted">For engineers who have failed an audit or require post-audit refresher training. NCS has been removed from this test; unsafe classifications used are ID and AR.</p>
+  <div class="grid">
+    <label>Training Record ID<br><input id="tbTrainingId" readonly></label>
+    <label>Audit Ref<br><input id="tbAuditId" readonly></label>
+    <label>Engineer<br><input id="tbEngineer" readonly></label>
+    <label>Date<br><input id="tbDate" type="date"></label>
+  </div>
+  <div id="toolboxQuestions"></div>
+  <p class="scorebox">Test Score: <span id="tbScoreOut">0</span>/15 - <span id="tbResultOut">Not submitted</span></p>
+  <button onclick="submitToolboxTest()">Submit Toolbox Test</button>
+  <p id="tbMsg"></p>
+ </div>
+
+ <div id="booklet" class="card hide"><h2>Audit Booklet</h2><div id="bookletBody"></div><button class="noprint" onclick="window.print()">Print / Save PDF</button></div>
+</section>
+<script>
+let user=null, users=[], lastAudits=[]; const qs=id=>document.getElementById(id); qs('date').value=new Date().toISOString().slice(0,10);
+const auditQuestions=[['Safety & Compliance','Risk assessment / dynamic risk assessment completed','Gas isolation and emergency controls confirmed','Ventilation checked and suitable','Gas tightness / let-by requirements considered','Flue route, termination and condition checked'],['Technical Competence','Gas pressures recorded correctly','Combustion analysis completed and values acceptable','Gas rate / burner input checked where required','Condensate, safety devices and interlocks checked','Manufacturer instructions followed'],['Documentation & Handover','Service/audit records completed correctly','Defects classified correctly: ID / AR','Client recommendations and warning notices recorded','Photographic evidence taken where appropriate','Work area left safe and operational status confirmed']];
+function renderQuestions(){let html=''; auditQuestions.forEach((sec,si)=>{html+=`<h3 class="section-title">${sec[0]}</h3>`; sec.slice(1).forEach((q,qi)=>{const id=`q_${si}_${qi}`; html+=`<div class="q"><label>${q}</label><select id="${id}" onchange="calcScore()"><option value="10">Pass / Compliant</option><option value="5">Partial / Improvement Required</option><option value="0">Fail / Not Evidenced</option><option value="na">N/A</option></select><br><textarea id="${id}_note" rows="2" style="width:100%" placeholder="Optional notes"></textarea></div>`})}); qs('questions').innerHTML=html; calcScore()}
+function calcScore(){let total=0,max=0; auditQuestions.forEach((sec,si)=>sec.slice(1).forEach((q,qi)=>{const v=qs(`q_${si}_${qi}`)?.value; if(v!=='na'){max+=10; total+=Number(v||0)}})); const score=max?Math.round((total/max)*100):100; qs('scoreOut').textContent=score; const res=score>=95?'Excellent':score>=85?'Pass':score>=75?'Improvement Required':'Fail'; qs('resultOut').textContent=res; if(score<85 && !qs('training').value) qs('training').value='Post-audit refresher training / toolbox talk required. Re-audit to be completed within 30 days.'; return {score,result:res}}
+async function api(url,opts){const r=await fetch(url,opts); const t=await r.text(); if(!t) throw new Error('No response from backend function.'); let j; try{j=JSON.parse(t)}catch(e){throw new Error(t.slice(0,250))} if(!j.ok) throw new Error(j.error||'Request failed'); return j}
+async function login(){try{const j=await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:qs('email').value,pin:qs('pin').value})}); user=j.user; qs('login').classList.add('hide'); qs('app').classList.remove('hide'); qs('who').textContent=`Logged in: ${user.name} (${user.role})`; qs('auditor').value=user.name; await loadUsers(); renderQuestions(); await loadAudits(); await loadMyTrainingNotice()}catch(e){qs('loginMsg').textContent=e.message}}
+function logout(){location.reload()} function show(id){['auditForm','dashboard','booklet','trainingView','userAdmin','toolboxTest'].forEach(x=>qs(x).classList.add('hide')); qs(id).classList.remove('hide')} function newAudit(){show('auditForm'); qs('saveMsg').textContent=''}
+async function loadUsers(){const j=await api('/api/users'); users=j.users; const eng=users.filter(u=>u.role==='engineer'&&Number(u.active)!==0); qs('engineer').innerHTML=eng.map(u=>`<option value="${u.email}" data-name="${u.name}">${u.name}</option>`).join('')}
+async function fileToDataUrl(file){return new Promise(res=>{const img=new Image(), fr=new FileReader(); fr.onload=e=>{img.onload=()=>{const c=document.createElement('canvas'); const max=900, s=Math.min(1,max/Math.max(img.width,img.height)); c.width=img.width*s; c.height=img.height*s; c.getContext('2d').drawImage(img,0,0,c.width,c.height); res({filename:file.name,mime_type:'image/jpeg',data_url:c.toDataURL('image/jpeg',0.65)})}; img.src=e.target.result}; fr.readAsDataURL(file)})}
+function collectQuestions(){const arr=[]; auditQuestions.forEach((sec,si)=>sec.slice(1).forEach((q,qi)=>{const id=`q_${si}_${qi}`; arr.push({section:sec[0],question:q,score:qs(id).value,note:qs(id+'_note').value})})); return arr}
+async function saveAudit(){try{const opt=qs('engineer').selectedOptions[0]; if(!opt) throw new Error('No engineer selected.'); const photos=[]; for(const f of [...qs('photos').files].slice(0,6)) photos.push(await fileToDataUrl(f)); const sr=calcScore(); const body={engineer_email:qs('engineer').value,engineer_name:opt.dataset.name,manager_email:user.email,manager_name:user.name,site_name:qs('site').value,client_name:qs('client').value,audit_date:qs('date').value,auditor:qs('auditor').value,appliance_type:qs('applianceType').value,manufacturer:qs('manufacturer').value,model:qs('model').value,serial_number:qs('serial').value,asset_number:qs('asset').value,score:sr.score,result:sr.result,questions:collectQuestions(),actions_required:qs('actions').value,training_required:qs('training').value,signature:qs('signature').value,photos}; const j=await api('/api/audits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); qs('saveMsg').textContent=`Saved Audit ID ${j.id} - ${j.result}`; await loadAudits()}catch(e){qs('saveMsg').textContent=e.message}}
+async function loadAudits(){
+  show('dashboard');
+  const j=await api(`/api/audits?email=${encodeURIComponent(user.email)}&role=${user.role}`);
+  const rows=j.audits||[];
+  lastAudits=rows;
+
+  const total=rows.length;
+  const excellent=rows.filter(a=>a.result==='Excellent').length;
+  const pass=rows.filter(a=>a.result==='Pass').length;
+  const improve=rows.filter(a=>a.result==='Improvement Required').length;
+  const fail=rows.filter(a=>a.result==='Fail').length;
+  const passRate=total?Math.round(((excellent+pass)/total)*100):0;
+  const avgScore=total?Math.round(rows.reduce((s,a)=>s+Number(a.score||0),0)/total):0;
+
+  let openTraining=0, openReaudits=0;
+  try{
+    const t=await api('/api/training');
+    openTraining=(t.training||[]).filter(x=>(x.status||'').toLowerCase()!=='closed' && (x.status||'').toLowerCase()!=='complete' && (x.status||'').toLowerCase()!=='completed').length;
+  }catch(e){}
+  try{
+    const r=await api('/api/reaudits');
+    openReaudits=(r.reaudits||[]).filter(x=>(x.status||'').toLowerCase()!=='closed' && (x.status||'').toLowerCase()!=='complete' && (x.status||'').toLowerCase()!=='completed').length;
+  }catch(e){}
+
+  qs('stats').innerHTML=`<div class="grid">
+    <div class="card"><b>Total Audits</b><br><span class="scorebox">${total}</span></div>
+    <div class="card"><b>Average Score</b><br><span class="scorebox">${avgScore}%</span></div>
+    <div class="card"><b>Pass Rate</b><br><span class="scorebox">${passRate}%</span></div>
+    <div class="card"><b>Excellent</b><br><span class="scorebox">${excellent}</span></div>
+    <div class="card"><b>Pass</b><br><span class="scorebox">${pass}</span></div>
+    <div class="card"><b>Improvement Required</b><br><span class="scorebox">${improve}</span></div>
+    <div class="card"><b>Fail</b><br><span class="scorebox">${fail}</span></div>
+    <div class="card"><b>Open Training / Re-audits</b><br><span class="scorebox">${openTraining} / ${openReaudits}</span></div>
+  </div>`;
+
+  renderLeague(rows);
+  renderTrends(rows);
+  renderFailureAnalysis(rows);
+
+  qs('auditRows').innerHTML=rows.map(a=>{let d={};try{d=JSON.parse(a.audit_json||'{}')}catch(e){};return `<tr><td>HBS-${a.id}</td><td>${a.audit_date||''}</td><td>${a.engineer_name||''}</td><td>${a.site_name||''}</td><td>${d.manufacturer||''}</td><td>${d.model||''}</td><td>${a.score||0}%</td><td><span class="pill ${a.result==='Excellent'?'excellent':a.result==='Pass'?'pass':a.result==='Fail'?'fail':'warn'}">${a.result||''}</span></td><td><button onclick="booklet(${a.id})">Open</button></td></tr>`}).join('')
+}
+
+function renderLeague(rows){
+  const map={};
+  rows.forEach(a=>{
+    const name=a.engineer_name||'Unknown';
+    if(!map[name]) map[name]={name,audits:0,total:0,fail:0,improve:0,excellent:0};
+    map[name].audits++;
+    map[name].total+=Number(a.score||0);
+    if(a.result==='Fail') map[name].fail++;
+    if(a.result==='Improvement Required') map[name].improve++;
+    if(a.result==='Excellent') map[name].excellent++;
+  });
+  const league=Object.values(map).map(x=>({...x,avg:Math.round(x.total/x.audits)})).sort((a,b)=>b.avg-a.avg||b.audits-a.audits);
+  qs('leagueTable').innerHTML=`<table><thead><tr><th>Rank</th><th>Engineer</th><th>Audits</th><th>Avg Score</th><th>Excellent</th><th>Improvement</th><th>Fails</th></tr></thead><tbody>${league.map((x,i)=>`<tr><td>${i+1}</td><td>${x.name}</td><td>${x.audits}</td><td>${x.avg}%</td><td>${x.excellent}</td><td>${x.improve}</td><td>${x.fail}</td></tr>`).join('')}</tbody></table>`;
+  qs('performanceGraph').innerHTML = league.length ? league.map(x=>`<div class="barrow"><div class="barname">${x.name}<br><span class="muted">${x.audits} audit${x.audits===1?'':'s'}</span></div><div class="barwrap"><div class="barfill" style="width:${Math.max(3,x.avg)}%">${x.avg}%</div></div><div class="barvalue">${x.avg}%</div></div>`).join('') : '<p class="muted">No engineer performance data available yet.</p>';
+}
+
+function renderTrends(rows){
+  const map={};
+  rows.forEach(a=>{
+    const month=(a.audit_date||'').slice(0,7)||'Unknown';
+    if(!map[month]) map[month]={month,audits:0,total:0,fail:0,improve:0};
+    map[month].audits++;
+    map[month].total+=Number(a.score||0);
+    if(a.result==='Fail') map[month].fail++;
+    if(a.result==='Improvement Required') map[month].improve++;
+  });
+  const trend=Object.values(map).map(x=>({...x,avg:Math.round(x.total/x.audits)})).sort((a,b)=>a.month.localeCompare(b.month));
+  qs('trendTable').innerHTML=`<table><thead><tr><th>Month</th><th>Audits</th><th>Average Score</th><th>Trend Bar</th><th>Improvement</th><th>Fails</th></tr></thead><tbody>${trend.map(x=>`<tr><td>${x.month}</td><td>${x.audits}</td><td>${x.avg}%</td><td><div style="background:#e6eef8;border-radius:8px;overflow:hidden"><div style="width:${x.avg}%;background:#123f6d;color:white;padding:4px 0;text-align:center">${x.avg}%</div></div></td><td>${x.improve}</td><td>${x.fail}</td></tr>`).join('')}</tbody></table>`;
+}
+
+function renderFailureAnalysis(rows){
+  const counts={};
+  rows.forEach(a=>{
+    let d={};try{d=JSON.parse(a.audit_json||'{}')}catch(e){}
+    (d.questions||[]).forEach(q=>{
+      if(String(q.score)==='0' || String(q.score)==='5'){
+        const key=q.question||'Unknown question';
+        if(!counts[key]) counts[key]={question:key,fail:0,improve:0,total:0};
+        counts[key].total++;
+        if(String(q.score)==='0') counts[key].fail++;
+        if(String(q.score)==='5') counts[key].improve++;
+      }
+    });
+  });
+  const list=Object.values(counts).sort((a,b)=>b.total-a.total).slice(0,10);
+  qs('failAnalysis').innerHTML=list.length?`<table><thead><tr><th>Question / Audit Area</th><th>Total Issues</th><th>Fails</th><th>Improvements</th></tr></thead><tbody>${list.map(x=>`<tr><td>${x.question}</td><td>${x.total}</td><td>${x.fail}</td><td>${x.improve}</td></tr>`).join('')}</tbody></table>`:'<p class="muted">No failed or improvement questions recorded yet.</p>';
+}
+async function loadTraining(){
+  show('trainingView');
+  const t=await api('/api/training');
+  const r=await api('/api/reaudits');
+
+  qs('trainingRows').innerHTML=(t.training||[]).map(x=>{
+    const status=(x.status||'Open');
+    const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
+    const testBtn=done?'<span class="muted">Closed</span>':`<button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||'').replaceAll("'","&#39;")}')">Start Test</button>`;
+    const btn=done?'<span class="muted">Closed</span>':`<button onclick="completeTraining(${x.id})">Mark Complete</button>`;
+    return `<tr><td>${x.engineer_name||''}</td><td>${x.training_type||''}</td><td>${x.assigned_date||''}</td><td>${status}</td><td>${testBtn} ${btn}</td></tr>`;
+  }).join('');
+
+  qs('reauditRows').innerHTML=(r.reaudits||[]).map(x=>{
+    const status=(x.status||'Open');
+    const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
+    const btn=done?'<span class="muted">Closed</span>':`<button onclick="completeReaudit(${x.id})">Mark Complete</button>`;
+    return `<tr><td>HBS-${x.audit_id||''}</td><td>${x.engineer_name||''}</td><td>${x.due_date||''}</td><td>${status}</td><td>${btn}</td></tr>`;
+  }).join('');
+}
+
+
+const toolboxQuestions=[
+ {q:'Under GSIUR, who is responsible for leaving the gas installation safe after attending site?',a:'Gas Engineer',opts:['Client','Building Manager','Gas Engineer','Manufacturer']},
+ {q:'What is the correct action where an Immediately Dangerous situation is identified?',a:'Isolate or disconnect where possible and issue warning notice',opts:['Record only','Quote for repair','Isolate or disconnect where possible and issue warning notice','Leave running until next visit']},
+ {q:'Which unsafe classification applies where there is immediate danger to life or property?',a:'ID',opts:['Advisory','AR','ID','Service Required']},
+ {q:'Which unsafe classification applies where danger may occur if the situation continues?',a:'AR',opts:['AR','ID','Passed','Routine']},
+ {q:'What document should be issued where an unsafe gas situation is identified?',a:'Warning Notice',opts:['Invoice only','Warning Notice','Delivery note','Verbal advice only']},
+ {q:'What does a gas tightness test confirm?',a:'Integrity of the gas installation',opts:['Appliance efficiency','Water pressure','Integrity of the gas installation','Flue dilution rate only']},
+ {q:'When should ventilation be considered on commercial gas appliances?',a:'During service, audit, repair or safety inspection where relevant',opts:['Only on new installations','Never','During service, audit, repair or safety inspection where relevant','Only after a complaint']},
+ {q:'If mechanical ventilation serving gas appliances fails, what should normally happen?',a:'Gas appliances must be safely interlocked or isolated as required',opts:['Appliances continue running','Only reduce appliance output','Gas appliances must be safely interlocked or isolated as required','Open a window']},
+ {q:'Before combustion analysis, what should the engineer confirm?',a:'Appliance is operating correctly under suitable load',opts:['Only the case temperature','Appliance is operating correctly under suitable load','That the client is present','That the room is empty']},
+ {q:'Which instructions must be followed during servicing and maintenance?',a:'Manufacturer instructions',opts:['Manufacturer instructions','Previous engineer notes only','Client preference','Online forum advice']},
+ {q:'What audit result requires formal improvement action in the HBS system?',a:'75% to 84%',opts:['95% to 100%','85% to 94%','75% to 84%','100% only']},
+ {q:'What score is a fail in the HBS audit system?',a:'Below 75%',opts:['Below 95%','Below 85%','Below 75%','Below 50% only']},
+ {q:'Following a failed audit, when should a re-audit normally be targeted?',a:'Within 30 days',opts:['Within 30 days','Within 12 months','At next service only','No re-audit required']},
+ {q:'What evidence should support audit findings where appropriate?',a:'Photographs and clear written notes',opts:['Photographs and clear written notes','Verbal explanation only','No evidence required','Timesheet only']},
+ {q:'If an engineer is unsure of a classification or safety decision, what should they do?',a:'Stop and contact technical support or compliance management',opts:['Guess','Ignore it','Stop and contact technical support or compliance management','Ask the client to decide']}
+];
+
+async function loadMyTrainingNotice(){
+  try{
+    if(!user || user.role!=='engineer') return;
+    const t=await api('/api/training?engineer='+encodeURIComponent(user.name));
+    const open=(t.training||[]).filter(x=>!['complete','completed','closed','cancelled'].includes((x.status||'Open').toLowerCase()));
+    if(!open.length){qs('trainingNotice').classList.add('hide');return;}
+    qs('trainingNotice').classList.remove('hide');
+    qs('trainingNoticeBody').innerHTML=open.map(x=>`<p><b>${x.training_type||'Post audit training required'}</b><br>Status: ${x.status||'Open'}<br>Assigned: ${x.assigned_date||''}<br><button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||user.name).replaceAll("'","&#39;")}')">Start Toolbox Test</button></p>`).join('');
+  }catch(e){}
+}
+
+function openToolboxTest(trainingId='', auditId='', engineerName=''){
+  show('toolboxTest');
+  qs('tbTrainingId').value = trainingId || '';
+  qs('tbAuditId').value = auditId || '';
+  qs('tbEngineer').value = engineerName || (user?user.name:'');
+  qs('tbDate').value = new Date().toISOString().slice(0,10);
+  renderToolboxQuestions();
+  qs('tbMsg').textContent='';
+}
+
+function renderToolboxQuestions(){
+  let html='';
+  toolboxQuestions.forEach((x,i)=>{
+    html+=`<div class="q"><label>${i+1}. ${x.q}</label><select id="tbq_${i}" onchange="calcToolboxScore()"><option value="">Select answer</option>${x.opts.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
+  });
+  qs('toolboxQuestions').innerHTML=html;
+  calcToolboxScore();
+}
+
+function calcToolboxScore(){
+  let score=0;
+  toolboxQuestions.forEach((x,i)=>{ if(qs('tbq_'+i)?.value===x.a) score++; });
+  const result = score>=12 ? 'PASS' : 'FAIL';
+  qs('tbScoreOut').textContent=score;
+  qs('tbResultOut').textContent=result;
+  return {score,result};
+}
+
+async function submitToolboxTest(){
+  try{
+    const sr=calcToolboxScore();
+    const answers=toolboxQuestions.map((x,i)=>({question:x.q,selected:qs('tbq_'+i).value,correct:x.a,pass:qs('tbq_'+i).value===x.a}));
+    const body={training_id:qs('tbTrainingId').value,audit_id:qs('tbAuditId').value,engineer_name:qs('tbEngineer').value,test_date:qs('tbDate').value,score:sr.score,result:sr.result,answers};
+    const j=await api('/api/toolbox-test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    qs('tbMsg').textContent=`Toolbox test saved. Result: ${j.result}, Score: ${j.score}/15`;
+    await loadTraining();
+    await loadAudits();
+    await loadMyTrainingNotice();
+  }catch(e){qs('tbMsg').textContent=e.message}
+}
+
+async function completeTraining(id){
+  if(!confirm('Mark this training record as completed?')) return;
+  await api('/api/training',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed'})});
+  await loadTraining();
+  await loadAudits();
+}
+
+async function completeReaudit(id){
+  if(!confirm('Mark this re-audit as completed?')) return;
+  await api('/api/reaudits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed'})});
+  await loadTraining();
+  await loadAudits();
+}
+async function loadUserAdmin(){show('userAdmin'); await loadUsers(); qs('userRows').innerHTML=users.map(u=>`<tr><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td>${Number(u.active)!==0?'Yes':'No'}</td><td><button onclick='editUser(${JSON.stringify(u).replaceAll("'","&#39;")})'>Edit</button></td></tr>`).join('')}
+function editUser(u){qs('userId').value=u.id; qs('userName').value=u.name||''; qs('userEmail').value=u.email||''; qs('userPin').value=''; qs('userRole').value=u.role||'engineer'; qs('userActive').value=String(Number(u.active)!==0?1:0); qs('userMsg').textContent='Leave PIN blank only if you intend to reset it to 1234 in this simple version.'}
+function clearUserForm(){['userId','userName','userEmail','userPin'].forEach(id=>qs(id).value=''); qs('userRole').value='engineer'; qs('userActive').value='1'; qs('userMsg').textContent=''}
+async function saveUser(){try{const body={id:qs('userId').value||undefined,name:qs('userName').value,email:qs('userEmail').value,pin:qs('userPin').value||'1234',role:qs('userRole').value,active:Number(qs('userActive').value)}; await api('/api/users',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); qs('userMsg').textContent='User saved.'; clearUserForm(); await loadUserAdmin()}catch(e){qs('userMsg').textContent=e.message}}
+async function booklet(id){const j=await api('/api/audit?id='+encodeURIComponent(id)); const a=j.audit, data=JSON.parse(a.audit_json||'{}'); show('booklet'); qs('bookletBody').innerHTML=`<h3>HBS-${a.id}</h3><p><b>Engineer:</b> ${a.engineer_name}<br><b>Auditor:</b> ${a.auditor||''}<br><b>Site:</b> ${a.site_name}<br><b>Client:</b> ${data.client_name||''}<br><b>Date:</b> ${a.audit_date}<br><b>Appliance Type:</b> ${data.appliance_type||''}<br><b>Manufacturer:</b> ${data.manufacturer||''}<br><b>Model:</b> ${data.model||''}<br><b>Serial Number:</b> ${data.serial_number||''}<br><b>Asset Number:</b> ${data.asset_number||''}<br><b>Score:</b> ${a.score}% - ${a.result}</p><h3>Audit Questions</h3><table><tr><th>Section</th><th>Question</th><th>Score</th><th>Notes</th></tr>${(data.questions||[]).map(q=>`<tr><td>${q.section}</td><td>${q.question}</td><td>${q.score}</td><td>${q.note||''}</td></tr>`).join('')}</table><h3>Findings / Actions</h3><p>${(data.actions_required||'').replaceAll('\n','<br>')}</p><h3>Training / Re-audit</h3><p>${(data.training_required||'').replaceAll('\n','<br>')}</p><h3>Photos</h3>${(j.photos||[]).map(p=>`<img class=photo src="${p.photo_url}">`).join('')}<h3>Signed</h3><p>${data.signature||''}</p>`}
+</script>
+</body>
+</html>
