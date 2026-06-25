@@ -12,7 +12,7 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
 <div class="top"><h1>HBS Gas Audit Portal</h1><p>PDA/iPad audit capture, photo upload, central saving, manager dashboard, engineer management, audit trends, league tables and printable PDF booklet.</p></div>
 <section id="login" class="card"><h2>Login</h2><p class="muted">Use your HBS portal email and PIN.</p><div class="grid"><label>Email<br><input id="email" value="peter@hbs.local"></label><label>PIN<br><input id="pin" type="password" value="1234"></label><label><br><button onclick="login()">Login</button></label></div><p id="loginMsg" class="muted"></p></section>
 <section id="app" class="hide">
- <div class="card noprint toolbar"><b id="who"></b> <button class="managerOnly" onclick="newAudit()">New Audit</button> <button onclick="loadAudits()">My Dashboard</button> <button onclick="loadTraining()">Training / Re-audits</button> <button onclick="openToolboxTest()">Toolbox Test</button> <button class="managerOnly" onclick="loadUserAdmin()">Users</button> <button onclick="logout()">Logout</button></div>
+ <div class="card noprint toolbar"><b id="who"></b> <button class="managerOnly" onclick="newAudit()">New Audit</button> <button onclick="loadAudits()">My Dashboard</button> <button onclick="loadTraining()">Training / Re-audits</button> <button onclick="openToolboxTest()">Toolbox Test</button> <button class="managerOnly" onclick="loadUserAdmin()">Users</button> <button class="managerOnly" onclick="downloadBackup()">Backup</button> <button onclick="logout()">Logout</button></div>
  <div id="trainingNotice" class="card hide">
   <h2>Outstanding Training Action</h2>
   <div id="trainingNoticeBody"></div>
@@ -32,8 +32,20 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
   </div>
   <div id="questions"></div><p class="scorebox">Calculated Score: <span id="scoreOut">100</span>% - <span id="resultOut">Excellent</span></p>
   <p><label>Findings / Corrective Actions<br><textarea id="actions" rows="4" style="width:100%" placeholder="Record all audit findings and required corrective actions"></textarea></label></p>
-  <p><label>Training Required<br><textarea id="training" rows="2" style="width:100%" placeholder="Auto-populated for failed/improvement audits, but can be edited"></textarea></label></p>
-  <p><label>Photos from iPad/Phone<br><input id="photos" type="file" accept="image/*" multiple></label></p>
+  <p><label>Manager Test Selection<br><select id="testLevel">
+<option value="auto">Automatic based on audit score</option>
+<option value="none">No test required</option>
+<option value="level1">Level 1 - Commercial Gas Safety Refresher</option>
+<option value="level2">Level 2 - Advanced Competency Assessment</option>
+</select></label></p>
+<p><label>Training Required<br><textarea id="training" rows="2" style="width:100%" placeholder="Auto-populated for failed/improvement audits, but can be edited"></textarea></label></p>
+  <p><label>Photographs<br>
+<button type="button" onclick="qs('cameraPhoto').click()">Take Photo</button>
+<button type="button" onclick="qs('galleryPhotos').click()">Choose Photos</button>
+<input id="cameraPhoto" type="file" accept="image/*" capture="environment" style="display:none" onchange="addSelectedPhotos(this.files)">
+<input id="galleryPhotos" type="file" accept="image/*" multiple style="display:none" onchange="addSelectedPhotos(this.files)">
+</label></p>
+<div id="photoList" class="muted">No photographs selected.</div>
   <p><label>Auditor / Engineer signature note<br><input id="signature" style="width:100%" placeholder="Typed signature / confirmation"></label></p>
   <button onclick="saveAudit()">Save Audit Centrally</button><p id="saveMsg"></p>
  </div>
@@ -48,7 +60,7 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
     <label>Training Record ID<br><input id="tbTrainingId" readonly></label>
     <label>Audit Ref<br><input id="tbAuditId" readonly></label>
     <label>Engineer<br><input id="tbEngineer" readonly></label>
-    <label>Date<br><input id="tbDate" type="date"></label>
+    <label>Date<br><input id="tbDate" type="date"></label><label>Test Level<br><select id="tbLevel" onchange="renderToolboxQuestions()"><option value="level1">Level 1 Refresher</option><option value="level2">Level 2 Advanced</option></select></label>
   </div>
   <div id="toolboxQuestions"></div>
   <p class="scorebox">Test Score: <span id="tbScoreOut">0</span>/15 - <span id="tbResultOut">Not submitted</span></p>
@@ -59,10 +71,10 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
  <div id="booklet" class="card hide"><h2>Audit Booklet</h2><div id="bookletBody"></div><button class="noprint" onclick="window.print()">Print / Save PDF</button></div>
 </section>
 <script>
-let user=null, users=[], lastAudits=[]; const qs=id=>document.getElementById(id); qs('date').value=new Date().toISOString().slice(0,10);
+let user=null, users=[], lastAudits=[], selectedPhotos=[]; const qs=id=>document.getElementById(id); qs('date').value=new Date().toISOString().slice(0,10);
 const auditQuestions=[['Safety & Compliance','Risk assessment / dynamic risk assessment completed','Gas isolation and emergency controls confirmed','Ventilation checked and suitable','Gas tightness / let-by requirements considered','Flue route, termination and condition checked'],['Technical Competence','Gas pressures recorded correctly','Combustion analysis completed and values acceptable','Gas rate / burner input checked where required','Condensate, safety devices and interlocks checked','Manufacturer instructions followed'],['Documentation & Handover','Service/audit records completed correctly','Defects classified correctly: ID / AR','Client recommendations and warning notices recorded','Photographic evidence taken where appropriate','Work area left safe and operational status confirmed']];
 function renderQuestions(){let html=''; auditQuestions.forEach((sec,si)=>{html+=`<h3 class="section-title">${sec[0]}</h3>`; sec.slice(1).forEach((q,qi)=>{const id=`q_${si}_${qi}`; html+=`<div class="q"><label>${q}</label><select id="${id}" onchange="calcScore()"><option value="10">Pass / Compliant</option><option value="5">Partial / Improvement Required</option><option value="0">Fail / Not Evidenced</option><option value="na">N/A</option></select><br><textarea id="${id}_note" rows="2" style="width:100%" placeholder="Optional notes"></textarea></div>`})}); qs('questions').innerHTML=html; calcScore()}
-function calcScore(){let total=0,max=0; auditQuestions.forEach((sec,si)=>sec.slice(1).forEach((q,qi)=>{const v=qs(`q_${si}_${qi}`)?.value; if(v!=='na'){max+=10; total+=Number(v||0)}})); const score=max?Math.round((total/max)*100):100; qs('scoreOut').textContent=score; const res=score>=95?'Excellent':score>=85?'Pass':score>=75?'Improvement Required':'Fail'; qs('resultOut').textContent=res; if(score<85 && !qs('training').value) qs('training').value='Post-audit refresher training / toolbox talk required. Re-audit to be completed within 30 days.'; return {score,result:res}}
+function calcScore(){let total=0,max=0; auditQuestions.forEach((sec,si)=>sec.slice(1).forEach((q,qi)=>{const v=qs(`q_${si}_${qi}`)?.value; if(v!=='na'){max+=10; total+=Number(v||0)}})); const score=max?Math.round((total/max)*100):100; qs('scoreOut').textContent=score; const res=score>=95?'Excellent':score>=85?'Pass':score>=75?'Improvement Required':'Fail'; qs('resultOut').textContent=res; if(score<85 && !qs('training').value) qs('training').value=score<75?'Level 2 Advanced Competency Assessment required. Re-audit and practical review to be completed.':'Level 1 Commercial Gas Safety Refresher required. Re-audit to be completed within 30 days.'; if(qs('testLevel') && qs('testLevel').value==='auto') qs('testLevel').dataset.recommended=score<75?'level2':score<85?'level1':'none'; return {score,result:res}}
 async function api(url,opts){const r=await fetch(url,opts); const t=await r.text(); if(!t) throw new Error('No response from backend function.'); let j; try{j=JSON.parse(t)}catch(e){throw new Error(t.slice(0,250))} if(!j.ok) throw new Error(j.error||'Request failed'); return j}
 async function login(){try{const j=await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:qs('email').value,pin:qs('pin').value})}); user=j.user; qs('login').classList.add('hide'); qs('app').classList.remove('hide'); qs('who').textContent=`Logged in: ${user.name} (${user.role})`; qs('auditor').value=user.name; applyRoleVisibility(); await loadUsers(); renderQuestions(); await loadAudits(); await loadMyTrainingNotice()}catch(e){qs('loginMsg').textContent=e.message}}
 function applyRoleVisibility(){
@@ -74,8 +86,23 @@ function applyRoleVisibility(){
 function logout(){location.reload()} function show(id){['auditForm','dashboard','booklet','trainingView','userAdmin','toolboxTest'].forEach(x=>qs(x).classList.add('hide')); qs(id).classList.remove('hide')} function newAudit(){if(!user || user.role!=='manager'){alert('Manager access only');return;} show('auditForm'); qs('saveMsg').textContent=''}
 async function loadUsers(){const j=await api(`/api/users?email=${encodeURIComponent(user.email)}&role=${user.role}`); users=j.users; const eng=users.filter(u=>u.role==='engineer'&&Number(u.active)!==0); qs('engineer').innerHTML=eng.map(u=>`<option value="${u.email}" data-name="${u.name}">${u.name}</option>`).join('')}
 async function fileToDataUrl(file){return new Promise(res=>{const img=new Image(), fr=new FileReader(); fr.onload=e=>{img.onload=()=>{const c=document.createElement('canvas'); const max=900, s=Math.min(1,max/Math.max(img.width,img.height)); c.width=img.width*s; c.height=img.height*s; c.getContext('2d').drawImage(img,0,0,c.width,c.height); res({filename:file.name,mime_type:'image/jpeg',data_url:c.toDataURL('image/jpeg',0.65)})}; img.src=e.target.result}; fr.readAsDataURL(file)})}
+
+function addSelectedPhotos(files){
+  selectedPhotos.push(...Array.from(files||[]));
+  renderPhotoList();
+}
+function removeSelectedPhoto(index){
+  selectedPhotos.splice(index,1);
+  renderPhotoList();
+}
+function renderPhotoList(){
+  const box=qs('photoList');
+  if(!box) return;
+  if(!selectedPhotos.length){box.innerHTML='No photographs selected.';return;}
+  box.innerHTML=selectedPhotos.map((f,i)=>`<div class="pill">${i+1}. ${f.name||'camera photo'} <button type="button" onclick="removeSelectedPhoto(${i})">Remove</button></div>`).join('');
+}
 function collectQuestions(){const arr=[]; auditQuestions.forEach((sec,si)=>sec.slice(1).forEach((q,qi)=>{const id=`q_${si}_${qi}`; arr.push({section:sec[0],question:q,score:qs(id).value,note:qs(id+'_note').value})})); return arr}
-async function saveAudit(){try{const opt=qs('engineer').selectedOptions[0]; if(!opt) throw new Error('No engineer selected.'); const photos=[]; for(const f of [...qs('photos').files].slice(0,6)) photos.push(await fileToDataUrl(f)); const sr=calcScore(); const body={engineer_email:qs('engineer').value,engineer_name:opt.dataset.name,manager_email:user.email,manager_name:user.name,site_name:qs('site').value,client_name:qs('client').value,audit_date:qs('date').value,auditor:qs('auditor').value,appliance_type:qs('applianceType').value,manufacturer:qs('manufacturer').value,model:qs('model').value,serial_number:qs('serial').value,asset_number:qs('asset').value,score:sr.score,result:sr.result,questions:collectQuestions(),actions_required:qs('actions').value,training_required:qs('training').value,signature:qs('signature').value,photos}; const j=await api('/api/audits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); qs('saveMsg').textContent=`Saved Audit ID ${j.id} - ${j.result}`; await loadAudits()}catch(e){qs('saveMsg').textContent=e.message}}
+async function saveAudit(){try{const opt=qs('engineer').selectedOptions[0]; if(!opt) throw new Error('No engineer selected.'); const photos=[]; for(const f of selectedPhotos.slice(0,12)) photos.push(await fileToDataUrl(f)); const sr=calcScore(); const body={engineer_email:qs('engineer').value,engineer_name:opt.dataset.name,manager_email:user.email,manager_name:user.name,site_name:qs('site').value,client_name:qs('client').value,audit_date:qs('date').value,auditor:qs('auditor').value,appliance_type:qs('applianceType').value,manufacturer:qs('manufacturer').value,model:qs('model').value,serial_number:qs('serial').value,asset_number:qs('asset').value,score:sr.score,result:sr.result,questions:collectQuestions(),actions_required:qs('actions').value,training_required:qs('training').value,test_level:(qs('testLevel').value==='auto'?(qs('testLevel').dataset.recommended||'none'):qs('testLevel').value),signature:qs('signature').value,photos}; const j=await api('/api/audits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); qs('saveMsg').textContent=`Saved Audit ID ${j.id} - ${j.result}`; selectedPhotos=[]; renderPhotoList(); await loadAudits()}catch(e){qs('saveMsg').textContent=e.message}}
 async function loadAudits(){
   show('dashboard');
   const j=await api(`/api/audits?email=${encodeURIComponent(user.email)}&role=${user.role}`);
@@ -92,12 +119,12 @@ async function loadAudits(){
 
   let openTraining=0, openReaudits=0;
   try{
-    const t=await api(`/api/training?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
-    openTraining=(t.training||[]).filter(x=>user.role==='manager'||(x.engineer_name||'').toLowerCase()===(user.name||'').toLowerCase()).filter(x=>(x.status||'').toLowerCase()!=='closed' && (x.status||'').toLowerCase()!=='complete' && (x.status||'').toLowerCase()!=='completed').length;
+    const t=await api('/api/training');
+    openTraining=(t.training||[]).filter(x=>(x.status||'').toLowerCase()!=='closed' && (x.status||'').toLowerCase()!=='complete' && (x.status||'').toLowerCase()!=='completed').length;
   }catch(e){}
   try{
-    const r=await api(`/api/reaudits?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
-    openReaudits=(r.reaudits||[]).filter(x=>user.role==='manager'||(x.engineer_name||'').toLowerCase()===(user.name||'').toLowerCase()).filter(x=>(x.status||'').toLowerCase()!=='closed' && (x.status||'').toLowerCase()!=='complete' && (x.status||'').toLowerCase()!=='completed').length;
+    const r=await api('/api/reaudits');
+    openReaudits=(r.reaudits||[]).filter(x=>(x.status||'').toLowerCase()!=='closed' && (x.status||'').toLowerCase()!=='complete' && (x.status||'').toLowerCase()!=='completed').length;
   }catch(e){}
 
   qs('stats').innerHTML=`<div class="grid">
@@ -170,10 +197,7 @@ async function loadTraining(){
   const t=await api(`/api/training?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
   const r=await api(`/api/reaudits?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
 
-  const trainingList=(t.training||[]).filter(x=>user.role==='manager'||(x.engineer_name||'').toLowerCase()===(user.name||'').toLowerCase());
-  const reauditList=(r.reaudits||[]).filter(x=>user.role==='manager'||(x.engineer_name||'').toLowerCase()===(user.name||'').toLowerCase());
-
-  qs('trainingRows').innerHTML=trainingList.map(x=>{
+  qs('trainingRows').innerHTML=(t.training||[]).map(x=>{
     const status=(x.status||'Open');
     const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
     const testBtn=done?'<span class="muted">Closed</span>':`<button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||'').replaceAll("'","&#39;")}')">Start Test</button>`;
@@ -181,7 +205,7 @@ async function loadTraining(){
     return `<tr><td>${x.engineer_name||''}</td><td>${x.training_type||''}</td><td>${x.assigned_date||''}</td><td>${status}</td><td>${testBtn} ${btn}</td></tr>`;
   }).join('');
 
-  qs('reauditRows').innerHTML=reauditList.map(x=>{
+  qs('reauditRows').innerHTML=(r.reaudits||[]).map(x=>{
     const status=(x.status||'Open');
     const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
     const btn=done?'<span class="muted">Closed</span>':`<button onclick="completeReaudit(${x.id})">Mark Complete</button>`;
@@ -190,29 +214,64 @@ async function loadTraining(){
 }
 
 
-const toolboxQuestions=[
- {q:'Under GSIUR, who is responsible for leaving the gas installation safe after attending site?',a:'Gas Engineer',opts:['Client','Building Manager','Gas Engineer','Manufacturer']},
- {q:'What is the correct action where an Immediately Dangerous situation is identified?',a:'Isolate or disconnect where possible and issue warning notice',opts:['Record only','Quote for repair','Isolate or disconnect where possible and issue warning notice','Leave running until next visit']},
- {q:'Which unsafe classification applies where there is immediate danger to life or property?',a:'ID',opts:['Advisory','AR','ID','Service Required']},
- {q:'Which unsafe classification applies where danger may occur if the situation continues?',a:'AR',opts:['AR','ID','Passed','Routine']},
- {q:'What document should be issued where an unsafe gas situation is identified?',a:'Warning Notice',opts:['Invoice only','Warning Notice','Delivery note','Verbal advice only']},
- {q:'What does a gas tightness test confirm?',a:'Integrity of the gas installation',opts:['Appliance efficiency','Water pressure','Integrity of the gas installation','Flue dilution rate only']},
- {q:'When should ventilation be considered on commercial gas appliances?',a:'During service, audit, repair or safety inspection where relevant',opts:['Only on new installations','Never','During service, audit, repair or safety inspection where relevant','Only after a complaint']},
- {q:'If mechanical ventilation serving gas appliances fails, what should normally happen?',a:'Gas appliances must be safely interlocked or isolated as required',opts:['Appliances continue running','Only reduce appliance output','Gas appliances must be safely interlocked or isolated as required','Open a window']},
- {q:'Before combustion analysis, what should the engineer confirm?',a:'Appliance is operating correctly under suitable load',opts:['Only the case temperature','Appliance is operating correctly under suitable load','That the client is present','That the room is empty']},
- {q:'Which instructions must be followed during servicing and maintenance?',a:'Manufacturer instructions',opts:['Manufacturer instructions','Previous engineer notes only','Client preference','Online forum advice']},
- {q:'What audit result requires formal improvement action in the HBS system?',a:'75% to 84%',opts:['95% to 100%','85% to 94%','75% to 84%','100% only']},
- {q:'What score is a fail in the HBS audit system?',a:'Below 75%',opts:['Below 95%','Below 85%','Below 75%','Below 50% only']},
- {q:'Following a failed audit, when should a re-audit normally be targeted?',a:'Within 30 days',opts:['Within 30 days','Within 12 months','At next service only','No re-audit required']},
- {q:'What evidence should support audit findings where appropriate?',a:'Photographs and clear written notes',opts:['Photographs and clear written notes','Verbal explanation only','No evidence required','Timesheet only']},
- {q:'If an engineer is unsure of a classification or safety decision, what should they do?',a:'Stop and contact technical support or compliance management',opts:['Guess','Ignore it','Stop and contact technical support or compliance management','Ask the client to decide']}
-];
 
+const toolboxQuestionBanks={
+level1:[
+{q:'Under GSIUR, who is responsible for leaving the gas installation safe after attending site?',a:'Gas Engineer',opts:['Client','Building Manager','Gas Engineer','Manufacturer']},
+{q:'What is the correct action where an Immediately Dangerous situation is identified?',a:'Isolate or disconnect where possible and issue warning notice',opts:['Record only','Quote for repair','Isolate or disconnect where possible and issue warning notice','Leave running until next visit']},
+{q:'Which unsafe classification applies where there is immediate danger to life or property?',a:'ID',opts:['Advisory','AR','ID','Service Required']},
+{q:'Which unsafe classification applies where danger may occur if the situation continues?',a:'AR',opts:['AR','ID','Passed','Routine']},
+{q:'What document should be issued where an unsafe gas situation is identified?',a:'Warning Notice',opts:['Invoice only','Warning Notice','Delivery note','Verbal advice only']},
+{q:'What does a gas tightness test confirm?',a:'Integrity of the gas installation',opts:['Appliance efficiency','Water pressure','Integrity of the gas installation','Flue dilution rate only']},
+{q:'When should ventilation be considered on commercial gas appliances?',a:'During service, audit, repair or safety inspection where relevant',opts:['Only on new installations','Never','During service, audit, repair or safety inspection where relevant','Only after a complaint']},
+{q:'If mechanical ventilation serving gas appliances fails, what should normally happen?',a:'Gas appliances must be safely interlocked or isolated as required',opts:['Appliances continue running','Only reduce appliance output','Gas appliances must be safely interlocked or isolated as required','Open a window']},
+{q:'Before combustion analysis, what should the engineer confirm?',a:'Appliance is operating correctly under suitable load',opts:['Only the case temperature','Appliance is operating correctly under suitable load','That the client is present','That the room is empty']},
+{q:'Which instructions must be followed during servicing and maintenance?',a:'Manufacturer instructions',opts:['Manufacturer instructions','Previous engineer notes only','Client preference','Online forum advice']},
+{q:'What audit result requires formal improvement action in the HBS system?',a:'75% to 84%',opts:['95% to 100%','85% to 94%','75% to 84%','100% only']},
+{q:'What score is a fail in the HBS audit system?',a:'Below 75%',opts:['Below 95%','Below 85%','Below 75%','Below 50% only']},
+{q:'Following a failed audit, when should a re-audit normally be targeted?',a:'Within 30 days',opts:['Within 30 days','Within 12 months','At next service only','No re-audit required']},
+{q:'What evidence should support audit findings where appropriate?',a:'Photographs and clear written notes',opts:['Photographs and clear written notes','Verbal explanation only','No evidence required','Timesheet only']},
+{q:'If an engineer is unsure of a classification or safety decision, what should they do?',a:'Stop and contact technical support or compliance management',opts:['Guess','Ignore it','Stop and contact technical support or compliance management','Ask the client to decide']}
+],
+level2:[
+{q:'Mechanical ventilation serving a commercial plantroom fails. What should happen?',a:'Gas appliances should be prevented from operating until ventilation is restored and proven',opts:['Continue operation at reduced rate','Open the plantroom door','Gas appliances should be prevented from operating until ventilation is restored and proven','Record only']},
+{q:'Working pressure is 18.1 mbar and manufacturer minimum is 17 mbar. What is the correct approach?',a:'Continue only if appliance performance is correct and no adverse conditions exist, recording readings clearly',opts:['Classify ID immediately','Ignore because above 17 mbar','Continue only if appliance performance is correct and no adverse conditions exist, recording readings clearly','Increase pressure at the meter']},
+{q:'A flue shows signs of leakage into the plantroom. What is the appropriate action?',a:'Assess as unsafe, isolate where necessary and issue warning notice',opts:['Tape the joint','Leave operational','Assess as unsafe, isolate where necessary and issue warning notice','Only photograph it']},
+{q:'Combustion readings show significantly elevated CO and unstable flame picture. What should happen?',a:'Investigate, make safe and do not leave operating if unsafe',opts:['Record as passed','Increase gas rate','Investigate, make safe and do not leave operating if unsafe','Ignore if boiler is heating']},
+{q:'What is the main purpose of proving and interlocking systems?',a:'To prevent gas flow or appliance operation unless required safety conditions are proven',opts:['To improve efficiency','To reduce paperwork','To prevent gas flow or appliance operation unless required safety conditions are proven','To increase inlet pressure']},
+{q:'Manufacturer instructions conflict with a generic checklist. What takes priority?',a:'Manufacturer instructions and relevant standards',opts:['Generic checklist','Customer instruction','Manufacturer instructions and relevant standards','Previous engineer notes']},
+{q:'A tightness test indicates pressure loss above permitted limits. What is correct?',a:'Do not leave the installation in unsafe operation; investigate and classify accordingly',opts:['Record as N/A','Do not leave the installation in unsafe operation; investigate and classify accordingly','Retest at lower pressure until it passes','Only tell reception']},
+{q:'Burner pressure cannot be measured. What should be recorded?',a:'Reason it cannot be measured and alternative relevant readings such as inlet working pressure where appropriate',opts:['Leave blank','Write OK','Reason it cannot be measured and alternative relevant readings such as inlet working pressure where appropriate','Invent the value']},
+{q:'A CP15 has missing combustion readings where readings were required. What should the audit reflect?',a:'Documentation and technical evidence failure requiring corrective action',opts:['No issue','Documentation and technical evidence failure requiring corrective action','Pass because service was done','Only housekeeping issue']},
+{q:'What does below 75% audit score require?',a:'Level 2 Advanced Competency Assessment required',opts:['No action','Optional refresher only','Level 2 Advanced Competency Assessment required','Annual review only']},
+{q:'What is the Level 2 pass requirement?',a:'27 out of 30',opts:['12 out of 15','14 out of 15','27 out of 30','Any score above 50%']},
+{q:'If an engineer fails Level 2 twice, what should follow?',a:'Manager competency review and practical assessment',opts:['No further action','Automatic pass','Manager competency review and practical assessment','Delete the record']},
+{q:'What evidence is strongest for a competency concern?',a:'Audit findings, photographs, readings, training record and re-audit outcome',opts:['Verbal memory only','Audit findings, photographs, readings, training record and re-audit outcome','A text message','No record needed']},
+{q:'A gas train has pressure switches, proving valve and slam shut. What should be verified?',a:'Correct operation, settings where applicable and safe sequence of operation',opts:['Only paint condition','Correct operation, settings where applicable and safe sequence of operation','Only manufacturer name','Nothing if boiler runs']},
+{q:'Before returning a commercial appliance to service after safety work, what is required?',a:'Complete relevant safety checks, functional checks, combustion checks and documentation',opts:['Switch on only','Complete relevant safety checks, functional checks, combustion checks and documentation','Ask client to monitor','Leave paperwork blank']},
+{q:'A room-sealed fan flued appliance has a damaged case seal. What is the concern?',a:'Potential effect on combustion air/flue integrity requiring assessment and action',opts:['Cosmetic only','Potential effect on combustion air/flue integrity requiring assessment and action','No issue if warm','Only clean it']},
+{q:'Repeated failure in gas pressure recording usually indicates what?',a:'Training and competency gap in technical recording and pressure verification',opts:['Nothing','Training and competency gap in technical recording and pressure verification','Client issue only','IT issue only']},
+{q:'What is suitable manager action below 60% audit score?',a:'Level 2 plus practical assessment and management review',opts:['No action','Level 2 plus practical assessment and management review','Only email reminder','Delete audit']},
+{q:'Why should photographs be linked to failed findings?',a:'They provide evidence and support technical review and training',opts:['For decoration','They provide evidence and support technical review and training','To fill space','Not necessary']},
+{q:'If unsafe classification is uncertain, what should the engineer do?',a:'Make safe and seek competent technical/compliance support',opts:['Guess','Make safe and seek competent technical/compliance support','Leave site','Ask the customer to choose']},
+{q:'What is the purpose of a re-audit after training?',a:'To verify that the engineer has corrected the competency gap in practice',opts:['To punish the engineer','To verify that the engineer has corrected the competency gap in practice','To close paperwork only','To replace ACS']},
+{q:'Which evidence is strongest for restored competence?',a:'Passed assessment plus observed correct site performance or successful re-audit',opts:['Verbal promise','Passed assessment plus observed correct site performance or successful re-audit','One email','Timesheet']},
+{q:'A boiler operates but flue termination is obstructed. What is the priority?',a:'Safety assessment and making the appliance/installation safe',opts:['Leave running','Safety assessment and making the appliance/installation safe','Only quote later','No action']},
+{q:'Why check gas rates and burner input where required?',a:'To confirm correct appliance input and safe operation against manufacturer data',opts:['To fill the form','To confirm correct appliance input and safe operation against manufacturer data','Only for domestic appliances','Never required']},
+{q:'What should be done with incomplete audit records?',a:'Correct them promptly and use as training evidence where failures occurred',opts:['Ignore','Correct them promptly and use as training evidence where failures occurred','Delete all audits','Tell engineer verbally only']},
+{q:'What is the correct treatment of failed safety devices?',a:'Do not leave appliance operating unsafely; repair, isolate or classify as required',opts:['Bypass temporarily','Do not leave appliance operating unsafely; repair, isolate or classify as required','Note for next year','Reset only']},
+{q:'What does competency evidence require in practical terms?',a:'Traceable records showing knowledge, practical ability and supervision where needed',opts:['One certificate only','Traceable records showing knowledge, practical ability and supervision where needed','No evidence','Only job title']},
+{q:'A client pressures an engineer to leave unsafe equipment running. What should happen?',a:'Engineer must follow safety duties and company escalation, not client pressure',opts:['Agree with client','Engineer must follow safety duties and company escalation, not client pressure','Turn a blind eye','Ask reception']},
+{q:'Why might manufacturer-specific training be needed after an audit?',a:'Because controls, combustion setup and fault diagnosis vary by appliance range',opts:['It is never useful','Because controls, combustion setup and fault diagnosis vary by appliance range','Only for new starters','To avoid paperwork']},
+{q:'What is the correct closing action after Level 2 pass?',a:'Close training only when assessment and any required re-audit/practical sign-off are complete',opts:['Close immediately regardless','Close training only when assessment and any required re-audit/practical sign-off are complete','Delete the fail','No record needed']}
+]
+};
+function currentToolboxQuestions(){return toolboxQuestionBanks[qs('tbLevel')?.value||'level1'];}
 async function loadMyTrainingNotice(){
   try{
     if(!user || user.role!=='engineer') return;
-    const t=await api(`/api/training?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
-    const open=(t.training||[]).filter(x=>(x.engineer_name||'').toLowerCase()===(user.name||'').toLowerCase()).filter(x=>!['complete','completed','closed','cancelled'].includes((x.status||'Open').toLowerCase()));
+    const t=await api('/api/training?engineer='+encodeURIComponent(user.name));
+    const open=(t.training||[]).filter(x=>!['complete','completed','closed','cancelled'].includes((x.status||'Open').toLowerCase()));
     if(!open.length){qs('trainingNotice').classList.add('hide');return;}
     qs('trainingNotice').classList.remove('hide');
     qs('trainingNoticeBody').innerHTML=open.map(x=>`<p><b>${x.training_type||'Post audit training required'}</b><br>Status: ${x.status||'Open'}<br>Assigned: ${x.assigned_date||''}<br><button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||user.name).replaceAll("'","&#39;")}')">Start Toolbox Test</button></p>`).join('');
@@ -231,7 +290,8 @@ function openToolboxTest(trainingId='', auditId='', engineerName=''){
 
 function renderToolboxQuestions(){
   let html='';
-  toolboxQuestions.forEach((x,i)=>{
+  const bank=currentToolboxQuestions();
+  bank.forEach((x,i)=>{
     html+=`<div class="q"><label>${i+1}. ${x.q}</label><select id="tbq_${i}" onchange="calcToolboxScore()"><option value="">Select answer</option>${x.opts.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
   });
   qs('toolboxQuestions').innerHTML=html;
@@ -240,18 +300,24 @@ function renderToolboxQuestions(){
 
 function calcToolboxScore(){
   let score=0;
-  toolboxQuestions.forEach((x,i)=>{ if(qs('tbq_'+i)?.value===x.a) score++; });
-  const result = score>=12 ? 'PASS' : 'FAIL';
+  const bank=currentToolboxQuestions();
+  bank.forEach((x,i)=>{ if(qs('tbq_'+i)?.value===x.a) score++; });
+  const level=qs('tbLevel')?.value||'level1';
+  const passMark=level==='level2'?27:14;
+  const result = score>=passMark ? 'PASS' : 'FAIL';
   qs('tbScoreOut').textContent=score;
   qs('tbResultOut').textContent=result;
-  return {score,result};
+  const total=bank.length;
+  const scoreBox=qs('tbScoreOut')?.parentElement;
+  if(scoreBox) scoreBox.innerHTML=`Test Score: <span id="tbScoreOut">${score}</span>/${total} - Pass mark ${passMark} - <span id="tbResultOut">${result}</span>`;
+  return {score,result,level,total,passMark};
 }
 
 async function submitToolboxTest(){
   try{
     const sr=calcToolboxScore();
-    const answers=toolboxQuestions.map((x,i)=>({question:x.q,selected:qs('tbq_'+i).value,correct:x.a,pass:qs('tbq_'+i).value===x.a}));
-    const body={training_id:qs('tbTrainingId').value,audit_id:qs('tbAuditId').value,engineer_name:qs('tbEngineer').value,test_date:qs('tbDate').value,score:sr.score,result:sr.result,answers};
+    const answers=currentToolboxQuestions().map((x,i)=>({question:x.q,selected:qs('tbq_'+i).value,correct:x.a,pass:qs('tbq_'+i).value===x.a}));
+    const body={training_id:qs('tbTrainingId').value,audit_id:qs('tbAuditId').value,engineer_name:qs('tbEngineer').value,test_date:qs('tbDate').value,test_level:sr.level,total_questions:sr.total,pass_mark:sr.passMark,score:sr.score,result:sr.result,answers};
     const j=await api('/api/toolbox-test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     qs('tbMsg').textContent=`Toolbox test saved. Result: ${j.result}, Score: ${j.score}/15`;
     await loadTraining();
@@ -277,6 +343,19 @@ async function loadUserAdmin(){if(!user || user.role!=='manager'){alert('Manager
 function editUser(u){qs('userId').value=u.id; qs('userName').value=u.name||''; qs('userEmail').value=u.email||''; qs('userPin').value=''; qs('userRole').value=u.role||'engineer'; qs('userActive').value=String(Number(u.active)!==0?1:0); qs('userMsg').textContent='Leave PIN blank only if you intend to reset it to 1234 in this simple version.'}
 function clearUserForm(){['userId','userName','userEmail','userPin'].forEach(id=>qs(id).value=''); qs('userRole').value='engineer'; qs('userActive').value='1'; qs('userMsg').textContent=''}
 async function saveUser(){try{const body={id:qs('userId').value||undefined,name:qs('userName').value,email:qs('userEmail').value,pin:qs('userPin').value||'1234',role:qs('userRole').value,active:Number(qs('userActive').value)}; await api('/api/users',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); qs('userMsg').textContent='User saved.'; clearUserForm(); await loadUserAdmin()}catch(e){qs('userMsg').textContent=e.message}}
+
+async function downloadBackup(){
+  try{
+    const j=await api('/api/backup');
+    const blob=new Blob([JSON.stringify(j.backup,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='HBS_Gas_Audit_Backup_'+new Date().toISOString().slice(0,10)+'.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }catch(e){alert('Backup failed: '+e.message)}
+}
+
 async function booklet(id){const j=await api('/api/audit?id='+encodeURIComponent(id)); const a=j.audit, data=JSON.parse(a.audit_json||'{}'); show('booklet'); qs('bookletBody').innerHTML=`<h3>HBS-${a.id}</h3><p><b>Engineer:</b> ${a.engineer_name}<br><b>Auditor:</b> ${a.auditor||''}<br><b>Site:</b> ${a.site_name}<br><b>Client:</b> ${data.client_name||''}<br><b>Date:</b> ${a.audit_date}<br><b>Appliance Type:</b> ${data.appliance_type||''}<br><b>Manufacturer:</b> ${data.manufacturer||''}<br><b>Model:</b> ${data.model||''}<br><b>Serial Number:</b> ${data.serial_number||''}<br><b>Asset Number:</b> ${data.asset_number||''}<br><b>Score:</b> ${a.score}% - ${a.result}</p><h3>Audit Questions</h3><table><tr><th>Section</th><th>Question</th><th>Score</th><th>Notes</th></tr>${(data.questions||[]).map(q=>`<tr><td>${q.section}</td><td>${q.question}</td><td>${q.score}</td><td>${q.note||''}</td></tr>`).join('')}</table><h3>Findings / Actions</h3><p>${(data.actions_required||'').replaceAll('\n','<br>')}</p><h3>Training / Re-audit</h3><p>${(data.training_required||'').replaceAll('\n','<br>')}</p><h3>Photos</h3>${(j.photos||[]).map(p=>`<img class=photo src="${p.photo_url}">`).join('')}<h3>Signed</h3><p>${data.signature||''}</p>`}
 </script>
 </body>
