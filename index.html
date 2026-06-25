@@ -32,7 +32,7 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
   </div>
   <div id="questions"></div><p class="scorebox">Calculated Score: <span id="scoreOut">100</span>% - <span id="resultOut">Excellent</span></p>
   <p><label>Findings / Corrective Actions<br><textarea id="actions" rows="4" style="width:100%" placeholder="Record all audit findings and required corrective actions"></textarea></label></p>
-  <p><label>Manager Test Selection<br><select id="testLevel">
+  <p><label>Manager Test Selection<br><select id="testLevel" onchange="updateTrainingText()">
 <option value="auto">Automatic based on audit score</option>
 <option value="none">No test required</option>
 <option value="level1">Level 1 - Commercial Gas Safety Refresher</option>
@@ -99,7 +99,41 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
 let user=null, users=[], lastAudits=[], selectedPhotos=[]; const qs=id=>document.getElementById(id); qs('date').value=new Date().toISOString().slice(0,10);
 const auditQuestions=[['Safety & Compliance','Risk assessment / dynamic risk assessment completed','Gas isolation and emergency controls confirmed','Ventilation checked and suitable','Gas tightness / let-by requirements considered','Flue route, termination and condition checked'],['Technical Competence','Gas pressures recorded correctly','Combustion analysis completed and values acceptable','Gas rate / burner input checked where required','Condensate, safety devices and interlocks checked','Manufacturer instructions followed'],['Documentation & Handover','Service/audit records completed correctly','Defects classified correctly: ID / AR','Client recommendations and warning notices recorded','Photographic evidence taken where appropriate','Work area left safe and operational status confirmed']];
 function renderQuestions(){let html=''; auditQuestions.forEach((sec,si)=>{html+=`<h3 class="section-title">${sec[0]}</h3>`; sec.slice(1).forEach((q,qi)=>{const id=`q_${si}_${qi}`; html+=`<div class="q"><label>${q}</label><select id="${id}" onchange="calcScore()"><option value="10">Pass / Compliant</option><option value="5">Partial / Improvement Required</option><option value="0">Fail / Not Evidenced</option><option value="na">N/A</option></select><br><textarea id="${id}_note" rows="2" style="width:100%" placeholder="Optional notes"></textarea></div>`})}); qs('questions').innerHTML=html; calcScore()}
-function calcScore(){let total=0,max=0; auditQuestions.forEach((sec,si)=>sec.slice(1).forEach((q,qi)=>{const v=qs(`q_${si}_${qi}`)?.value; if(v!=='na'){max+=10; total+=Number(v||0)}})); const score=max?Math.round((total/max)*100):100; qs('scoreOut').textContent=score; const res=score>=95?'Excellent':score>=85?'Pass':score>=75?'Improvement Required':'Fail'; qs('resultOut').textContent=res; if(score<85 && !qs('training').value) qs('training').value=score<75?'Level 2 Advanced Competency Assessment required. Re-audit and practical review to be completed.':'Level 1 Commercial Gas Safety Refresher required. Re-audit to be completed within 30 days.'; if(qs('testLevel') && qs('testLevel').value==='auto') qs('testLevel').dataset.recommended=score<75?'level2':score<85?'level1':'none'; return {score,result:res}}
+
+function updateTrainingText(){
+  if(!qs('training')) return;
+  const score = Number(qs('scoreOut')?.textContent || 100);
+  const test = qs('testLevel') ? qs('testLevel').value : 'auto';
+
+  if (test === 'level1') {
+    qs('training').value = 'Level 1 Commercial Gas Safety Refresher required. Re-audit to be completed within 30 days.';
+  } else if (test === 'level2') {
+    qs('training').value = 'Level 2 Advanced Competency Assessment required. Practical assessment and manager sign-off required before re-audit.';
+  } else if (test === 'practical') {
+    qs('training').value = 'Practical competency assessment required by HBS Compliance Manager.';
+  } else if (test === 'manufacturer') {
+    qs('training').value = 'Manufacturer specific training required before engineer undertakes further work on this appliance.';
+  } else if (test === 'coaching') {
+    qs('training').value = 'One-to-one coaching session required with Compliance Manager.';
+  } else if (test === 'reaudit') {
+    qs('training').value = 'Engineer to undergo re-audit only.';
+  } else if (test === 'none') {
+    qs('training').value = '';
+  } else {
+    if(score < 75) {
+      qs('training').value = 'Level 2 Advanced Competency Assessment required. Practical assessment and manager sign-off required before re-audit.';
+      if(qs('testLevel')) qs('testLevel').dataset.recommended='level2';
+    } else if(score < 85) {
+      qs('training').value = 'Level 1 Commercial Gas Safety Refresher required. Re-audit to be completed within 30 days.';
+      if(qs('testLevel')) qs('testLevel').dataset.recommended='level1';
+    } else {
+      qs('training').value = '';
+      if(qs('testLevel')) qs('testLevel').dataset.recommended='none';
+    }
+  }
+}
+
+function calcScore(){let total=0,max=0; auditQuestions.forEach((sec,si)=>sec.slice(1).forEach((q,qi)=>{const v=qs(`q_${si}_${qi}`)?.value; if(v!=='na'){max+=10; total+=Number(v||0)}})); const score=max?Math.round((total/max)*100):100; qs('scoreOut').textContent=score; const res=score>=95?'Excellent':score>=85?'Pass':score>=75?'Improvement Required':'Fail'; qs('resultOut').textContent=res; updateTrainingText(); return {score,result:res}}
 async function api(url,opts){const r=await fetch(url,opts); const t=await r.text(); if(!t) throw new Error('No response from backend function.'); let j; try{j=JSON.parse(t)}catch(e){throw new Error(t.slice(0,250))} if(!j.ok) throw new Error(j.error||'Request failed'); return j}
 async function login(){try{const j=await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:qs('email').value,pin:qs('pin').value})}); user=j.user; qs('login').classList.add('hide'); qs('app').classList.remove('hide'); qs('who').textContent=`Logged in: ${user.name} (${user.role})`; qs('auditor').value=user.name; applyRoleVisibility(); await loadUsers(); renderQuestions(); await loadAudits(); await loadMyTrainingNotice()}catch(e){qs('loginMsg').textContent=e.message}}
 function applyRoleVisibility(){
