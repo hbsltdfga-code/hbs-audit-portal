@@ -12,7 +12,7 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
 <div class="top"><h1>HBS Gas Audit Portal</h1><p>PDA/iPad audit capture, photo upload, central saving, manager dashboard, engineer management, audit trends, league tables and printable PDF booklet.</p></div>
 <section id="login" class="card"><h2>Login</h2><p class="muted">Use your HBS portal email and PIN.</p><div class="grid"><label>Email<br><input id="email" value="peter@hbs.local"></label><label>PIN<br><input id="pin" type="password" value="1234"></label><label><br><button onclick="login()">Login</button></label></div><p id="loginMsg" class="muted"></p></section>
 <section id="app" class="hide">
- <div class="card noprint toolbar"><b id="who"></b> <button class="managerOnly" onclick="newAudit()">New Audit</button> <button onclick="loadAudits()">My Dashboard</button> <button onclick="loadTraining()">Training / Re-audits</button> <button class="managerOnly" onclick="loadTrainingManager()">Training Management</button> <button onclick="openToolboxTest()">Toolbox Test</button> <button class="managerOnly" onclick="loadToolboxResults()">Test Results</button> <button class="managerOnly" onclick="loadUserAdmin()">Users</button> <button class="managerOnly" onclick="loadToolboxResults()">Test Results</button> <button class="managerOnly" onclick="downloadBackup()">Backup</button> <button onclick="logout()">Logout</button></div>
+ <div class="card noprint toolbar"><b id="who"></b> <button class="managerOnly" onclick="newAudit()">New Audit</button> <button onclick="loadAudits()">My Dashboard</button> <button onclick="loadTraining()">Training / Re-audits</button> <button class="managerOnly" onclick="loadTrainingManager()">Training Management</button> <button onclick="openToolboxTest()">Toolbox Test</button> <button class="managerOnly" onclick="loadToolboxResults()">Test Results</button> <button class="managerOnly" onclick="loadUserAdmin()">Users</button> <button class="managerOnly" onclick="loadToolboxResults()">Test Results</button> <button class="managerOnly" onclick="loadRecordManager()">Record Management</button> <button class="managerOnly" onclick="downloadBackup()">Backup</button> <button onclick="logout()">Logout</button></div>
  <div id="trainingNotice" class="card hide">
   <h2>Outstanding Training Action</h2>
   <div id="trainingNoticeBody"></div>
@@ -115,6 +115,32 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
   <div id="toolboxResultDetail" class="muted">Select a result to view answers.</div>
  </div>
 
+
+ <div id="recordManager" class="card hide">
+  <h2>Manager Record Management</h2>
+  <p class="muted">Manager-only tools to remove test audits, training records, re-audits and toolbox test results. Use carefully.</p>
+
+  <h3>Delete Audit and Linked Records</h3>
+  <div class="grid noprint">
+    <label>Audit ID<br><input id="rmAuditId" placeholder="Example: 10"></label>
+    <label>Reason<br><input id="rmAuditReason" placeholder="Example: Test audit cleanup"></label>
+    <label><br><button class="danger" onclick="deleteAuditBundle()">Delete Audit Bundle</button></label>
+  </div>
+  <p id="rmAuditMsg"></p>
+
+  <h3>Delete Engineer Training / Test Records</h3>
+  <div class="grid noprint">
+    <label>Engineer Name<br><input id="rmEngineer" placeholder="Example: Gary Kingett"></label>
+    <label>Reason<br><input id="rmEngineerReason" placeholder="Example: Test record cleanup"></label>
+    <label><br><button class="danger" onclick="deleteEngineerTraining()">Delete Engineer Training/Test Records</button></label>
+  </div>
+  <p id="rmEngineerMsg"></p>
+
+  <h3>Deletion Log</h3>
+  <button class="noprint" onclick="loadDeletionLog()">Refresh Log</button>
+  <table><thead><tr><th>Date</th><th>Manager</th><th>Action</th><th>Target</th><th>Reason</th></tr></thead><tbody id="deletionLogRows"></tbody></table>
+ </div>
+
  <div id="booklet" class="card hide"><h2>Audit Booklet</h2><div id="bookletBody"></div><button class="noprint" onclick="window.print()">Print / Save PDF</button></div>
 </section>
 <script>
@@ -150,7 +176,7 @@ function applyRoleVisibility(){
   const h=qs('dashboard')?.querySelector('h2');
   if(h) h.textContent = isManager ? 'Manager Dashboard / Audit Register' : 'My Audit Results / Training Dashboard';
 }
-function logout(){location.reload()} function show(id){['auditForm','dashboard','booklet','trainingView','userAdmin','toolboxTest','trainingManager','toolboxResults'].forEach(x=>qs(x).classList.add('hide')); qs(id).classList.remove('hide')} function newAudit(){if(!user || user.role!=='manager'){alert('Manager access only');return;} show('auditForm'); qs('saveMsg').textContent=''}
+function logout(){location.reload()} function show(id){['auditForm','dashboard','booklet','trainingView','userAdmin','toolboxTest','trainingManager','toolboxResults','recordManager'].forEach(x=>qs(x).classList.add('hide')); qs(id).classList.remove('hide')} function newAudit(){if(!user || user.role!=='manager'){alert('Manager access only');return;} show('auditForm'); qs('saveMsg').textContent=''}
 async function loadUsers(){const j=await api(`/api/users?email=${encodeURIComponent(user.email)}&role=${user.role}`); users=j.users; const eng=users.filter(u=>u.role==='engineer'&&Number(u.active)!==0); qs('engineer').innerHTML=eng.map(u=>`<option value="${u.email}" data-name="${u.name}">${u.name}</option>`).join('')}
 async function fileToDataUrl(file){return new Promise(res=>{const img=new Image(), fr=new FileReader(); fr.onload=e=>{img.onload=()=>{const c=document.createElement('canvas'); const max=900, s=Math.min(1,max/Math.max(img.width,img.height)); c.width=img.width*s; c.height=img.height*s; c.getContext('2d').drawImage(img,0,0,c.width,c.height); res({filename:file.name,mime_type:'image/jpeg',data_url:c.toDataURL('image/jpeg',0.65)})}; img.src=e.target.result}; fr.readAsDataURL(file)})}
 
@@ -510,6 +536,47 @@ function viewToolboxResult(id){
     <b>Pass Mark:</b> ${info.pass_mark||''}</p>
     <table><thead><tr><th>Question</th><th>Selected</th><th>Correct Answer</th><th>Outcome</th></tr></thead>
     <tbody>${answers.map(a=>`<tr><td>${a.question||''}</td><td>${a.selected||''}</td><td>${a.correct||''}</td><td>${a.pass?'Correct':'Incorrect'}</td></tr>`).join('')}</tbody></table>`;
+}
+
+
+async function loadRecordManager(){
+  if(!user || user.role!=='manager'){alert('Manager access only');return;}
+  show('recordManager');
+  await loadDeletionLog();
+}
+async function deleteAuditBundle(){
+  if(!user || user.role!=='manager'){alert('Manager access only');return;}
+  const id=Number(qs('rmAuditId').value);
+  if(!id){qs('rmAuditMsg').textContent='Enter an audit ID.';return;}
+  const reason=qs('rmAuditReason').value||'No reason entered';
+  if(!confirm(`Delete HBS-${id} and all linked photos, training, re-audits and test results? This cannot be undone.`)) return;
+  try{
+    const j=await api('/api/admin-delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'delete_audit_bundle',audit_id:id,manager:user.name,reason})});
+    qs('rmAuditMsg').textContent=`Deleted HBS-${id}. Records affected: ${JSON.stringify(j.deleted)}`;
+    await loadDeletionLog();
+    await loadAudits();
+  }catch(e){qs('rmAuditMsg').textContent=e.message;}
+}
+async function deleteEngineerTraining(){
+  if(!user || user.role!=='manager'){alert('Manager access only');return;}
+  const engineer=qs('rmEngineer').value.trim();
+  if(!engineer){qs('rmEngineerMsg').textContent='Enter an engineer name.';return;}
+  const reason=qs('rmEngineerReason').value||'No reason entered';
+  if(!confirm(`Delete all training, re-audits and toolbox results for ${engineer}? This cannot be undone.`)) return;
+  try{
+    const j=await api('/api/admin-delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'delete_engineer_training',engineer_name:engineer,manager:user.name,reason})});
+    qs('rmEngineerMsg').textContent=`Deleted records for ${engineer}. Records affected: ${JSON.stringify(j.deleted)}`;
+    await loadDeletionLog();
+    await loadAudits();
+  }catch(e){qs('rmEngineerMsg').textContent=e.message;}
+}
+async function loadDeletionLog(){
+  try{
+    const j=await api('/api/admin-delete');
+    qs('deletionLogRows').innerHTML=(j.logs||[]).map(x=>`<tr><td>${x.created_at||''}</td><td>${x.manager_name||''}</td><td>${x.action||''}</td><td>${x.target||''}</td><td>${x.reason||''}</td></tr>`).join('');
+  }catch(e){
+    if(qs('deletionLogRows')) qs('deletionLogRows').innerHTML=`<tr><td colspan="5">${e.message}</td></tr>`;
+  }
 }
 
 async function downloadBackup(){
