@@ -258,7 +258,6 @@ async function loadTraining(){
     const status=(x.status||'Open');
     const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
     const assignedLevel=trainingTestLevel(x);
-    const assignedLevel=trainingTestLevel(x);
     const canTest=assignedLevel==='level1'||assignedLevel==='level2';
     const testBtn=done?'<span class="muted">Closed</span>':(canTest?`<button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||'').replaceAll("'","&#39;")}','${assignedLevel}')">Start ${testLevelText(assignedLevel)}</button>`:'<span class="muted">No online test</span>');
     const btn=done?'<span class="muted">Closed</span>':`<button onclick="completeTraining(${x.id})">Mark Complete</button>`;
