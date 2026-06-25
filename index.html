@@ -294,14 +294,14 @@ async function loadTraining(){
     const status=(x.status||'Open');
     const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
     const testBtn=done?'<span class="muted">Closed</span>':`<button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||'').replaceAll("'","&#39;")}','${trainingTestLevel(x)}')">Start ${testLevelText(trainingTestLevel(x))}</button>`;
-    const btn=done?'<span class="muted">Closed</span>':`<button onclick="completeTraining(${x.id})">Mark Complete</button>`;
+    const btn=done?'<span class="muted">Closed</span>':(user.role==='manager'?`<button onclick="completeTraining(${x.id})">Mark Complete</button>`:'<span class="muted">Awaiting manager sign-off</span>');
     return `<tr><td>${x.engineer_name||''}</td><td>${x.training_type||''}</td><td>${x.assigned_date||''}</td><td>${status}</td><td>${testBtn} ${btn}</td></tr>`;
   }).join('');
 
   qs('reauditRows').innerHTML=(r.reaudits||[]).map(x=>{
     const status=(x.status||'Open');
     const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
-    const btn=done?'<span class="muted">Closed</span>':`<button onclick="completeReaudit(${x.id})">Mark Complete</button>`;
+    const btn=done?'<span class="muted">Closed</span>':(user.role==='manager'?`${user.role==='manager'?`<button onclick="completeReaudit(${x.id})">Mark Complete</button>`:''}`:'');
     return `<tr><td>HBS-${x.audit_id||''}</td><td>${x.engineer_name||''}</td><td>${x.due_date||''}</td><td>${status}</td><td>${btn}</td></tr>`;
   }).join('');
 }
@@ -428,16 +428,16 @@ async function submitToolboxTest(){
   }catch(e){qs('tbMsg').textContent=e.message}
 }
 
-async function completeTraining(id){
+async function completeTraining(id){if(!user || user.role!=='manager'){alert('Manager access only');return;}
   if(!confirm('Mark this training record as completed?')) return;
-  await api('/api/training',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed'})});
+  await api('/api/training',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed',role:user.role})});
   await loadTraining();
   await loadAudits();
 }
 
-async function completeReaudit(id){
+async function completeReaudit(id){if(!user || user.role!=='manager'){alert('Manager access only');return;}
   if(!confirm('Mark this re-audit as completed?')) return;
-  await api('/api/reaudits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed'})});
+  await api('/api/reaudits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed',role:user.role})});
   await loadTraining();
   await loadAudits();
 }
