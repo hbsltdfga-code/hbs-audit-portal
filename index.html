@@ -359,7 +359,13 @@ function calcToolboxScore(){
   const result = score>=passMark ? 'PASS' : 'FAIL';
   const total=bank.length;
   const scoreBox=qs('tbScoreOut')?.parentElement;
-  if(scoreBox) scoreBox.innerHTML=`Test Score: <span id="tbScoreOut">${score}</span>/${total} - Pass mark ${passMark} - <span id="tbResultOut">${result}</span>`;
+  if(scoreBox){
+    if(user && user.role==='manager'){
+      scoreBox.innerHTML=`Test Score: <span id="tbScoreOut">${score}</span>/${total} - Pass mark ${passMark} - <span id="tbResultOut">${result}</span>`;
+    } else {
+      scoreBox.innerHTML=`Test in progress. Results will be recorded for manager review.`;
+    }
+  }
   return {score,result,level,total,passMark};
 }
 
@@ -369,7 +375,9 @@ async function submitToolboxTest(){
     const answers=currentToolboxQuestions().map((x,i)=>({question:x.q,selected:qs('tbq_'+i).value,correct:x.a,pass:qs('tbq_'+i).value===x.a}));
     const body={training_id:qs('tbTrainingId').value,audit_id:qs('tbAuditId').value,engineer_name:qs('tbEngineer').value,test_date:qs('tbDate').value,test_level:sr.level,total_questions:sr.total,pass_mark:sr.passMark,score:sr.score,result:sr.result,answers};
     const j=await api('/api/toolbox-test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    qs('tbMsg').textContent=`Toolbox test saved. Result: ${j.result}, Score: ${j.score}/15`;
+    qs('tbMsg').textContent = (user && user.role==='manager') 
+      ? `Toolbox test saved. Result: ${j.result}, Score: ${j.score}/${sr.total}`
+      : 'Toolbox test submitted. Your manager will review the result.';
     await loadTraining();
     await loadAudits();
     await loadMyTrainingNotice();
