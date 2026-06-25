@@ -263,23 +263,59 @@ async function loadTraining(){
 }
 
 
-const toolboxQuestions=[
- {q:'Under GSIUR, who is responsible for leaving the gas installation safe after attending site?',a:'Gas Engineer',opts:['Client','Building Manager','Gas Engineer','Manufacturer']},
- {q:'What is the correct action where an Immediately Dangerous situation is identified?',a:'Isolate or disconnect where possible and issue warning notice',opts:['Record only','Quote for repair','Isolate or disconnect where possible and issue warning notice','Leave running until next visit']},
- {q:'Which unsafe classification applies where there is immediate danger to life or property?',a:'ID',opts:['Advisory','AR','ID','Service Required']},
- {q:'Which unsafe classification applies where danger may occur if the situation continues?',a:'AR',opts:['AR','ID','Passed','Routine']},
- {q:'What document should be issued where an unsafe gas situation is identified?',a:'Warning Notice',opts:['Invoice only','Warning Notice','Delivery note','Verbal advice only']},
- {q:'What does a gas tightness test confirm?',a:'Integrity of the gas installation',opts:['Appliance efficiency','Water pressure','Integrity of the gas installation','Flue dilution rate only']},
- {q:'When should ventilation be considered on commercial gas appliances?',a:'During service, audit, repair or safety inspection where relevant',opts:['Only on new installations','Never','During service, audit, repair or safety inspection where relevant','Only after a complaint']},
- {q:'If mechanical ventilation serving gas appliances fails, what should normally happen?',a:'Gas appliances must be safely interlocked or isolated as required',opts:['Appliances continue running','Only reduce appliance output','Gas appliances must be safely interlocked or isolated as required','Open a window']},
- {q:'Before combustion analysis, what should the engineer confirm?',a:'Appliance is operating correctly under suitable load',opts:['Only the case temperature','Appliance is operating correctly under suitable load','That the client is present','That the room is empty']},
- {q:'Which instructions must be followed during servicing and maintenance?',a:'Manufacturer instructions',opts:['Manufacturer instructions','Previous engineer notes only','Client preference','Online forum advice']},
- {q:'What audit result requires formal improvement action in the HBS system?',a:'75% to 84%',opts:['95% to 100%','85% to 94%','75% to 84%','100% only']},
- {q:'What score is a fail in the HBS audit system?',a:'Below 75%',opts:['Below 95%','Below 85%','Below 75%','Below 50% only']},
- {q:'Following a failed audit, when should a re-audit normally be targeted?',a:'Within 30 days',opts:['Within 30 days','Within 12 months','At next service only','No re-audit required']},
- {q:'What evidence should support audit findings where appropriate?',a:'Photographs and clear written notes',opts:['Photographs and clear written notes','Verbal explanation only','No evidence required','Timesheet only']},
- {q:'If an engineer is unsure of a classification or safety decision, what should they do?',a:'Stop and contact technical support or compliance management',opts:['Guess','Ignore it','Stop and contact technical support or compliance management','Ask the client to decide']}
-];
+
+const toolboxQuestionBanks={
+ level1:[
+  {q:'Under GSIUR, who is responsible for leaving the gas installation safe after attending site?',a:'Gas Engineer',opts:['Client','Building Manager','Gas Engineer','Manufacturer']},
+  {q:'What is the correct action where an Immediately Dangerous situation is identified?',a:'Isolate or disconnect where possible and issue warning notice',opts:['Record only','Quote for repair','Isolate or disconnect where possible and issue warning notice','Leave running until next visit']},
+  {q:'Which unsafe classification applies where there is immediate danger to life or property?',a:'ID',opts:['Advisory','AR','ID','Service Required']},
+  {q:'Which unsafe classification applies where danger may occur if the situation continues?',a:'AR',opts:['AR','ID','Passed','Routine']},
+  {q:'What document should be issued where an unsafe gas situation is identified?',a:'Warning Notice',opts:['Invoice only','Warning Notice','Delivery note','Verbal advice only']},
+  {q:'What does a gas tightness test confirm?',a:'Integrity of the gas installation',opts:['Appliance efficiency','Water pressure','Integrity of the gas installation','Flue dilution rate only']},
+  {q:'When should ventilation be considered on commercial gas appliances?',a:'During service, audit, repair or safety inspection where relevant',opts:['Only on new installations','Never','During service, audit, repair or safety inspection where relevant','Only after a complaint']},
+  {q:'If mechanical ventilation serving gas appliances fails, what should normally happen?',a:'Gas appliances must be safely interlocked or isolated as required',opts:['Appliances continue running','Only reduce appliance output','Gas appliances must be safely interlocked or isolated as required','Open a window']},
+  {q:'Before combustion analysis, what should the engineer confirm?',a:'Appliance is operating correctly under suitable load',opts:['Only the case temperature','Appliance is operating correctly under suitable load','That the client is present','That the room is empty']},
+  {q:'Which instructions must be followed during servicing and maintenance?',a:'Manufacturer instructions',opts:['Manufacturer instructions','Previous engineer notes only','Client preference','Online forum advice']},
+  {q:'What should be verified when checking a commercial flue system?',a:'Route, integrity, termination, support and signs of leakage or distress',opts:['Colour only','Route, integrity, termination, support and signs of leakage or distress','Only external terminal paint','Nothing if appliance lights']},
+  {q:'What should be recorded for combustion analysis?',a:'Relevant combustion readings and whether they are acceptable against manufacturer data',opts:['Only temperature','Relevant combustion readings and whether they are acceptable against manufacturer data','Nothing if the appliance runs','Only a photograph']},
+  {q:'What should be checked where condensate is produced by a commercial boiler?',a:'Correct discharge route, trap condition and safe termination',opts:['Nothing','Correct discharge route, trap condition and safe termination','Only pipe colour','Only water pressure']},
+  {q:'What evidence should support audit findings where appropriate?',a:'Photographs and clear written notes',opts:['Photographs and clear written notes','Verbal explanation only','No evidence required','Timesheet only']},
+  {q:'If an engineer is unsure of a classification or safety decision, what should they do?',a:'Stop and contact technical support or compliance management',opts:['Guess','Ignore it','Stop and contact technical support or compliance management','Ask the client to decide']}
+ ],
+ level2:[
+  {q:'Mechanical ventilation serving a commercial plantroom fails. What should happen?',a:'Gas appliances should be prevented from operating until ventilation is restored and proven',opts:['Continue operation at reduced rate','Open the plantroom door','Gas appliances should be prevented from operating until ventilation is restored and proven','Record only']},
+  {q:'Working pressure is 18.1 mbar and manufacturer minimum is 17 mbar. What is the correct approach?',a:'Continue only if appliance performance is correct and no adverse conditions exist, recording readings clearly',opts:['Classify ID immediately','Ignore because above 17 mbar','Continue only if appliance performance is correct and no adverse conditions exist, recording readings clearly','Increase pressure at the meter']},
+  {q:'A flue shows signs of leakage into the plantroom. What is the appropriate action?',a:'Assess as unsafe, isolate where necessary and issue warning notice',opts:['Tape the joint','Leave operational','Assess as unsafe, isolate where necessary and issue warning notice','Only photograph it']},
+  {q:'Combustion readings show significantly elevated CO and unstable flame picture. What should happen?',a:'Investigate, make safe and do not leave operating if unsafe',opts:['Record as passed','Increase gas rate','Investigate, make safe and do not leave operating if unsafe','Ignore if boiler is heating']},
+  {q:'What is the main purpose of proving and interlocking systems?',a:'To prevent gas flow or appliance operation unless required safety conditions are proven',opts:['To improve efficiency','To reduce paperwork','To prevent gas flow or appliance operation unless required safety conditions are proven','To increase inlet pressure']},
+  {q:'Manufacturer instructions conflict with a generic checklist. What takes priority?',a:'Manufacturer instructions and relevant standards',opts:['Generic checklist','Customer instruction','Manufacturer instructions and relevant standards','Previous engineer notes']},
+  {q:'A tightness test indicates pressure loss above permitted limits. What is correct?',a:'Do not leave the installation in unsafe operation; investigate and classify accordingly',opts:['Record as N/A','Do not leave the installation in unsafe operation; investigate and classify accordingly','Retest at lower pressure until it passes','Only tell reception']},
+  {q:'Burner pressure cannot be measured. What should be recorded?',a:'Reason it cannot be measured and alternative relevant readings such as inlet working pressure where appropriate',opts:['Leave blank','Write OK','Reason it cannot be measured and alternative relevant readings such as inlet working pressure where appropriate','Invent the value']},
+  {q:'A CP15 has missing combustion readings where readings were required. What should the audit reflect?',a:'Documentation and technical evidence failure requiring corrective action',opts:['No issue','Documentation and technical evidence failure requiring corrective action','Pass because service was done','Only housekeeping issue']},
+  {q:'A commercial boiler locks out repeatedly on flame failure after ignition. What should the engineer assess?',a:'Gas supply, ignition, flame detection, combustion setup and manufacturer fault guidance',opts:['Reset only','Gas supply, ignition, flame detection, combustion setup and manufacturer fault guidance','Change the thermostat','Ignore if it relights']},
+  {q:'A proving system fails to prove closed position before gas is enabled. What should happen?',a:'Do not permit operation until the proving fault is investigated and rectified',opts:['Bypass proving','Do not permit operation until the proving fault is investigated and rectified','Open valve manually','Leave running']},
+  {q:'A commercial appliance has no accessible test point for burner pressure. What is the correct audit expectation?',a:'Record why it cannot be tested and verify other required pressures and performance data where appropriate',opts:['Invent a burner pressure','Record why it cannot be tested and verify other required pressures and performance data where appropriate','Leave the form blank','Mark all readings N/A']},
+  {q:'If an engineer fails Level 2 twice, what should follow?',a:'Manager competency review and practical assessment',opts:['No further action','Automatic pass','Manager competency review and practical assessment','Delete the record']},
+  {q:'What evidence is strongest for a competency concern?',a:'Audit findings, photographs, readings, training record and re-audit outcome',opts:['Verbal memory only','Audit findings, photographs, readings, training record and re-audit outcome','A text message','No record needed']},
+  {q:'A gas train has pressure switches, proving valve and slam shut. What should be verified?',a:'Correct operation, settings where applicable and safe sequence of operation',opts:['Only paint condition','Correct operation, settings where applicable and safe sequence of operation','Only manufacturer name','Nothing if boiler runs']},
+  {q:'Before returning a commercial appliance to service after safety work, what is required?',a:'Complete relevant safety checks, functional checks, combustion checks and documentation',opts:['Switch on only','Complete relevant safety checks, functional checks and documentation','Ask client to monitor','Leave paperwork blank']},
+  {q:'A room-sealed fan flued appliance has a damaged case seal. What is the concern?',a:'Potential effect on combustion air/flue integrity requiring assessment and action',opts:['Cosmetic only','Potential effect on combustion air/flue integrity requiring assessment and action','No issue if warm','Only clean it']},
+  {q:'Repeated failure in gas pressure recording usually indicates what?',a:'Training and competency gap in technical recording and pressure verification',opts:['Nothing','Training and competency gap in technical recording and pressure verification','Client issue only','IT issue only']},
+  {q:'Why should photographs be linked to failed findings?',a:'They provide evidence and support technical review and training',opts:['For decoration','They provide evidence and support technical review and training','To fill space','Not necessary']},
+  {q:'If unsafe classification is uncertain, what should the engineer do?',a:'Make safe and seek competent technical/compliance support',opts:['Guess','Make safe and seek competent technical/compliance support','Leave site','Ask the customer to choose']},
+  {q:'What is the purpose of a re-audit after training?',a:'To verify that the engineer has corrected the competency gap in practice',opts:['To punish the engineer','To verify that the engineer has corrected the competency gap in practice','To close paperwork only','To replace ACS']},
+  {q:'Which evidence is strongest for restored competence?',a:'Passed assessment plus observed correct site performance or successful re-audit',opts:['Verbal promise','Passed assessment plus observed correct site performance or successful re-audit','One email','Timesheet']},
+  {q:'A boiler operates but flue termination is obstructed. What is the priority?',a:'Safety assessment and making the appliance/installation safe',opts:['Leave running','Safety assessment and making the appliance/installation safe','Only quote later','No action']},
+  {q:'Why check gas rates and burner input where required?',a:'To confirm correct appliance input and safe operation against manufacturer data',opts:['To fill the form','To confirm correct appliance input and safe operation against manufacturer data','Only for domestic appliances','Never required']},
+  {q:'What should be done with incomplete audit records?',a:'Correct them promptly and use as training evidence where failures occurred',opts:['Ignore','Correct them promptly and use as training evidence where failures occurred','Delete all audits','Tell engineer verbally only']},
+  {q:'What is the correct treatment of failed safety devices?',a:'Do not leave appliance operating unsafely; repair, isolate or classify as required',opts:['Bypass temporarily','Do not leave appliance operating unsafely; repair, isolate or classify as required','Note for next year','Reset only']},
+  {q:'What does competency evidence require in practical terms?',a:'Traceable records showing knowledge, practical ability and supervision where needed',opts:['One certificate only','Traceable records showing knowledge, practical ability and supervision where needed','No evidence','Only job title']},
+  {q:'A client pressures an engineer to leave unsafe equipment running. What should happen?',a:'Engineer must follow safety duties and company escalation, not client pressure',opts:['Agree with client','Engineer must follow safety duties and company escalation, not client pressure','Turn a blind eye','Ask reception']},
+  {q:'Why might manufacturer-specific training be needed after an audit?',a:'Because controls, combustion setup and fault diagnosis vary by appliance range',opts:['It is never useful','Because controls, combustion setup and fault diagnosis vary by appliance range','Only for new starters','To avoid paperwork']},
+  {q:'What is the correct closing action after Level 2 pass?',a:'Close training only when assessment and any required re-audit/practical sign-off are complete',opts:['Close immediately regardless','Close training only when assessment and any required re-audit/practical sign-off are complete','Delete the fail','No record needed']}
+ ]
+};
+function currentToolboxQuestions(){return toolboxQuestionBanks[qs('tbLevel')?.value||'level1'];}
 
 async function loadMyTrainingNotice(){
   try{
@@ -306,7 +342,8 @@ function openToolboxTest(trainingId='', auditId='', engineerName='', assignedLev
 
 function renderToolboxQuestions(){
   let html='';
-  toolboxQuestions.forEach((x,i)=>{
+  const bank=currentToolboxQuestions();
+  bank.forEach((x,i)=>{
     html+=`<div class="q"><label>${i+1}. ${x.q}</label><select id="tbq_${i}" onchange="calcToolboxScore()"><option value="">Select answer</option>${x.opts.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
   });
   qs('toolboxQuestions').innerHTML=html;
@@ -315,18 +352,22 @@ function renderToolboxQuestions(){
 
 function calcToolboxScore(){
   let score=0;
-  toolboxQuestions.forEach((x,i)=>{ if(qs('tbq_'+i)?.value===x.a) score++; });
-  const result = score>=12 ? 'PASS' : 'FAIL';
-  qs('tbScoreOut').textContent=score;
-  qs('tbResultOut').textContent=result;
-  return {score,result};
+  const bank=currentToolboxQuestions();
+  bank.forEach((x,i)=>{ if(qs('tbq_'+i)?.value===x.a) score++; });
+  const level=qs('tbLevel')?.value||'level1';
+  const passMark=level==='level2'?27:14;
+  const result = score>=passMark ? 'PASS' : 'FAIL';
+  const total=bank.length;
+  const scoreBox=qs('tbScoreOut')?.parentElement;
+  if(scoreBox) scoreBox.innerHTML=`Test Score: <span id="tbScoreOut">${score}</span>/${total} - Pass mark ${passMark} - <span id="tbResultOut">${result}</span>`;
+  return {score,result,level,total,passMark};
 }
 
 async function submitToolboxTest(){
   try{
     const sr=calcToolboxScore();
-    const answers=toolboxQuestions.map((x,i)=>({question:x.q,selected:qs('tbq_'+i).value,correct:x.a,pass:qs('tbq_'+i).value===x.a}));
-    const body={training_id:qs('tbTrainingId').value,audit_id:qs('tbAuditId').value,engineer_name:qs('tbEngineer').value,test_date:qs('tbDate').value,score:sr.score,result:sr.result,answers};
+    const answers=currentToolboxQuestions().map((x,i)=>({question:x.q,selected:qs('tbq_'+i).value,correct:x.a,pass:qs('tbq_'+i).value===x.a}));
+    const body={training_id:qs('tbTrainingId').value,audit_id:qs('tbAuditId').value,engineer_name:qs('tbEngineer').value,test_date:qs('tbDate').value,test_level:sr.level,total_questions:sr.total,pass_mark:sr.passMark,score:sr.score,result:sr.result,answers};
     const j=await api('/api/toolbox-test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     qs('tbMsg').textContent=`Toolbox test saved. Result: ${j.result}, Score: ${j.score}/15`;
     await loadTraining();
