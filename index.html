@@ -12,7 +12,7 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
 <div class="top"><h1>HBS Gas Audit Portal</h1><p>PDA/iPad audit capture, photo upload, central saving, manager dashboard, engineer management, audit trends, league tables and printable PDF booklet.</p></div>
 <section id="login" class="card"><h2>Login</h2><p class="muted">Use your HBS portal email and PIN.</p><div class="grid"><label>Email<br><input id="email" value="peter@hbs.local"></label><label>PIN<br><input id="pin" type="password" value="1234"></label><label><br><button onclick="login()">Login</button></label></div><p id="loginMsg" class="muted"></p></section>
 <section id="app" class="hide">
- <div class="card noprint toolbar"><b id="who"></b> <button class="managerOnly" onclick="newAudit()">New Audit</button> <button onclick="loadAudits()">My Dashboard</button> <button onclick="loadTraining()">Training / Re-audits</button> <button onclick="openToolboxTest()">Toolbox Test</button> <button class="managerOnly" onclick="loadUserAdmin()">Users</button> <button class="managerOnly" onclick="downloadBackup()">Backup</button> <button onclick="logout()">Logout</button></div>
+ <div class="card noprint toolbar"><b id="who"></b> <button class="managerOnly" onclick="newAudit()">New Audit</button> <button onclick="loadAudits()">My Dashboard</button> <button onclick="loadTraining()">Training / Re-audits</button> <button class="managerOnly" onclick="loadTrainingManager()">Training Management</button> <button onclick="openToolboxTest()">Toolbox Test</button> <button class="managerOnly" onclick="loadUserAdmin()">Users</button> <button class="managerOnly" onclick="downloadBackup()">Backup</button> <button onclick="logout()">Logout</button></div>
  <div id="trainingNotice" class="card hide">
   <h2>Outstanding Training Action</h2>
   <div id="trainingNoticeBody"></div>
@@ -53,6 +53,31 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
  <div id="trainingView" class="card hide"><h2>Training / Re-audit Tracking</h2><div class="grid"><div><h3>Training Records</h3><table><thead><tr><th>Engineer</th><th>Training</th><th>Assigned</th><th>Status</th><th>Action</th></tr></thead><tbody id="trainingRows"></tbody></table></div><div><h3>Open Re-audits</h3><table><thead><tr><th>Audit</th><th>Engineer</th><th>Due</th><th>Status</th><th>Action</th></tr></thead><tbody id="reauditRows"></tbody></table></div></div></div>
  <div id="userAdmin" class="card hide"><h2>Engineer / User Management</h2><div class="grid noprint"><input type="hidden" id="userId"><label>Name<br><input id="userName" placeholder="Engineer name"></label><label>Email<br><input id="userEmail" placeholder="name@hbs.local"></label><label>PIN<br><input id="userPin" placeholder="1234"></label><label>Role<br><select id="userRole"><option>engineer</option><option>manager</option></select></label><label>Active<br><select id="userActive"><option value="1">Active</option><option value="0">Inactive</option></select></label><label><br><button onclick="saveUser()">Save User</button><button onclick="clearUserForm()">Clear</button></label></div><p id="userMsg"></p><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Active</th><th>Action</th></tr></thead><tbody id="userRows"></tbody></table></div>
 
+
+ <div id="trainingManager" class="card hide">
+  <h2>Training Management</h2>
+  <p class="muted">Manager-only area to assign the required test or training action to an engineer. Engineers cannot change the allocated test.</p>
+  <div class="grid noprint">
+    <label>Engineer<br><select id="tmEngineer"></select></label>
+    <label>Training / Test Type<br>
+      <select id="tmType">
+        <option value="level1">Level 1 - Commercial Gas Safety Refresher</option>
+        <option value="level2">Level 2 - Advanced Competency Assessment</option>
+        <option value="practical">Practical Assessment</option>
+        <option value="manufacturer">Manufacturer Product Training</option>
+        <option value="coaching">One-to-One Coaching</option>
+        <option value="reaudit">Re-audit Only</option>
+      </select>
+    </label>
+    <label>Due Date<br><input id="tmDue" type="date"></label>
+    <label>Manager Notes<br><input id="tmNotes" placeholder="Reason / audit reference / action required"></label>
+    <label><br><button onclick="assignTraining()">Assign Training</button></label>
+  </div>
+  <p id="tmMsg"></p>
+  <h3>Current Training Records</h3>
+  <table><thead><tr><th>ID</th><th>Engineer</th><th>Training</th><th>Assigned</th><th>Status</th><th>Action</th></tr></thead><tbody id="tmRows"></tbody></table>
+ </div>
+
  <div id="toolboxTest" class="card hide">
   <h2>Post Audit Toolbox Talk Test</h2>
   <p class="muted">For engineers who have failed an audit or require post-audit refresher training. The test level is assigned by the manager and cannot be changed by the engineer. NCS has been removed from this test; unsafe classifications used are ID and AR.</p>
@@ -83,7 +108,7 @@ function applyRoleVisibility(){
   const h=qs('dashboard')?.querySelector('h2');
   if(h) h.textContent = isManager ? 'Manager Dashboard / Audit Register' : 'My Audit Results / Training Dashboard';
 }
-function logout(){location.reload()} function show(id){['auditForm','dashboard','booklet','trainingView','userAdmin','toolboxTest'].forEach(x=>qs(x).classList.add('hide')); qs(id).classList.remove('hide')} function newAudit(){if(!user || user.role!=='manager'){alert('Manager access only');return;} show('auditForm'); qs('saveMsg').textContent=''}
+function logout(){location.reload()} function show(id){['auditForm','dashboard','booklet','trainingView','userAdmin','toolboxTest','trainingManager'].forEach(x=>qs(x).classList.add('hide')); qs(id).classList.remove('hide')} function newAudit(){if(!user || user.role!=='manager'){alert('Manager access only');return;} show('auditForm'); qs('saveMsg').textContent=''}
 async function loadUsers(){const j=await api(`/api/users?email=${encodeURIComponent(user.email)}&role=${user.role}`); users=j.users; const eng=users.filter(u=>u.role==='engineer'&&Number(u.active)!==0); qs('engineer').innerHTML=eng.map(u=>`<option value="${u.email}" data-name="${u.name}">${u.name}</option>`).join('')}
 async function fileToDataUrl(file){return new Promise(res=>{const img=new Image(), fr=new FileReader(); fr.onload=e=>{img.onload=()=>{const c=document.createElement('canvas'); const max=900, s=Math.min(1,max/Math.max(img.width,img.height)); c.width=img.width*s; c.height=img.height*s; c.getContext('2d').drawImage(img,0,0,c.width,c.height); res({filename:file.name,mime_type:'image/jpeg',data_url:c.toDataURL('image/jpeg',0.65)})}; img.src=e.target.result}; fr.readAsDataURL(file)})}
 
@@ -202,6 +227,25 @@ function testLevelText(level){
   return level==='level2'?'Level 2 Advanced Competency Assessment':'Level 1 Commercial Gas Safety Refresher';
 }
 
+
+
+function trainingTestLevel(x){
+  const text=((x&&x.training_type)||'').toLowerCase();
+  if(text.includes('level 2') || text.includes('advanced')) return 'level2';
+  return 'level1';
+}
+function testLevelText(level){
+  return level==='level2'?'Level 2 Advanced Competency Assessment':'Level 1 Commercial Gas Safety Refresher';
+}
+function trainingTypeText(level){
+  if(level==='level2') return 'Level 2 Advanced Competency Assessment required. Re-audit and practical review to be completed.';
+  if(level==='practical') return 'Practical Assessment required. Manager observation and sign-off required.';
+  if(level==='manufacturer') return 'Manufacturer Product Training required.';
+  if(level==='coaching') return 'One-to-One Coaching required.';
+  if(level==='reaudit') return 'Re-audit Only required.';
+  return 'Level 1 Commercial Gas Safety Refresher required. Re-audit to be completed within 30 days.';
+}
+
 async function loadTraining(){
   show('trainingView');
   const t=await api(`/api/training?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);
@@ -214,7 +258,9 @@ async function loadTraining(){
     const status=(x.status||'Open');
     const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
     const assignedLevel=trainingTestLevel(x);
-    const testBtn=done?'<span class="muted">Closed</span>':`<button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||'').replaceAll("'","&#39;")}','${assignedLevel}')">Start ${testLevelText(assignedLevel)}</button>`;
+    const assignedLevel=trainingTestLevel(x);
+    const canTest=assignedLevel==='level1'||assignedLevel==='level2';
+    const testBtn=done?'<span class="muted">Closed</span>':(canTest?`<button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||'').replaceAll("'","&#39;")}','${assignedLevel}')">Start ${testLevelText(assignedLevel)}</button>`:'<span class="muted">No online test</span>');
     const btn=done?'<span class="muted">Closed</span>':`<button onclick="completeTraining(${x.id})">Mark Complete</button>`;
     return `<tr><td>${x.engineer_name||''}</td><td>${x.training_type||''}</td><td>${x.assigned_date||''}</td><td>${status}</td><td>${testBtn} ${btn}</td></tr>`;
   }).join('');
@@ -296,7 +342,7 @@ async function loadMyTrainingNotice(){
     const open=(t.training||[]).filter(x=>(x.engineer_name||'').toLowerCase()===(user.name||'').toLowerCase()).filter(x=>!['complete','completed','closed','cancelled'].includes((x.status||'Open').toLowerCase()));
     if(!open.length){qs('trainingNotice').classList.add('hide');return;}
     qs('trainingNotice').classList.remove('hide');
-    qs('trainingNoticeBody').innerHTML=open.map(x=>`<p><b>${x.training_type||'Post audit training required'}</b><br>Status: ${x.status||'Open'}<br>Assigned: ${x.assigned_date||''}<br><button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||user.name).replaceAll("'","&#39;")}','${trainingTestLevel(x)}')">Start ${testLevelText(trainingTestLevel(x))}</button></p>`).join('');
+    qs('trainingNoticeBody').innerHTML=open.map(x=>`<p><b>${x.training_type||'Post audit training required'}</b><br>Status: ${x.status||'Open'}<br>Assigned: ${x.assigned_date||''}<br>${(trainingTestLevel(x)==='level1'||trainingTestLevel(x)==='level2')?`<button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||user.name).replaceAll("'","&#39;")}','${trainingTestLevel(x)}')">Start ${testLevelText(trainingTestLevel(x))}</button>`:'<span class="muted">Manager sign-off required</span>'}</p>`).join('');
   }catch(e){}
 }
 
@@ -363,6 +409,39 @@ async function completeReaudit(id){
   await loadTraining();
   await loadAudits();
 }
+
+async function loadTrainingManager(){
+  if(!user || user.role!=='manager'){alert('Manager access only');return;}
+  show('trainingManager');
+  await loadUsers();
+  const eng=users.filter(u=>u.role==='engineer'&&Number(u.active)!==0);
+  qs('tmEngineer').innerHTML=eng.map(u=>`<option value="${u.name}">${u.name}</option>`).join('');
+  qs('tmDue').value=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
+  const t=await api('/api/training?role=manager');
+  qs('tmRows').innerHTML=(t.training||[]).map(x=>{
+    const done=['complete','completed','closed','cancelled'].includes((x.status||'Open').toLowerCase());
+    const assignedLevel=trainingTestLevel(x);
+    const canTest=assignedLevel==='level1'||assignedLevel==='level2';
+    const testBtn=done?'<span class="muted">Closed</span>':(canTest?`<button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||'').replaceAll("'","&#39;")}','${assignedLevel}')">Open ${testLevelText(assignedLevel)}</button>`:'');
+    const closeBtn=done?'':`<button onclick="completeTraining(${x.id})">Mark Complete</button>`;
+    return `<tr><td>${x.id||''}</td><td>${x.engineer_name||''}</td><td>${x.training_type||''}</td><td>${x.assigned_date||''}</td><td>${x.status||''}</td><td>${testBtn} ${closeBtn}</td></tr>`;
+  }).join('');
+}
+async function assignTraining(){
+  try{
+    const body={
+      engineer_name:qs('tmEngineer').value,
+      training_type:trainingTypeText(qs('tmType').value)+(qs('tmNotes').value?(' Notes: '+qs('tmNotes').value):''),
+      assigned_date:new Date().toISOString().slice(0,10),
+      completion_date:'',
+      status:'Open'
+    };
+    await api('/api/training',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    qs('tmMsg').textContent='Training assigned to '+body.engineer_name;
+    await loadTrainingManager();
+  }catch(e){qs('tmMsg').textContent=e.message}
+}
+
 async function loadUserAdmin(){if(!user || user.role!=='manager'){alert('Manager access only');return;} show('userAdmin'); await loadUsers(); qs('userRows').innerHTML=users.map(u=>`<tr><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td>${Number(u.active)!==0?'Yes':'No'}</td><td><button onclick='editUser(${JSON.stringify(u).replaceAll("'","&#39;")})'>Edit</button></td></tr>`).join('')}
 function editUser(u){qs('userId').value=u.id; qs('userName').value=u.name||''; qs('userEmail').value=u.email||''; qs('userPin').value=''; qs('userRole').value=u.role||'engineer'; qs('userActive').value=String(Number(u.active)!==0?1:0); qs('userMsg').textContent='Leave PIN blank only if you intend to reset it to 1234 in this simple version.'}
 function clearUserForm(){['userId','userName','userEmail','userPin'].forEach(id=>qs(id).value=''); qs('userRole').value='engineer'; qs('userActive').value='1'; qs('userMsg').textContent=''}
