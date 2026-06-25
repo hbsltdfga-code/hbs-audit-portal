@@ -12,7 +12,7 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
 <div class="top"><h1>HBS Gas Audit Portal</h1><p>PDA/iPad audit capture, photo upload, central saving, manager dashboard, engineer management, audit trends, league tables and printable PDF booklet.</p></div>
 <section id="login" class="card"><h2>Login</h2><p class="muted">Use your HBS portal email and PIN.</p><div class="grid"><label>Email<br><input id="email" value="peter@hbs.local"></label><label>PIN<br><input id="pin" type="password" value="1234"></label><label><br><button onclick="login()">Login</button></label></div><p id="loginMsg" class="muted"></p></section>
 <section id="app" class="hide">
- <div class="card noprint toolbar"><b id="who"></b> <button class="managerOnly" onclick="newAudit()">New Audit</button> <button onclick="loadAudits()">My Dashboard</button> <button onclick="loadTraining()">Training / Re-audits</button> <button class="managerOnly" onclick="loadTrainingManager()">Training Management</button> <button onclick="openToolboxTest()">Toolbox Test</button> <button class="managerOnly" onclick="loadUserAdmin()">Users</button> <button class="managerOnly" onclick="downloadBackup()">Backup</button> <button onclick="logout()">Logout</button></div>
+ <div class="card noprint toolbar"><b id="who"></b> <button class="managerOnly" onclick="newAudit()">New Audit</button> <button onclick="loadAudits()">My Dashboard</button> <button onclick="loadTraining()">Training / Re-audits</button> <button class="managerOnly" onclick="loadTrainingManager()">Training Management</button> <button onclick="openToolboxTest()">Toolbox Test</button> <button class="managerOnly" onclick="loadToolboxResults()">Test Results</button> <button class="managerOnly" onclick="loadUserAdmin()">Users</button> <button class="managerOnly" onclick="loadToolboxResults()">Test Results</button> <button class="managerOnly" onclick="downloadBackup()">Backup</button> <button onclick="logout()">Logout</button></div>
  <div id="trainingNotice" class="card hide">
   <h2>Outstanding Training Action</h2>
   <div id="trainingNoticeBody"></div>
@@ -97,6 +97,24 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
   <p id="tbMsg"></p>
  </div>
 
+
+ <div id="toolboxResults" class="card hide">
+  <h2>Toolbox / Competency Test Results</h2>
+  <p class="muted">Manager-only register of all completed Level 1 and Level 2 assessments.</p>
+  <button class="noprint" onclick="loadToolboxResults()">Refresh Results</button>
+  <div id="toolboxResultStats"></div>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Date</th><th>Engineer</th><th>Test Level</th><th>Score</th><th>Result</th><th>Training Record</th>
+      </tr>
+    </thead>
+    <tbody id="toolboxResultRows"></tbody>
+  </table>
+  <h3>Selected Test Detail</h3>
+  <div id="toolboxResultDetail" class="muted">Select a result to view answers.</div>
+ </div>
+
  <div id="booklet" class="card hide"><h2>Audit Booklet</h2><div id="bookletBody"></div><button class="noprint" onclick="window.print()">Print / Save PDF</button></div>
 </section>
 <script>
@@ -132,7 +150,7 @@ function applyRoleVisibility(){
   const h=qs('dashboard')?.querySelector('h2');
   if(h) h.textContent = isManager ? 'Manager Dashboard / Audit Register' : 'My Audit Results / Training Dashboard';
 }
-function logout(){location.reload()} function show(id){['auditForm','dashboard','booklet','trainingView','userAdmin','toolboxTest','trainingManager'].forEach(x=>qs(x).classList.add('hide')); qs(id).classList.remove('hide')} function newAudit(){if(!user || user.role!=='manager'){alert('Manager access only');return;} show('auditForm'); qs('saveMsg').textContent=''}
+function logout(){location.reload()} function show(id){['auditForm','dashboard','booklet','trainingView','userAdmin','toolboxTest','trainingManager','toolboxResults'].forEach(x=>qs(x).classList.add('hide')); qs(id).classList.remove('hide')} function newAudit(){if(!user || user.role!=='manager'){alert('Manager access only');return;} show('auditForm'); qs('saveMsg').textContent=''}
 async function loadUsers(){const j=await api(`/api/users?email=${encodeURIComponent(user.email)}&role=${user.role}`); users=j.users; const eng=users.filter(u=>u.role==='engineer'&&Number(u.active)!==0); qs('engineer').innerHTML=eng.map(u=>`<option value="${u.email}" data-name="${u.name}">${u.name}</option>`).join('')}
 async function fileToDataUrl(file){return new Promise(res=>{const img=new Image(), fr=new FileReader(); fr.onload=e=>{img.onload=()=>{const c=document.createElement('canvas'); const max=900, s=Math.min(1,max/Math.max(img.width,img.height)); c.width=img.width*s; c.height=img.height*s; c.getContext('2d').drawImage(img,0,0,c.width,c.height); res({filename:file.name,mime_type:'image/jpeg',data_url:c.toDataURL('image/jpeg',0.65)})}; img.src=e.target.result}; fr.readAsDataURL(file)})}
 
@@ -445,6 +463,55 @@ async function assignTraining(){
     await loadTrainingManager();
   }catch(e){qs('tmMsg').textContent=e.message;}
 }
+
+async function loadToolboxResults(){
+  if(!user || user.role!=='manager'){alert('Manager access only');return;}
+  show('toolboxResults');
+  try{
+    const j=await api('/api/toolbox-test?role=manager');
+    const rows=j.results||[];
+    const total=rows.length;
+    const passes=rows.filter(x=>(x.result||'').toUpperCase()==='PASS').length;
+    const fails=rows.filter(x=>(x.result||'').toUpperCase()==='FAIL').length;
+    qs('toolboxResultStats').innerHTML=`<p><span class="pill">Total tests: ${total}</span> <span class="pill pass">Pass: ${passes}</span> <span class="pill fail">Fail: ${fails}</span></p>`;
+    qs('toolboxResultRows').innerHTML=rows.map(x=>{
+      let info={};
+      try{info=JSON.parse(x.answers_json||'{}')}catch(e){}
+      const level=info.test_level||'';
+      const totalQ=info.total_questions||'';
+      const label=level==='level2'?'Level 2 Advanced':level==='level1'?'Level 1 Refresher':level;
+      return `<tr>
+        <td>${x.id||''}</td>
+        <td>${x.test_date||x.created_at||''}</td>
+        <td>${x.engineer_name||''}</td>
+        <td>${label}</td>
+        <td>${x.score||0}${totalQ?'/'+totalQ:''}</td>
+        <td><span class="pill ${(x.result||'').toUpperCase()==='PASS'?'pass':'fail'}">${x.result||''}</span></td>
+        <td>${x.training_id||''}</td>
+        <td><button onclick="viewToolboxResult(${x.id})">View</button></td>
+      </tr>`;
+    }).join('');
+    window._toolboxResults=rows;
+  }catch(e){
+    qs('toolboxResultRows').innerHTML=`<tr><td colspan="8">${e.message}</td></tr>`;
+  }
+}
+function viewToolboxResult(id){
+  const row=(window._toolboxResults||[]).find(x=>Number(x.id)===Number(id));
+  if(!row){qs('toolboxResultDetail').textContent='Result not found.';return;}
+  let info={};
+  try{info=JSON.parse(row.answers_json||'{}')}catch(e){}
+  const answers=info.answers||[];
+  qs('toolboxResultDetail').innerHTML=`
+    <p><b>Engineer:</b> ${row.engineer_name||''}<br>
+    <b>Date:</b> ${row.test_date||row.created_at||''}<br>
+    <b>Result:</b> ${row.result||''}<br>
+    <b>Score:</b> ${row.score||0}/${info.total_questions||answers.length||''}<br>
+    <b>Pass Mark:</b> ${info.pass_mark||''}</p>
+    <table><thead><tr><th>Question</th><th>Selected</th><th>Correct Answer</th><th>Outcome</th></tr></thead>
+    <tbody>${answers.map(a=>`<tr><td>${a.question||''}</td><td>${a.selected||''}</td><td>${a.correct||''}</td><td>${a.pass?'Correct':'Incorrect'}</td></tr>`).join('')}</tbody></table>`;
+}
+
 async function downloadBackup(){
   try{
     const j=await api('/api/backup');
