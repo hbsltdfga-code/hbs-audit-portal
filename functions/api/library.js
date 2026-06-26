@@ -1,3 +1,8 @@
+async function columnExists(env, table, column) {
+  const info = await env.DB.prepare(`PRAGMA table_info(${table})`).all();
+  return (info.results || []).some(c => c.name === column);
+}
+
 async function ensureTables(env) {
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS technical_library (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -12,6 +17,14 @@ async function ensureTables(env) {
     uploaded_by TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`).run();
+
+  // Upgrade older D1-library table that stored file_data but did not have R2 columns.
+  if (!(await columnExists(env, 'technical_library', 'file_key'))) {
+    await env.DB.prepare(`ALTER TABLE technical_library ADD COLUMN file_key TEXT`).run();
+  }
+  if (!(await columnExists(env, 'technical_library', 'file_size'))) {
+    await env.DB.prepare(`ALTER TABLE technical_library ADD COLUMN file_size INTEGER`).run();
+  }
 
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS library_access_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,6 +66,7 @@ export async function onRequestGet({ request, env }) {
         await env.DB.prepare('INSERT INTO library_access_log (document_id, opened_by, action) VALUES (?,?,?)')
           .bind(Number(id), openedBy, 'open').run();
       }
+      if (!doc.file_key) return Response.json({ ok:false, error:'Document was created before R2 storage and has no R2 file key. Re-upload this document.' }, { status:400 });
       doc.file_url = fileRoute(doc.file_key);
       return Response.json({ ok:true, document: doc });
     }
@@ -135,7 +149,7 @@ export async function onRequestDelete({ request, env }) {
     const doc = await env.DB.prepare('SELECT * FROM technical_library WHERE id=?').bind(id).first();
     if (!doc) throw new Error('Document not found');
 
-    await env.LIBRARY_BUCKET.delete(doc.file_key);
+    if (doc.file_key) await env.LIBRARY_BUCKET.delete(doc.file_key);
 
     await env.DB.prepare('INSERT INTO library_access_log (document_id, opened_by, action) VALUES (?,?,?)')
       .bind(id, body.manager || '', 'delete').run();
