@@ -6,3 +6,6 @@ pages_build_output_dir = "."
 binding = "DB"
 database_name = "hbsaudits"
 database_id = "50bed168-6c46-4d06-87ca-f9a25ce9be0e"
+[[r2_buckets]]
+binding = "LIBRARY_BUCKET"
+bucket_name = "hbs-technical-library"
