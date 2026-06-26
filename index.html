@@ -596,6 +596,45 @@ function editUser(u){qs('userId').value=u.id; qs('userName').value=u.name||''; q
 function clearUserForm(){['userId','userName','userEmail','userPin'].forEach(id=>qs(id).value=''); qs('userRole').value='engineer'; qs('userActive').value='1'; qs('userMsg').textContent=''}
 async function saveUser(){try{const body={id:qs('userId').value||undefined,name:qs('userName').value,email:qs('userEmail').value,pin:qs('userPin').value||'1234',role:qs('userRole').value,active:Number(qs('userActive').value)}; await api('/api/users',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); qs('userMsg').textContent='User saved.'; clearUserForm(); await loadUserAdmin()}catch(e){qs('userMsg').textContent=e.message}}
 async function booklet(id){const j=await api('/api/audit?id='+encodeURIComponent(id)); const a=j.audit, data=JSON.parse(a.audit_json||'{}'); show('booklet'); qs('bookletBody').innerHTML=`<h3>HBS-${a.id}</h3><p><b>Engineer:</b> ${a.engineer_name}<br><b>Auditor:</b> ${a.auditor||''}<br><b>Site:</b> ${a.site_name}<br><b>Client:</b> ${data.client_name||''}<br><b>Date:</b> ${a.audit_date}<br><b>Appliance Type:</b> ${data.appliance_type||''}<br><b>Manufacturer:</b> ${data.manufacturer||''}<br><b>Model:</b> ${data.model||''}<br><b>Serial Number:</b> ${data.serial_number||''}<br><b>Asset Number:</b> ${data.asset_number||''}<br><b>Score:</b> ${a.score}% - ${a.result}</p><h3>Audit Questions</h3><table><tr><th>Section</th><th>Question</th><th>Score</th><th>Notes</th></tr>${(data.questions||[]).map(q=>`<tr><td>${q.section}</td><td>${q.question}</td><td>${q.score}</td><td>${q.note||''}</td></tr>`).join('')}</table><h3>Findings / Actions</h3><p>${(data.actions_required||'').replaceAll('\n','<br>')}</p><h3>Training / Re-audit</h3><p>${(data.training_required||'').replaceAll('\n','<br>')}</p><h3>Photos</h3>${(j.photos||[]).map(p=>`<img class=photo src="${p.photo_url}">`).join('')}<h3>Signed</h3><p>${data.signature||''}</p>`}
+
+// --- Record Management delete fix override ---
+async function deleteAuditBundle(){
+  if(!user || user.role!=='manager'){alert('Manager access only');return;}
+  const id=Number(qs('rmAuditId').value);
+  if(!id){qs('rmAuditMsg').textContent='Enter an audit ID.';return;}
+  const reason=qs('rmAuditReason').value||'No reason entered';
+  if(!confirm(`Delete HBS-${id} and all linked photos, training, re-audits and test results?\nThis cannot be undone.`)) return;
+  qs('rmAuditMsg').textContent='Deleting...';
+  try{
+    const j=await api('/api/admin-delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'delete_audit_bundle',audit_id:id,manager:user.name,reason})});
+    qs('rmAuditMsg').textContent=`Deleted HBS-${id}. Audits: ${j.deleted.audits}, Photos: ${j.deleted.photos}, Training: ${j.deleted.training_records}, Re-audits: ${j.deleted.reaudits}, Test Results: ${j.deleted.toolbox_results}`;
+    qs('rmAuditId').value='';
+    await loadDeletionLog();
+    await loadAudits();
+    show('recordManager');
+  }catch(e){
+    qs('rmAuditMsg').textContent='Delete failed: '+e.message;
+  }
+}
+async function deleteEngineerTraining(){
+  if(!user || user.role!=='manager'){alert('Manager access only');return;}
+  const engineer=qs('rmEngineer').value.trim();
+  if(!engineer){qs('rmEngineerMsg').textContent='Enter an engineer name.';return;}
+  const reason=qs('rmEngineerReason').value||'No reason entered';
+  if(!confirm(`Delete all training, re-audits and toolbox results for ${engineer}?\nThis cannot be undone.`)) return;
+  qs('rmEngineerMsg').textContent='Deleting...';
+  try{
+    const j=await api('/api/admin-delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'delete_engineer_training',engineer_name:engineer,manager:user.name,reason})});
+    qs('rmEngineerMsg').textContent=`Deleted records for ${engineer}. Training: ${j.deleted.training_records}, Re-audits: ${j.deleted.reaudits}, Test Results: ${j.deleted.toolbox_results}`;
+    qs('rmEngineer').value='';
+    await loadDeletionLog();
+    await loadAudits();
+    show('recordManager');
+  }catch(e){
+    qs('rmEngineerMsg').textContent='Delete failed: '+e.message;
+  }
+}
+
 </script>
 </body>
 </html>
