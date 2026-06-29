@@ -1021,18 +1021,7 @@ function newSeniorAudit(){
 
 
 
-const _hbsApiOriginalSeniorFilter = typeof api === 'function' ? api : null;
-if(_hbsApiOriginalSeniorFilter){
-  api = function(url, options){
-    if(user && user.role==='senior_engineer' && typeof url==='string'){
-      if(url.startsWith('/api/training') || url.startsWith('/api/reaudits')){
-        const joiner=url.includes('?')?'&':'?';
-        url = url + joiner + 'role=engineer&engineer=' + encodeURIComponent(user.name);
-      }
-    }
-    return _hbsApiOriginalSeniorFilter(url, options);
-  }
-}
+
 
 
 
@@ -1275,6 +1264,146 @@ function hbsViewTightnessRecord(id){
   setInterval(() => {
     try { window.hbsHardDeduplicateNav(); } catch(e) {}
   }, 250);
+})();
+
+
+// --- HBS Manager Dashboard Data Restore Fix ---
+(function(){
+  function isMgr(){ return window.user && user.role === 'manager'; }
+
+  async function hbsFetchJson(url, options){
+    const res = await fetch(url, options || {});
+    const text = await res.text();
+    let json;
+    try { json = JSON.parse(text); }
+    catch(e) { throw new Error(text.slice(0,300)); }
+    if(!res.ok || json.ok === false) throw new Error(json.error || ('Request failed: ' + res.status));
+    return json;
+  }
+
+  function setText(id, value){
+    const el=document.getElementById(id);
+    if(el) el.textContent=value;
+  }
+
+  function getScore(a){
+    return Number(a.score ?? a.audit_score ?? a.total_score ?? a.calculated_score ?? 0);
+  }
+
+  function getEngineer(a){
+    return a.engineer_name || a.engineer || a.engineerName || '';
+  }
+
+  function getResult(a){
+    return a.result || a.outcome || a.audit_result || '';
+  }
+
+  window.hbsManagerDashboardRefresh = async function(){
+    if(!isMgr()) return;
+
+    try{
+      const auditsJson = await hbsFetchJson('/api/audits?role=manager&engineer=' + encodeURIComponent(user.name || ''));
+      const trainingJson = await hbsFetchJson('/api/training?role=manager&engineer=' + encodeURIComponent(user.name || '')).catch(()=>({training:[]}));
+      const reauditsJson = await hbsFetchJson('/api/reaudits?role=manager&engineer=' + encodeURIComponent(user.name || '')).catch(()=>({reaudits:[]}));
+
+      const audits = auditsJson.audits || auditsJson.records || [];
+      const training = trainingJson.training || trainingJson.records || [];
+      const reaudits = reauditsJson.reaudits || reauditsJson.records || [];
+
+      const scores = audits.map(getScore).filter(v=>Number.isFinite(v));
+      const avg = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+
+      const excellent = audits.filter(a=>getScore(a)>=95 || /excellent/i.test(getResult(a))).length;
+      const pass = audits.filter(a=>getScore(a)>=85 && getScore(a)<95 || /^pass$/i.test(getResult(a))).length;
+      const improvement = audits.filter(a=>getScore(a)>=75 && getScore(a)<85 || /improvement/i.test(getResult(a))).length;
+      const fail = audits.filter(a=>getScore(a)<75 && scores.length || /fail/i.test(getResult(a))).length;
+      const openTraining = training.filter(t=>/open|pending/i.test(t.status || '')).length;
+      const openReaudits = reaudits.filter(r=>/open|pending/i.test(r.status || '')).length;
+
+      // Update summary cards by visible text fallback.
+      const cards=[...document.querySelectorAll('.card, div')];
+      cards.forEach(c=>{
+        const txt=(c.textContent||'').trim();
+        if(/^Total Audits/i.test(txt)) c.innerHTML='<b>Total Audits</b><br><b>'+audits.length+'</b>';
+        if(/^Average Score/i.test(txt)) c.innerHTML='<b>Average Score</b><br><b>'+avg+'%</b>';
+        if(/^Pass Rate/i.test(txt)){
+          const pr=audits.length?Math.round(((excellent+pass)/audits.length)*100):0;
+          c.innerHTML='<b>Pass Rate</b><br><b>'+pr+'%</b>';
+        }
+        if(/^Excellent/i.test(txt)) c.innerHTML='<b>Excellent</b><br><b>'+excellent+'</b>';
+        if(/^Pass\s/i.test(txt)) c.innerHTML='<b>Pass</b><br><b>'+pass+'</b>';
+        if(/^Improvement Required/i.test(txt)) c.innerHTML='<b>Improvement Required</b><br><b>'+improvement+'</b>';
+        if(/^Fail/i.test(txt)) c.innerHTML='<b>Fail</b><br><b>'+fail+'</b>';
+        if(/^Open Training \/ Re-audits/i.test(txt)) c.innerHTML='<b>Open Training / Re-audits</b><br><b>'+openTraining+' / '+openReaudits+'</b>';
+      });
+
+      // Populate Audit Register if a likely tbody exists after headers Ref Date Engineer Site.
+      const tables=[...document.querySelectorAll('table')];
+      const auditTable=tables.find(t=>{
+        const h=(t.querySelector('thead')?.textContent || t.textContent || '').toLowerCase();
+        return h.includes('ref') && h.includes('engineer') && h.includes('site') && h.includes('score');
+      });
+      if(auditTable){
+        const body=auditTable.querySelector('tbody') || auditTable.appendChild(document.createElement('tbody'));
+        body.innerHTML = audits.map(a=>{
+          const ref=a.audit_ref || a.ref || a.id || '';
+          const date=a.audit_date || a.date || a.created_at || '';
+          const eng=getEngineer(a);
+          const site=a.site_name || a.site || '';
+          const manu=a.manufacturer || '';
+          const model=a.model || '';
+          const score=getScore(a);
+          const result=getResult(a);
+          return `<tr><td>${ref}</td><td>${date}</td><td>${eng}</td><td>${site}</td><td>${manu}</td><td>${model}</td><td>${score}</td><td>${result}</td><td>${ref}</td></tr>`;
+        }).join('');
+      }
+
+      // Populate league table if present.
+      const league=tables.find(t=>{
+        const h=(t.querySelector('thead')?.textContent || t.textContent || '').toLowerCase();
+        return h.includes('rank') && h.includes('avg score');
+      });
+      if(league){
+        const stats={};
+        audits.forEach(a=>{
+          const eng=getEngineer(a) || 'Unknown';
+          if(!stats[eng]) stats[eng]={count:0,total:0,excellent:0,improvement:0,fail:0};
+          const s=getScore(a);
+          stats[eng].count++; stats[eng].total+=s;
+          if(s>=95) stats[eng].excellent++;
+          else if(s>=75 && s<85) stats[eng].improvement++;
+          else if(s<75) stats[eng].fail++;
+        });
+        const rows=Object.entries(stats).map(([eng,v])=>({eng,...v,avg:v.count?Math.round(v.total/v.count):0})).sort((a,b)=>b.avg-a.avg);
+        const body=league.querySelector('tbody') || league.appendChild(document.createElement('tbody'));
+        body.innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.eng}</td><td>${r.count}</td><td>${r.avg}%</td><td>${r.excellent}</td><td>${r.improvement}</td><td>${r.fail}</td></tr>`).join('');
+      }
+
+    }catch(e){
+      console.warn('Manager dashboard refresh failed:', e);
+    }
+  };
+
+  const oldLoadDashboard = window.loadDashboard;
+  window.loadDashboard = async function(){
+    if(oldLoadDashboard) {
+      try { await oldLoadDashboard.apply(this, arguments); } catch(e) { console.warn(e); }
+    } else if(typeof show === 'function') {
+      show('dashboard');
+    }
+    if(isMgr()) setTimeout(window.hbsManagerDashboardRefresh, 150);
+  };
+
+  document.addEventListener('click', function(e){
+    if((e.target?.textContent||'').trim()==='Refresh' && isMgr()){
+      setTimeout(window.hbsManagerDashboardRefresh, 150);
+    }
+  });
+
+  setInterval(()=>{try{
+    const title=[...document.querySelectorAll('h2,h3')].find(h=>/Manager Dashboard|Audit Register/i.test(h.textContent||''));
+    if(isMgr() && title) window.hbsManagerDashboardRefresh();
+  }catch(e){}}, 5000);
 })();
 
 </script>
