@@ -3,1490 +3,283 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HBS Gas Audit Portal v6 Enterprise</title>
+<title>HBS Gas Audit Portal v3.0</title>
 <style>
-body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top{background:linear-gradient(90deg,#123d68,#2369a7);color:#fff;padding:22px 26px}.card{background:#fff;margin:14px;padding:16px;border:1px solid #d3dfed;border-radius:12px;box-shadow:0 1px 4px #0001}input,select,textarea,button{font:inherit;padding:10px;border-radius:8px;border:1px solid #b8c8d8;box-sizing:border-box}button{background:#123f6d;color:white;border:0;font-weight:700;cursor:pointer;margin:2px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.hide{display:none}.muted{color:#52677f;font-size:13px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e3eaf2;text-align:left;padding:8px;vertical-align:top}th{background:#eef4fb}.pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#e6eef8;margin:2px}.fail{background:#ffe0e0}.pass{background:#ddf5e4}.warn{background:#fff1c9}.excellent{background:#dcecff}.photo{max-width:180px;max-height:130px;margin:4px;border-radius:8px;border:1px solid #ddd}.q{border:1px solid #e5edf5;border-radius:10px;padding:10px;margin:8px 0}.q label{display:block;font-weight:700}.scorebox{font-size:22px;font-weight:700}.section-title{background:#eef4fb;border-radius:8px;padding:8px;margin-top:12px}.danger{background:#8b1e1e}.small{font-size:12px}.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.barrow{display:grid;grid-template-columns:220px 1fr 70px;gap:8px;align-items:center;margin:8px 0}.barwrap{background:#e6eef8;border-radius:10px;overflow:hidden;height:26px}.barfill{background:#123f6d;color:#fff;height:26px;line-height:26px;text-align:right;padding-right:8px;min-width:28px;box-sizing:border-box}.barname{font-weight:700}.barvalue{text-align:right;font-weight:700}@media print{.noprint,.top button{display:none!important}.card{box-shadow:none;border:1px solid #999;margin:8px}body{background:white}.top{color:#000;background:#fff;border-bottom:2px solid #000}.photo{max-width:240px;max-height:180px}}
+:root{--blue:#123f6d;--blue2:#2369a7;--bg:#f4f7fb;--line:#d3dfed;--muted:#52677f;--danger:#8b1e1e;--ok:#ddf5e4;--warn:#fff1c9}
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;margin:0;background:var(--bg);color:#071b34}
+.top{background:linear-gradient(90deg,#123d68,#2369a7);color:#fff;padding:24px 28px}
+.top h1{margin:0 0 12px;font-size:30px}
+.version{opacity:.85;font-size:13px}
+.card{background:#fff;margin:14px;padding:16px;border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 4px #0001}
+input,select,textarea,button{font:inherit;padding:10px;border-radius:8px;border:1px solid #b8c8d8;box-sizing:border-box}
+button{background:var(--blue);color:#fff;border:0;font-weight:700;cursor:pointer;margin:3px}
+button.danger{background:var(--danger)}
+button.secondary{background:#52677f}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.hide{display:none!important}
+.muted{color:var(--muted);font-size:13px}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{border-bottom:1px solid #e3eaf2;text-align:left;padding:8px;vertical-align:top}
+th{background:#eef4fb}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.stat{background:#fff;border:1px solid #cfe0f2;border-radius:10px;padding:14px;box-shadow:0 1px 3px #0001}
+.stat b:last-child{font-size:20px}
+.pass{background:var(--ok)} .warn{background:var(--warn)} .fail{background:#ffe0e0}
+.pill{display:inline-block;border-radius:99px;padding:5px 9px;background:#e6eef8;margin:2px}
+.notice{background:#fff8dc;border:2px solid #e0b000}
+iframe{width:100%;height:1450px;border:1px solid #cfd8dc;border-radius:10px;background:white}
+textarea{width:100%;min-height:80px}
+@media(max-width:760px){.top h1{font-size:22px} .toolbar button{width:100%} iframe{height:1600px}}
+@media print{.noprint,.toolbar,button{display:none!important} .card{box-shadow:none} body{background:#fff}}
 </style>
-
-
-<style id="hbs-tightness-layout-fix">
-#tightnessCalculator .grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
-  gap:12px 16px;
-  align-items:end;
-}
-#tightnessCalculator label{
-  display:block;
-  min-width:0;
-  font-weight:600;
-}
-#tightnessCalculator input,
-#tightnessCalculator select{
-  width:100%;
-  max-width:100%;
-  box-sizing:border-box;
-}
-#tightnessCalculator table{
-  width:100%;
-  table-layout:auto;
-}
-#tightnessCalculator th,
-#tightnessCalculator td{
-  vertical-align:middle;
-}
-#tightnessCalculator .card{
-  overflow:hidden;
-}
-@media(max-width:700px){
-  #tightnessCalculator .grid{grid-template-columns:1fr;}
-}
-</style>
-
 </head>
 <body>
+<header class="top">
+  <h1>HBS Gas Audit Portal</h1>
+  <div>PDA/iPad audit capture, central saving, manager dashboard, engineer competency, Knowledge Centre and Tightness Calculator.</div>
+  <div class="version">Version 3.0 Clean Stable Release</div>
+</header>
 
-<div class="hbsUserPanel" id="hbsUserPanel">
-    <span id="hbsHeaderUser">Not logged in</span><br>
-    <span id="hbsHeaderRole" class="roleBadge role-engineer">Portal Access</span>
-  </div>
-</div>
-
-<div class="top"><h1>HBS Gas Audit Portal</h1><p>PDA/iPad audit capture, photo upload, central saving, manager dashboard, engineer management, audit trends, league tables and printable PDF booklet.</p></div>
-<section id="login" class="card"><h2>Login</h2><p class="muted">Use your HBS portal email and PIN.</p><div class="grid"><label>Email<br><input id="email" value="peter@hbs.local"></label><label>PIN<br><input id="pin" type="password" value="1234"></label><label><br><button onclick="login()">Login</button></label></div><p id="loginMsg" class="muted"></p></section>
-<section id="app" class="hide">
- <div class="card noprint toolbar"><b id="who"></b> <button class="managerOnly" onclick="newAudit()">New Audit</button> <button onclick="loadAudits()">My Dashboard</button> <button onclick="loadTraining()">Training / Re-audits</button> <button class="managerOnly" onclick="loadTrainingManager()">Training Management</button> <button onclick="openToolboxTest()">Toolbox Test</button> <button onclick="loadKnowledgeCentre()">Knowledge Centre</button> <button onclick="loadTightnessCalculator()">Tightness Calculator</button> <button class="managerOnly" onclick="loadToolboxResults()">Test Results</button> <button class="managerOnly" onclick="loadUserAdmin()">Users</button> <button class="managerOnly" onclick="loadToolboxResults()">Test Results</button> <button class="managerOnly" onclick="loadRecordManager()">Record Management</button> <button class="managerOnly" onclick="downloadBackup()">Backup</button> <button onclick="logout()">Logout</button></div>
- <div id="trainingNotice" class="card hide">
-  <h2>Outstanding Training Action</h2>
-  <div id="trainingNoticeBody"></div>
- </div>
- <div id="auditForm" class="card hide"><h2>New Engineer Gas Audit</h2>
+<section id="loginCard" class="card">
+  <h2>Portal Login</h2>
   <div class="grid">
-   <label>Engineer<br><select id="engineer"></select></label>
-   <label>Site Name<br><input id="site" placeholder="Site / hotel / client site"></label>
-   <label>Client<br><input id="client"></label>
-   <label>Audit Date<br><input id="date" type="date"></label>
-   <label>Auditor<br><input id="auditor"></label>
-   <label>Appliance Type<br><select id="applianceType"><option>Boiler</option><option>Water Heater</option><option>Gas Train</option><option>AHU</option><option>Warm Air Heater</option><option>Radiant Tube Heater</option><option>Plant Room</option><option>Other</option></select></label>
-   <label>Manufacturer<br><select id="manufacturer"><option value="">Select Manufacturer</option><option>ACV</option><option>Adveco</option><option>Andrews</option><option>AO Smith</option><option>Atag</option><option>Baxi</option><option>Benson</option><option>Buderus</option><option>Carrier</option><option>Combat</option><option>De Dietrich</option><option>Elco</option><option>Ferroli</option><option>Hamworthy</option><option>Hoval</option><option>Ideal</option><option>Intergas</option><option>Keston</option><option>Lochinvar</option><option>MHS</option><option>Nu-Way</option><option>Potterton</option><option>Powrmatic</option><option>Reznor</option><option>Remeha</option><option>Riello</option><option>Robur</option><option>Sime</option><option>Stokvis</option><option>Strebel</option><option>Vaillant</option><option>Viessmann</option><option>Vokera</option><option>Weishaupt</option><option>Winterwarm</option><option>Worcester Bosch</option><option>Other</option></select></label>
-   <label>Model<br><input id="model" placeholder="Model / range"></label>
-   <label>Serial Number<br><input id="serial" placeholder="Serial number"></label>
-   <label>Asset Number<br><input id="asset" placeholder="Client/HBS asset ref"></label>
+    <label>Email / Username<br><input id="loginEmail" autocomplete="username"></label>
+    <label>4 digit PIN<br><input id="loginPin" type="password" inputmode="numeric" autocomplete="current-password"></label>
   </div>
-  <div id="questions"></div><p class="scorebox">Calculated Score: <span id="scoreOut">100</span>% - <span id="resultOut">Excellent</span></p>
-  <p><label>Findings / Corrective Actions<br><textarea id="actions" rows="4" style="width:100%" placeholder="Record all audit findings and required corrective actions"></textarea></label></p>
-  <p><label>Manager Test Selection<br><select id="testLevel" onchange="updateTrainingText()">
-<option value="auto">Automatic based on audit score</option>
-<option value="none">No test required</option>
-<option value="level1">Level 1 - Commercial Gas Safety Refresher</option>
-<option value="level2">Level 2 - Advanced Competency Assessment</option>
-<option value="practical">Practical Assessment</option>
-<option value="manufacturer">Manufacturer Product Training</option>
-<option value="coaching">One-to-One Coaching</option>
-<option value="reaudit">Re-audit Only</option>
-</select></label></p>
-<p><label>Training Required<br><textarea id="training" rows="2" style="width:100%" placeholder="Auto-populated for failed/improvement audits, but can be edited"></textarea></label></p>
-  <p><label>Photographs<br>
-<button type="button" onclick="qs('cameraPhoto').click()">Take Photo</button>
-<button type="button" onclick="qs('galleryPhotos').click()">Choose Photos</button>
-<input id="cameraPhoto" type="file" accept="image/*" capture="environment" style="display:none" onchange="addSelectedPhotos(this.files)">
-<input id="galleryPhotos" type="file" accept="image/*" multiple style="display:none" onchange="addSelectedPhotos(this.files)">
-</label></p>
-<div id="photoList" class="muted">No photographs selected.</div>
-  <p><label>Auditor / Engineer signature note<br><input id="signature" style="width:100%" placeholder="Typed signature / confirmation"></label></p>
-  <button onclick="saveAudit()">Save Audit Centrally</button><p id="saveMsg"></p>
- </div>
- <div id="dashboard" class="card"><h2>Manager Dashboard / Audit Register</h2><button class="noprint" onclick="loadAudits()">Refresh</button><div id="stats"></div><h3>Engineer League Table</h3><div id="leagueTable"></div><h3>Engineer Performance Graph</h3><div id="performanceGraph"></div><h3>Monthly Audit Trend</h3><div id="trendTable"></div><h3>Common Failed / Improvement Questions</h3><div id="failAnalysis"></div><h3>Audit Register</h3><table><thead><tr><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Manufacturer</th><th>Model</th><th>Score</th><th>Result</th><th>Booklet</th></tr></thead><tbody id="auditRows"></tbody></table></div>
- <div id="trainingView" class="card hide"><h2>Training / Re-audit Tracking</h2><div class="grid"><div><h3>Training Records</h3><table><thead><tr><th>Engineer</th><th>Training</th><th>Assigned</th><th>Status</th><th>Action</th></tr></thead><tbody id="trainingRows"></tbody></table></div><div><h3>Open Re-audits</h3><table><thead><tr><th>Audit</th><th>Engineer</th><th>Due</th><th>Status</th><th>Action</th></tr></thead><tbody id="reauditRows"></tbody></table></div></div></div>
- <div id="userAdmin" class="card hide"><h2>Engineer / User Management</h2><div class="grid noprint"><input type="hidden" id="userId"><label>Name<br><input id="userName" placeholder="Engineer name"></label><label>Email<br><input id="userEmail" placeholder="name@hbs.local"></label><label>PIN<br><input id="userPin" placeholder="1234"></label><label>Role<br><select id="userRole"><option>engineer</option><option>manager</option></select></label><label>Active<br><select id="userActive"><option value="1">Active</option><option value="0">Inactive</option></select></label><label><br><button onclick="saveUser()">Save User</button><button onclick="clearUserForm()">Clear</button></label></div><p id="userMsg"></p><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Active</th><th>Action</th></tr></thead><tbody id="userRows"></tbody></table></div>
-
-
- <div id="trainingManager" class="card hide">
-  <h2>Training Management</h2>
-  <p class="muted">Manager-only area to assign training or competency action to an engineer. Engineers cannot change the allocated test.</p>
-  <div class="grid noprint">
-    <label>Engineer<br><select id="tmEngineer"></select></label>
-    <label>Training / Test Type<br>
-      <select id="tmType">
-        <option value="level1">Level 1 - Commercial Gas Safety Refresher</option>
-        <option value="level2">Level 2 - Advanced Competency Assessment</option>
-        <option value="practical">Practical Assessment</option>
-        <option value="manufacturer">Manufacturer Product Training</option>
-        <option value="coaching">One-to-One Coaching</option>
-        <option value="reaudit">Re-audit Only</option>
-      </select>
-    </label>
-    <label>Due Date<br><input id="tmDue" type="date"></label>
-    <label>Manager Notes<br><input id="tmNotes" placeholder="Reason / audit reference / action required"></label>
-    <label><br><button onclick="assignTraining()">Assign Training</button></label>
-  </div>
-  <p id="tmMsg"></p>
-  <h3>Current Training Records</h3>
-  <table><thead><tr><th>ID</th><th>Engineer</th><th>Training</th><th>Assigned</th><th>Status</th><th>Action</th></tr></thead><tbody id="tmRows"></tbody></table>
- </div>
-
- <div id="toolboxTest" class="card hide">
-  <h2>Post Audit Toolbox Talk Test</h2>
-  <p class="muted">For engineers who have failed an audit or require post-audit refresher training. NCS has been removed from this test; unsafe classifications used are ID and AR.</p>
-  <div class="grid">
-    <label>Training Record ID<br><input id="tbTrainingId" readonly></label>
-    <label>Audit Ref<br><input id="tbAuditId" readonly></label>
-    <label>Engineer<br><input id="tbEngineer" readonly></label>
-    <label>Date<br><input id="tbDate" type="date"></label><label>Assigned Test Level<br><input id="tbLevelLabel" readonly value="Level 1 Commercial Gas Safety Refresher"><input id="tbLevel" type="hidden" value="level1"></label>
-  </div>
-  <div id="toolboxQuestions"></div>
-  <p class="scorebox">Test Score: <span id="tbScoreOut">0</span>/15 - <span id="tbResultOut">Not submitted</span></p>
-  <button onclick="submitToolboxTest()">Submit Toolbox Test</button>
-  <p id="tbMsg"></p>
- </div>
-
-
- <div id="toolboxResults" class="card hide">
-  <h2>Toolbox / Competency Test Results</h2>
-  <p class="muted">Manager-only register of all completed Level 1 and Level 2 assessments.</p>
-  <button class="noprint" onclick="loadToolboxResults()">Refresh Results</button>
-  <div id="toolboxResultStats"></div>
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th><th>Date</th><th>Engineer</th><th>Test Level</th><th>Score</th><th>Result</th><th>Training Record</th>
-      </tr>
-    </thead>
-    <tbody id="toolboxResultRows"></tbody>
-  </table>
-  <h3>Selected Test Detail</h3>
-  <div id="toolboxResultDetail" class="muted">Select a result to view answers.</div>
- </div>
-
-
- <div id="recordManager" class="card hide">
-  <h2>Manager Record Management</h2>
-  <p class="muted">Manager-only tools to remove test audits, training records, re-audits and toolbox test results. Use carefully.</p>
-
-  <h3>Delete Audit and Linked Records</h3>
-  <div class="grid noprint">
-    <label>Audit ID<br><input id="rmAuditId" placeholder="Example: 10"></label>
-    <label>Reason<br><input id="rmAuditReason" placeholder="Example: Test audit cleanup"></label>
-    <label><br><button class="danger" onclick="deleteAuditBundle()">Delete Audit Bundle</button></label>
-  </div>
-  <p id="rmAuditMsg"></p>
-
-  <h3>Delete Engineer Training / Test Records</h3>
-  <div class="grid noprint">
-    <label>Engineer Name<br><input id="rmEngineer" placeholder="Example: Gary Kingett"></label>
-    <label>Reason<br><input id="rmEngineerReason" placeholder="Example: Test record cleanup"></label>
-    <label><br><button class="danger" onclick="deleteEngineerTraining()">Delete Engineer Training/Test Records</button></label>
-  </div>
-  <p id="rmEngineerMsg"></p>
-
-  <h3>Deletion Log</h3>
-  <button class="noprint" onclick="loadDeletionLog()">Refresh Log</button>
-  <table><thead><tr><th>Date</th><th>Manager</th><th>Action</th><th>Target</th><th>Reason</th></tr></thead><tbody id="deletionLogRows"></tbody></table>
- </div>
-
-
- <div id="knowledgeCentre" class="card hide">
-  <h2>Knowledge Centre</h2>
-  <p class="muted">Controlled HBS technical reference area for IGEM standards, manufacturer manuals and HBS technical bulletins. Large files are stored in Cloudflare R2, with searchable metadata in D1. Access should remain within your company subscription/licence terms.</p>
-
-  <div class="managerOnly">
-    <h3>Upload Document(s) to R2</h3>
-  <p class="muted"><b>Important:</b> Large PDFs upload directly to Cloudflare R2. You can select one or more documents at the same time. Do not close this page during upload.</p>
-    <div class="grid noprint">
-      <label>Document Title<br><input id="kcTitle" placeholder="Optional - auto-generated if blank"></label>
-      <label>Category<br>
-        <select id="kcCategory">
-          <option>IGEM Standards</option>
-          <option>British Standards</option>
-          <option>Manufacturer Manuals</option>
-          <option>HBS Technical Bulletins</option>
-          <option>HBS Procedures</option>
-          <option>Risk Assessments</option>
-          <option>Gas Safe Guidance</option>
-          <option>Gas Installer Magazine</option>
-          <option>CP15 Guidance</option>
-          <option>Toolbox Talks</option>
-          <option>Technical Images</option>
-          <option>Training Videos</option>
-          <option>Fault Library</option>
-          <option>Other</option>
-        </select>
-      </label>
-      <label>Reference / Version<br><input id="kcReference" placeholder="Optional - auto-detected where possible"></label>
-      <label>Keywords<br><input id="kcKeywords" placeholder="ventilation, flues, tightness, purge"></label>
-      <label>Document Files<br><input id="kcFiles" type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.mp4,.mov"></label>
-      <label><br><button onclick="uploadLibraryDocument()">Upload Document(s) to R2</button></label>
-    </div>
-    <p id="kcUploadMsg"></p><div id="kcUploadProgress" class="muted"></div>
-  </div>
-
-  
-<h3>Library Sections</h3><div id="kcSectionCounts" class="muted"></div>
-  <div id="kcQuickCards" class="grid noprint">
-    <button onclick="setKnowledgeCategory('IGEM Standards')">📘 IGEM Standards</button>
-    <button onclick="setKnowledgeCategory('Manufacturer Manuals')">🏭 Manufacturer Manuals</button>
-    <button onclick="setKnowledgeCategory('HBS Technical Bulletins')">📚 HBS Bulletins</button>
-    <button onclick="setKnowledgeCategory('Gas Safe Guidance')">🔥 Gas Safe Guidance</button>
-    <button onclick="setKnowledgeCategory('Technical Images')">📸 Technical Images</button>
-    <button onclick="setKnowledgeCategory('Training Videos')">🎥 Training Videos</button>
-    <button onclick="setKnowledgeCategory('Fault Library')">🛠 Fault Library</button>
-    <button onclick="setKnowledgeCategory('')">🔎 All Documents</button>
-  </div>
-  <h3>Search Library</h3>
-  <div class="grid noprint">
-    <label>Search<br><input id="kcSearch" placeholder="Search title, category, reference or keywords"></label>
-    <label>Category<br>
-      <select id="kcFilter">
-        <option value="">All Categories</option>
-        <option>IGEM Standards</option>
-        <option>British Standards</option>
-        <option>Manufacturer Manuals</option>
-        <option>HBS Technical Bulletins</option>
-        <option>HBS Procedures</option>
-        <option>Risk Assessments</option>
-        <option>Gas Safe Guidance</option>
-        <option>Gas Installer Magazine</option>
-        <option>CP15 Guidance</option>
-        <option>Toolbox Talks</option>
-        <option>Technical Images</option>
-        <option>Training Videos</option>
-        <option>Fault Library</option>
-        <option>Other</option>
-      </select>
-    </label>
-    <label><br><button onclick="loadKnowledgeCentre()">Search</button></label>
-  </div>
-
-  <table>
-    <thead><tr><th>Title</th><th>Category</th><th>Reference</th><th>Keywords</th><th>Size</th><th>Uploaded</th><th>Action</th></tr></thead>
-    <tbody id="knowledgeRows"></tbody>
-  </table>
-
-  <div id="kcEditPanel" class="card hide managerOnly">
-  <h3>Edit Document Details</h3>
-  <input type="hidden" id="kcEditId">
-  <div class="grid noprint">
-    <label>Document Title<br><input id="kcEditTitle"></label>
-    <label>Category<br>
-      <select id="kcEditCategory">
-        <option>IGEM Standards</option>
-        <option>British Standards</option>
-        <option>Manufacturer Manuals</option>
-        <option>HBS Technical Bulletins</option>
-        <option>HBS Procedures</option>
-        <option>Risk Assessments</option>
-        <option>Gas Safe Guidance</option>
-        <option>Gas Installer Magazine</option>
-        <option>CP15 Guidance</option>
-        <option>Toolbox Talks</option>
-        <option>Technical Images</option>
-        <option>Training Videos</option>
-        <option>Fault Library</option>
-        <option>Other</option>
-      </select>
-    </label>
-    <label>Reference / Version<br><input id="kcEditReference"></label>
-    <label>Keywords<br><input id="kcEditKeywords"></label>
-    <label><br><button onclick="saveKnowledgeEdit()">Save Changes</button><button onclick="cancelKnowledgeEdit()">Cancel</button></label>
-  </div>
-  <p id="kcEditMsg"></p>
-</div>
-
-<h3>Document Viewer</h3>
-  <div id="knowledgeViewer" class="muted">Select a document to view, stream or download.</div>
- </div>
-
-
- 
- 
- 
- <div id="tightnessCalculator" class="card hide">
-  <h2>HBS Gas Tightness Test Calculator</h2>
-  <p class="muted">This portal module runs the same calculator file used on Netlify, isolated from the main portal so the pipework section calculations are not affected by portal scripts or styling.</p>
-  <p>
-    <button onclick="hbsLoadEmbeddedTightness()">Reload Calculator</button>
-    <button onclick="hbsSaveEmbeddedTightness()">Save Current Calculation to Portal</button>
-    <button onclick="hbsLoadTightnessRecords()">Refresh Saved Records</button>
-  </p>
-  <p id="ttMsg"></p>
-  <iframe id="hbsTightnessFrame" title="HBS Gas Tightness Test Calculator" style="width:100%;height:1450px;border:1px solid #cfd8dc;border-radius:10px;background:white"></iframe>
-
-  <h3>Saved Tightness Test Records</h3><p class="muted">Engineers can only see their own saved tightness test records. Managers can view all records.</p>
-  <table>
-    <thead><tr><th>ID</th><th>Date</th><th>Engineer</th><th>Site</th><th>Volume</th><th>Drop</th><th>Result</th><th>Action</th></tr></thead>
-    <tbody id="ttRows"></tbody>
-  </table>
-  <h3>Selected Record</h3>
-  <div id="ttRecordDetail" class="muted">Select a saved record to view details.</div>
- </div>
-<div id="booklet" class="card hide"><h2>Audit Booklet</h2><div id="bookletBody"></div><button class="noprint" onclick="window.print()">Print / Save PDF</button></div>
+  <p><button onclick="login()">Login</button></p>
+  <p id="loginMsg" class="muted"></p>
 </section>
+
+<section id="app" class="hide">
+  <div class="card noprint">
+    <div class="toolbar">
+      <b id="loginStatus">Logged in</b>
+      <span id="navButtons"></span>
+    </div>
+  </div>
+
+  <main>
+    <section id="dashboard" class="card section">
+      <h2>Manager Dashboard / Audit Register</h2>
+      <p><button onclick="loadDashboard()">Refresh</button></p>
+      <div class="statgrid">
+        <div class="stat"><b>Total Audits</b><br><b id="stTotal">0</b></div>
+        <div class="stat"><b>Average Score</b><br><b id="stAvg">0%</b></div>
+        <div class="stat"><b>Pass Rate</b><br><b id="stPassRate">0%</b></div>
+        <div class="stat"><b>Excellent</b><br><b id="stExcellent">0</b></div>
+        <div class="stat"><b>Pass</b><br><b id="stPass">0</b></div>
+        <div class="stat"><b>Improvement Required</b><br><b id="stImprovement">0</b></div>
+        <div class="stat"><b>Fail</b><br><b id="stFail">0</b></div>
+        <div class="stat"><b>Open Training / Re-audits</b><br><b id="stOpen">0 / 0</b></div>
+      </div>
+      <h3>Engineer League Table</h3>
+      <table><thead><tr><th>Rank</th><th>Engineer</th><th>Audits</th><th>Avg Score</th><th>Excellent</th><th>Improvement</th><th>Fails</th></tr></thead><tbody id="leagueRows"></tbody></table>
+      <h3>Monthly Audit Trend</h3>
+      <table><thead><tr><th>Month</th><th>Audits</th><th>Average Score</th><th>Improvement</th><th>Fails</th></tr></thead><tbody id="trendRows"></tbody></table>
+      <h3>Audit Register</h3>
+      <table><thead><tr><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Manufacturer</th><th>Model</th><th>Score</th><th>Result</th><th>Booklet</th></tr></thead><tbody id="auditRows"></tbody></table>
+      <p id="dashboardMsg" class="muted"></p>
+    </section>
+
+    <section id="auditForm" class="card section hide">
+      <h2>New Technical Audit</h2>
+      <div class="grid">
+        <label>Engineer<br><select id="aEngineer"></select></label>
+        <label>Site Name<br><input id="aSite"></label>
+        <label>Client<br><input id="aClient"></label>
+        <label>Audit Date<br><input id="aDate" type="date"></label>
+        <label>Auditor<br><input id="aAuditor"></label>
+        <label>Manufacturer<br><input id="aManufacturer"></label>
+        <label>Model<br><input id="aModel"></label>
+        <label>Score %<br><input id="aScore" type="number" min="0" max="100" value="100"></label>
+      </div>
+      <label>Findings / Corrective Actions<br><textarea id="aFindings"></textarea></label>
+      <p><button onclick="saveAudit()">Save Audit</button></p>
+      <p id="auditMsg" class="muted"></p>
+    </section>
+
+    <section id="trainingView" class="card section hide">
+      <h2>Training / Re-audit Tracking</h2>
+      <button onclick="loadTraining()">Refresh</button>
+      <h3>Training Records</h3>
+      <table><thead><tr><th>Engineer</th><th>Training</th><th>Assigned</th><th>Status</th><th>Completion</th></tr></thead><tbody id="trainingRows"></tbody></table>
+      <h3>Open Re-audits</h3>
+      <table><thead><tr><th>Audit</th><th>Engineer</th><th>Due</th><th>Status</th></tr></thead><tbody id="reauditRows"></tbody></table>
+    </section>
+
+    <section id="trainingManager" class="card section hide">
+      <h2>Training Management</h2>
+      <p class="muted">Manager area for assigning and reviewing training records.</p>
+      <div class="grid"><label>Engineer<br><select id="tmEngineer"></select></label><label>Training Type<br><input id="tmType"></label></div>
+      <button onclick="assignTraining()">Assign Training</button>
+      <p id="tmMsg" class="muted"></p>
+    </section>
+
+    <section id="toolboxTest" class="card section hide">
+      <h2>Toolbox Test</h2>
+      <p class="muted">Toolbox tests are stored through the existing toolbox-test API. Use Test Results for manager review.</p>
+      <button onclick="alert('Toolbox test module is available in the existing API. Full interactive test can be expanded from here.')">Start Toolbox Test</button>
+    </section>
+
+    <section id="toolboxResults" class="card section hide">
+      <h2>Toolbox Test Results</h2>
+      <button onclick="loadToolboxResults()">Refresh</button>
+      <table><thead><tr><th>ID</th><th>Engineer</th><th>Score</th><th>Result</th><th>Date</th></tr></thead><tbody id="toolboxRows"></tbody></table>
+    </section>
+
+    <section id="knowledgeCentre" class="card section hide">
+      <h2>Knowledge Centre</h2>
+      <p class="muted">Controlled HBS technical reference area for IGEM standards, manufacturer manuals and HBS bulletins.</p>
+      <div id="kcUpload" class="card">
+        <h3>Upload Document to R2</h3>
+        <div class="grid">
+          <label>Document Title<br><input id="kcTitle" placeholder="Optional"></label>
+          <label>Category<br><select id="kcCategory"><option>IGEM Standards</option><option>Manufacturer Manuals</option><option>HBS Bulletins</option><option>Gas Safe Guidance</option><option>Technical Images</option><option>Training Videos</option><option>Fault Library</option><option>Other</option></select></label>
+          <label>Reference / Version<br><input id="kcReference"></label>
+          <label>Keywords<br><input id="kcKeywords"></label>
+          <label>Files<br><input id="kcFiles" type="file" multiple></label>
+        </div>
+        <button onclick="uploadKnowledge()">Upload</button>
+        <p id="kcMsg" class="muted"></p>
+      </div>
+      <h3>Search Library</h3>
+      <div class="grid"><label>Search<br><input id="kcSearch"></label><label>Category<br><select id="kcFilter"><option value="">All Categories</option><option>IGEM Standards</option><option>Manufacturer Manuals</option><option>HBS Bulletins</option><option>Gas Safe Guidance</option><option>Technical Images</option><option>Training Videos</option><option>Fault Library</option><option>Other</option></select></label></div>
+      <button onclick="loadKnowledgeCentre()">Search</button>
+      <table><thead><tr><th>Title</th><th>Category</th><th>Reference</th><th>Keywords</th><th>Size</th><th>Uploaded</th><th>Action</th></tr></thead><tbody id="kcRows"></tbody></table>
+    </section>
+
+    <section id="tightnessCalculator" class="card section hide">
+      <h2>HBS Gas Tightness Test Calculator</h2>
+      <p class="muted">Runs the working HBS calculator in an isolated frame and saves each calculation to the portal.</p>
+      <p><button onclick="loadTightnessCalculator()">Reload Calculator</button><button onclick="saveTightness()">Save Current Calculation</button><button onclick="loadTightnessRecords()">Refresh Records</button></p>
+      <p id="ttMsg" class="muted"></p>
+      <iframe id="ttFrame"></iframe>
+      <h3>Saved Tightness Test Records</h3>
+      <table><thead><tr><th>ID</th><th>Date</th><th>Engineer</th><th>Site</th><th>Volume</th><th>Drop</th><th>Result</th></tr></thead><tbody id="ttRows"></tbody></table>
+    </section>
+
+    <section id="userAdmin" class="card section hide">
+      <h2>Users</h2>
+      <button onclick="loadUsers()">Refresh</button>
+      <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Title</th><th>PIN</th></tr></thead><tbody id="userRows"></tbody></table>
+    </section>
+
+    <section id="recordManager" class="card section hide"><h2>Record Management</h2><p>Record management tools remain available through admin-delete API.</p></section>
+    <section id="backup" class="card section hide"><h2>Backup</h2><button onclick="downloadBackup()">Download Backup</button></section>
+  </main>
+</section>
+
 <script>
+const CALC_B64 = "PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9ImVuIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9InV0Zi04Ij4KPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xIj4KPHRpdGxlPkhCUyBHYXMgVGlnaHRuZXNzIFRlc3QgQ2FsY3VsYXRvciB2MC42LjE8L3RpdGxlPgo8bGluayByZWw9Im1hbmlmZXN0IiBocmVmPSJtYW5pZmVzdC53ZWJtYW5pZmVzdCI+CjxzdHlsZT4KOnJvb3R7LS1oYnM6IzEyM2M0YTstLWdyZWVuOiNlNmY2ZTY7LS1ibHVlOiNlYWYzZmY7LS1saW5lOiNjZmQ4ZGM7LS1yZWQ6I2ZmZjBmMH0KKntib3gtc2l6aW5nOmJvcmRlci1ib3h9Ym9keXtmb250LWZhbWlseTpBcmlhbCxIZWx2ZXRpY2Esc2Fucy1zZXJpZjttYXJnaW46MDtiYWNrZ3JvdW5kOiNmNGY2Zjg7Y29sb3I6IzFkMWQxZjtmb250LXNpemU6MTZweH0udG9we2JhY2tncm91bmQ6dmFyKC0taGJzKTtjb2xvcjp3aGl0ZTtwYWRkaW5nOjE4cHh9LnRvcCBoMXttYXJnaW46NHB4IDA7Zm9udC1zaXplOjI0cHh9LndyYXB7bWF4LXdpZHRoOjEwODBweDttYXJnaW46MCBhdXRvO3BhZGRpbmc6MTJweH0uY2FyZHtiYWNrZ3JvdW5kOndoaXRlO2JvcmRlcjoxcHggc29saWQgdmFyKC0tbGluZSk7Ym9yZGVyLXJhZGl1czoxMnB4O3BhZGRpbmc6MTRweDttYXJnaW46MTJweCAwO2JveC1zaGFkb3c6MCAxcHggM3B4IHJnYmEoMCwwLDAsLjA2KX1oMnttYXJnaW46MCAwIDEwcHg7Y29sb3I6dmFyKC0taGJzKTtmb250LXNpemU6MjFweH0uZ3JpZHtkaXNwbGF5OmdyaWQ7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCgyLG1pbm1heCgwLDFmcikpO2dhcDoxMHB4fWxhYmVse2ZvbnQtd2VpZ2h0OjcwMDtmb250LXNpemU6MTRweH0uaW5wdXQsc2VsZWN0e3dpZHRoOjEwMCU7bWluLWhlaWdodDo0NHB4O2ZvbnQtc2l6ZToxN3B4O3BhZGRpbmc6OXB4O2JvcmRlcjoycHggc29saWQgIzliYjBiODtib3JkZXItcmFkaXVzOjhweDtiYWNrZ3JvdW5kOnZhcigtLWdyZWVuKTttYXJnaW4tdG9wOjRweH0uY2FsY3tiYWNrZ3JvdW5kOnZhcigtLWJsdWUpfXRhYmxle3dpZHRoOjEwMCU7Ym9yZGVyLWNvbGxhcHNlOmNvbGxhcHNlO2ZvbnQtc2l6ZToxNHB4fXRoLHRke2JvcmRlcjoxcHggc29saWQgdmFyKC0tbGluZSk7cGFkZGluZzo2cHg7dmVydGljYWwtYWxpZ246bWlkZGxlfXRoe2JhY2tncm91bmQ6I2VlZjRmNjtjb2xvcjojMTIzYzRhfXRkIGlucHV0LHRkIHNlbGVjdHttaW4taGVpZ2h0OjQwcHg7Zm9udC1zaXplOjE1cHh9LmJ0bntiYWNrZ3JvdW5kOiMxMjNjNGE7Y29sb3I6I2ZmZjtib3JkZXI6bm9uZTtib3JkZXItcmFkaXVzOjhweDtwYWRkaW5nOjEycHggMTZweDtmb250LXNpemU6MTZweDtmb250LXdlaWdodDo3MDA7bWFyZ2luOjhweCA0cHggOHB4IDB9LmJ0bi5kYW5nZXJ7YmFja2dyb3VuZDojOGIxZTFlfS5yZXN1bHQtZ3JpZHtkaXNwbGF5OmdyaWQ7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCgzLG1pbm1heCgwLDFmcikpO2dhcDoxMHB4fS5yZXN1bHR7YmFja2dyb3VuZDp2YXIoLS1ibHVlKTtib3JkZXI6MXB4IHNvbGlkICNiOWQ0ZjM7Ym9yZGVyLXJhZGl1czo5cHg7cGFkZGluZzoxMHB4fS5yZXN1bHQgc3BhbntkaXNwbGF5OmJsb2NrO2ZvbnQtc2l6ZToxM3B4fS5yZXN1bHQgc3Ryb25ne2ZvbnQtc2l6ZToxOHB4fS53YXJuaW5ne2JhY2tncm91bmQ6I2ZmZjhkYztib3JkZXI6MnB4IHNvbGlkICNlMGIwMDB9LnBpcGUtc2VjdGlvbi10aXRsZXtmb250LXNpemU6MjRweDtiYWNrZ3JvdW5kOiMxNjNmNGQ7Y29sb3I6I2ZmZjtwYWRkaW5nOjEycHg7Ym9yZGVyLXJhZGl1czo4cHg7bWFyZ2luLWJvdHRvbToxMHB4fS52aXNpYmxlLWJhbm5lcntiYWNrZ3JvdW5kOiNlNmY2ZTY7Ym9yZGVyOjJweCBzb2xpZCAjMWY3YTFmO3BhZGRpbmc6MTBweDtib3JkZXItcmFkaXVzOjhweDtmb250LXdlaWdodDo3MDB9LnRhYmxlLXdyYXB7b3ZlcmZsb3cteDphdXRvfS5zbWFsbHtmb250LXNpemU6MTJweDtjb2xvcjojNTU1fXByZXt3aGl0ZS1zcGFjZTpwcmUtd3JhcDtiYWNrZ3JvdW5kOiNmOGZhZmI7Ym9yZGVyOjFweCBzb2xpZCB2YXIoLS1saW5lKTtwYWRkaW5nOjEwcHg7Ym9yZGVyLXJhZGl1czo4cHh9QG1lZGlhKG1heC13aWR0aDo3NjBweCl7LmdyaWQsLnJlc3VsdC1ncmlke2dyaWQtdGVtcGxhdGUtY29sdW1uczoxZnJ9dGFibGV7Zm9udC1zaXplOjEzcHh9LnRvcCBoMXtmb250LXNpemU6MjBweH19CkBtZWRpYSBwcmludHsuYnRue2Rpc3BsYXk6bm9uZX0uY2FyZHtib3gtc2hhZG93Om5vbmU7YnJlYWstaW5zaWRlOmF2b2lkfWJvZHl7YmFja2dyb3VuZDojZmZmfS5pbnB1dCxzZWxlY3R7Ym9yZGVyOjFweCBzb2xpZCAjOTk5O2JhY2tncm91bmQ6I2ZmZn19Cjwvc3R5bGU+CjwvaGVhZD4KPGJvZHk+CjxoZWFkZXIgY2xhc3M9InRvcCI+PGRpdj5Ib2NrbGV5IEJ1aWxkaW5nIFNlcnZpY2VzIEx0ZDwvZGl2PjxoMT5Db21tZXJjaWFsIEdhcyBUaWdodG5lc3MgVGVzdCBDYWxjdWxhdG9yIHYwLjYuMS4xPC9oMT48ZGl2PlRQQ1AxIC8gVFBDUDFBIMK3IFBpcGV3b3JrIFNlY3Rpb25zIHZpc2libGUgwrcgR2FzIHR5cGUgdmlzaWJsZSDCtyBQcmVzc3VyZSBsb3NzIGNvcnJlY3RlZDwvZGl2PjwvaGVhZGVyPgo8ZGl2IGNsYXNzPSJ3cmFwIj4KPHNlY3Rpb24gY2xhc3M9ImNhcmQgd2FybmluZyI+PGgyPkVuZ2luZWVyIFVzZTwvaDI+PHA+PGI+R3JlZW4gY2VsbHMgYXJlIGVuZ2luZWVyIGVudHJpZXMuPC9iPiBDYWxjdWxhdGVkIGNlbGxzIGFyZSBibHVlLiBUaGUgUGlwZXdvcmsgU2VjdGlvbnMgdGFibGUgYmVsb3cgaXMgaGFyZC1jb2RlZCBpbnRvIHRoaXMgcGFnZSBhbmQgZG9lcyBub3QgcmVseSBvbiBoaWRkZW4gbmF2aWdhdGlvbi48L3A+PC9zZWN0aW9uPgo8c2VjdGlvbiBjbGFzcz0iY2FyZCI+PGgyPjEuIFNpdGUgRGV0YWlsczwvaDI+PGRpdiBjbGFzcz0iZ3JpZCI+CjxsYWJlbD5TaXRlIE5hbWU8aW5wdXQgY2xhc3M9ImlucHV0IiBpZD0ic2l0ZU5hbWUiPjwvbGFiZWw+PGxhYmVsPkpvYiBOdW1iZXI8aW5wdXQgY2xhc3M9ImlucHV0IiBpZD0iam9iTnVtYmVyIj48L2xhYmVsPgo8bGFiZWw+RW5naW5lZXI8aW5wdXQgY2xhc3M9ImlucHV0IiBpZD0iZW5naW5lZXIiPjwvbGFiZWw+PGxhYmVsPkRhdGU8aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJkYXRlIiBpZD0idGVzdERhdGUiPjwvbGFiZWw+CjwvZGl2Pjwvc2VjdGlvbj4KPHNlY3Rpb24gY2xhc3M9ImNhcmQiPjxoMj4yLiBHYXMgYW5kIFRlc3QgRGV0YWlsczwvaDI+PGRpdiBjbGFzcz0iZ3JpZCI+CjxsYWJlbD5HYXMgVHlwZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0iZ2FzVHlwZSI+PG9wdGlvbj5OYXR1cmFsIEdhczwvb3B0aW9uPjxvcHRpb24+UHJvcGFuZTwvb3B0aW9uPjxvcHRpb24+QnV0YW5lPC9vcHRpb24+PC9zZWxlY3Q+PC9sYWJlbD4KPGxhYmVsPlByb2NlZHVyZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0icHJvY2VkdXJlIj48b3B0aW9uIHZhbHVlPSJhdXRvIj5BdXRvIGJhc2VkIG9uIHZvbHVtZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IlRQQ1AxQSI+VFBDUDFBIHVwIHRvIDFtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJUUENQMSI+VFBDUDEgYWJvdmUgMW3Cszwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5JbnN0YWxsYXRpb24gVHlwZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0iaW5zdGFsbGF0aW9uVHlwZSI+PG9wdGlvbj5FeGlzdGluZzwvb3B0aW9uPjxvcHRpb24+TmV3PC9vcHRpb24+PC9zZWxlY3Q+PC9sYWJlbD4KPGxhYmVsPlRlc3QgQXJlYTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0idGVzdEFyZWEiPjxvcHRpb24gdmFsdWU9IkEiPlR5cGUgQSAtIE5ldyAmIGluYWRlcXVhdGVseSB2ZW50aWxhdGVkPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iQiI+VHlwZSBCIC0gRXhpc3Rpbmcgcm9vbXMgdW5kZXIgNjBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJDIj5UeXBlIEMgLSBSb29tIHZvbHVtZSBvdmVyIDYwbcKzICsgcGlwZSB2b2x1bWU8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJEIj5UeXBlIEQgLSBVbmRlcmdyb3VuZDwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5HYXVnZSBUeXBlPHNlbGVjdCBjbGFzcz0iaW5wdXQiIGlkPSJnYXVnZVR5cGUiPjxvcHRpb24gdmFsdWU9IjAuMDEiPkVsZWN0cm9uaWMgR2F1Z2UgMiBkZWNpbWFsIHBsYWNlPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC4xIj5FbGVjdHJvbmljIEdhdWdlIDEgZGVjaW1hbCBwbGFjZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjEiPkVsZWN0cm9uaWMgR2F1Z2UgMCBkZWNpbWFsIHBsYWNlPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC41Ij5XYXRlciBHYXVnZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjAuMSI+SGlnaCBTLkcgR2F1Z2U8L29wdGlvbj48L3NlbGVjdD48L2xhYmVsPgo8bGFiZWw+Um9vbSBWb2x1bWUgbcKzPGlucHV0IGNsYXNzPSJpbnB1dCIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjAwMSIgaWQ9InJvb21Wb2x1bWUiIHZhbHVlPSIwIj48L2xhYmVsPgo8bGFiZWw+TU9QIG1iYXI8aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJudW1iZXIiIHN0ZXA9IjAuMSIgaWQ9Im1vcCIgdmFsdWU9IjIxIj48L2xhYmVsPgo8bGFiZWw+TUlQIG1iYXI8aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJudW1iZXIiIHN0ZXA9IjAuMSIgaWQ9Im1pcCIgdmFsdWU9Ijc1Ij48L2xhYmVsPgo8bGFiZWw+VGVzdCBQcmVzc3VyZSBtYmFyPGlucHV0IGNsYXNzPSJpbnB1dCIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjEiIGlkPSJ0ZXN0UHJlc3N1cmUiIHZhbHVlPSIyMSI+PC9sYWJlbD4KPGxhYmVsPk1lYXN1cmVkIFByZXNzdXJlIERyb3AgbWJhcjxpbnB1dCBjbGFzcz0iaW5wdXQiIHR5cGU9Im51bWJlciIgc3RlcD0iMC4wMDEiIGlkPSJtZWFzdXJlZERyb3AiIHZhbHVlPSIwIj48L2xhYmVsPgo8L2Rpdj48L3NlY3Rpb24+CjxzZWN0aW9uIGNsYXNzPSJjYXJkIiBpZD0icGlwZXdvcmtTZWN0aW9ucyI+CjxkaXYgY2xhc3M9InBpcGUtc2VjdGlvbi10aXRsZSI+My4gUElQRVdPUksgU0VDVElPTlMgLSBWSVNJQkxFIEVOR0lORUVSIElOUFVUPC9kaXY+CjxwIGNsYXNzPSJ2aXNpYmxlLWJhbm5lciI+VGhpcyBzZWN0aW9uIGlzIHZpc2libGUgYnkgZGVmYXVsdC4gQWRkIGV2ZXJ5IHBpcGUgc2VjdGlvbiBiZWxvdy48L3A+CjxkaXYgY2xhc3M9InRhYmxlLXdyYXAiPjx0YWJsZSBpZD0icGlwZVRhYmxlIj48dGhlYWQ+PHRyPjx0aD5Oby48L3RoPjx0aD5NYXRlcmlhbDwvdGg+PHRoPlNpemU8L3RoPjx0aD5MZW5ndGggbTwvdGg+PHRoPkludGVybmFsIERpYSBtbTwvdGg+PHRoPm3Csy9tPC90aD48dGg+Vm9sdW1lIG3CszwvdGg+PHRoPlJlbW92ZTwvdGg+PC90cj48L3RoZWFkPjx0Ym9keSBpZD0icGlwZUJvZHkiPgo8dHI+PHRkPjE8L3RkPjx0ZD48c2VsZWN0IGNsYXNzPSJpbnB1dCBtYXQiPjwvc2VsZWN0PjwvdGQ+PHRkPjxzZWxlY3QgY2xhc3M9ImlucHV0IHNpemUiPjwvc2VsZWN0PjwvdGQ+PHRkPjxpbnB1dCBjbGFzcz0iaW5wdXQgbGVuIiB0eXBlPSJudW1iZXIiIHN0ZXA9IjAuMDEiIHZhbHVlPSIwIj48L3RkPjx0ZCBjbGFzcz0iY2FsYyBpZG1tIj4wPC90ZD48dGQgY2xhc3M9ImNhbGMgcGVyTSI+MC4wMDAwMDA8L3RkPjx0ZCBjbGFzcz0iY2FsYyB2b2wiPjAuMDAwMDAwPC90ZD48dGQ+PGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJidG4gZGFuZ2VyIHJlbW92ZSI+WDwvYnV0dG9uPjwvdGQ+PC90cj4KPHRyPjx0ZD4yPC90ZD48dGQ+PHNlbGVjdCBjbGFzcz0iaW5wdXQgbWF0Ij48L3NlbGVjdD48L3RkPjx0ZD48c2VsZWN0IGNsYXNzPSJpbnB1dCBzaXplIj48L3NlbGVjdD48L3RkPjx0ZD48aW5wdXQgY2xhc3M9ImlucHV0IGxlbiIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjAxIiB2YWx1ZT0iMCI+PC90ZD48dGQgY2xhc3M9ImNhbGMgaWRtbSI+MDwvdGQ+PHRkIGNsYXNzPSJjYWxjIHBlck0iPjAuMDAwMDAwPC90ZD48dGQgY2xhc3M9ImNhbGMgdm9sIj4wLjAwMDAwMDwvdGQ+PHRkPjxidXR0b24gdHlwZT0iYnV0dG9uIiBjbGFzcz0iYnRuIGRhbmdlciByZW1vdmUiPlg8L2J1dHRvbj48L3RkPjwvdHI+Cjx0cj48dGQ+MzwvdGQ+PHRkPjxzZWxlY3QgY2xhc3M9ImlucHV0IG1hdCI+PC9zZWxlY3Q+PC90ZD48dGQ+PHNlbGVjdCBjbGFzcz0iaW5wdXQgc2l6ZSI+PC9zZWxlY3Q+PC90ZD48dGQ+PGlucHV0IGNsYXNzPSJpbnB1dCBsZW4iIHR5cGU9Im51bWJlciIgc3RlcD0iMC4wMSIgdmFsdWU9IjAiPjwvdGQ+PHRkIGNsYXNzPSJjYWxjIGlkbW0iPjA8L3RkPjx0ZCBjbGFzcz0iY2FsYyBwZXJNIj4wLjAwMDAwMDwvdGQ+PHRkIGNsYXNzPSJjYWxjIHZvbCI+MC4wMDAwMDA8L3RkPjx0ZD48YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9ImJ0biBkYW5nZXIgcmVtb3ZlIj5YPC9idXR0b24+PC90ZD48L3RyPgo8L3Rib2R5PjwvdGFibGU+PC9kaXY+PGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJidG4iIGlkPSJhZGRQaXBlIj4rIEFkZCBQaXBld29yayBTZWN0aW9uPC9idXR0b24+PC9zZWN0aW9uPgo8c2VjdGlvbiBjbGFzcz0iY2FyZCI+PGgyPjQuIE1ldGVyIC8gVHVyYmluZSBNZXRlcjwvaDI+PGRpdiBjbGFzcz0iZ3JpZCI+CjxsYWJlbD5NZXRlciBUeXBlPHNlbGVjdCBjbGFzcz0iaW5wdXQiIGlkPSJtZXRlclR5cGUiPjxvcHRpb24gdmFsdWU9Ik5vbmUiPk5vbmU8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJEaWFwaHJhZ20iPkRpYXBocmFnbTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IlJvdGFyeSI+Um90YXJ5PC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iVHVyYmluZSI+VHVyYmluZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9Ik90aGVyIj5PdGhlciAvIE1hbnVhbDwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5NZXRlciBTaXplIC8gU3RhbmRhcmQgVm9sdW1lPHNlbGVjdCBjbGFzcz0iaW5wdXQiIGlkPSJtZXRlclN0ZCI+PG9wdGlvbiB2YWx1ZT0iMCI+Tm9uZS9tYW51YWw8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjAwNiI+VTYgMC4wMDZtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjAxNiI+VTE2IDAuMDE2bcKzPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC4wMjUiPlUyNSAwLjAyNW3Cszwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjAuMDQwIj5VNDAgMC4wNDBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjA2NSI+VTY1IDAuMDY1bcKzPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC4xMDAiPlUxMDAgMC4xMDBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjE2MCI+RzE2MCAwLjE2MG3Cszwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjAuMjUwIj5HMjUwIDAuMjUwbcKzPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC40MDAiPkc0MDAgMC40MDBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjY1MCI+RzY1MCAwLjY1MG3Cszwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5NYW51YWwgLyBNYW51ZmFjdHVyZXIgTWV0ZXIgVm9sdW1lIG3CszxpbnB1dCBjbGFzcz0iaW5wdXQiIHR5cGU9Im51bWJlciIgc3RlcD0iMC4wMDEiIGlkPSJtZXRlck1hbnVhbCIgdmFsdWU9IjAiPjwvbGFiZWw+CjxsYWJlbD5Sb3RhcnkgLyBUdXJiaW5lIEZsYW5nZSBEaWFtZXRlciBtbTxpbnB1dCBjbGFzcz0iaW5wdXQiIHR5cGU9Im51bWJlciIgc3RlcD0iMSIgaWQ9InR1cmJpbmVEaWEiIHZhbHVlPSIwIj48L2xhYmVsPgo8bGFiZWw+Um90YXJ5IC8gVHVyYmluZSBNZXRlciBMZW5ndGggbW08aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJudW1iZXIiIHN0ZXA9IjEiIGlkPSJ0dXJiaW5lTGVuIiB2YWx1ZT0iMCI+PC9sYWJlbD4KPGxhYmVsPkZpdHRpbmdzIEFsbG93YW5jZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0iZml0dGluZ3NNb2RlIj48b3B0aW9uIHZhbHVlPSIxMCI+QXBwbHkgMTAlIG9mIHBpcGUgdm9sdW1lPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0ibWFudWFsIj5NYW51YWwgZml0dGluZ3Mgdm9sdW1lPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMCI+Tm8gZml0dGluZ3MgYWxsb3dhbmNlPC9vcHRpb24+PC9zZWxlY3Q+PC9sYWJlbD4KPGxhYmVsPk1hbnVhbCBGaXR0aW5ncyBWb2x1bWUgbcKzPGlucHV0IGNsYXNzPSJpbnB1dCIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjAwMSIgaWQ9Im1hbnVhbEZpdHRpbmdzIiB2YWx1ZT0iMCI+PC9sYWJlbD4KPC9kaXY+PC9zZWN0aW9uPgo8c2VjdGlvbiBjbGFzcz0iY2FyZCI+PGgyPjUuIFJlc3VsdHM8L2gyPjxkaXYgY2xhc3M9InJlc3VsdC1ncmlkIj4KPGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5QaXBld29yayBWb2x1bWU8L3NwYW4+PHN0cm9uZyBpZD0icGlwZVZvbCI+MC4wMDAwMDAgbcKzPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5NZXRlciBWb2x1bWU8L3NwYW4+PHN0cm9uZyBpZD0ibWV0ZXJWb2wiPjAuMDAwMDAwIG3Cszwvc3Ryb25nPjwvZGl2PjxkaXYgY2xhc3M9InJlc3VsdCI+PHNwYW4+Rml0dGluZ3MgVm9sdW1lPC9zcGFuPjxzdHJvbmcgaWQ9ImZpdFZvbCI+MC4wMDAwMDAgbcKzPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5Ub3RhbCBJbnN0YWxsYXRpb24gVm9sdW1lPC9zcGFuPjxzdHJvbmcgaWQ9InRvdGFsVm9sIj4wLjAwMDAwMCBtwrM8L3N0cm9uZz48L2Rpdj48ZGl2IGNsYXNzPSJyZXN1bHQiPjxzcGFuPlNlbGVjdGVkIFN0YW5kYXJkPC9zcGFuPjxzdHJvbmcgaWQ9InN0ZE91dCI+VFBDUDFBPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5TdGFiaWxpc2F0aW9uIFBlcmlvZDwvc3Bhbj48c3Ryb25nIGlkPSJzdGFiT3V0Ij42IG1pbnV0ZXM8L3N0cm9uZz48L2Rpdj48ZGl2IGNsYXNzPSJyZXN1bHQiPjxzcGFuPlRlc3QgVGltZSBEdXJhdGlvbjwvc3Bhbj48c3Ryb25nIGlkPSJ0dGRPdXQiPjIgbWludXRlczwvc3Ryb25nPjwvZGl2PjxkaXYgY2xhc3M9InJlc3VsdCI+PHNwYW4+VG90YWwgVGltZTwvc3Bhbj48c3Ryb25nIGlkPSJ0b3RhbFRpbWVPdXQiPjggbWludXRlczwvc3Ryb25nPjwvZGl2PjxkaXYgY2xhc3M9InJlc3VsdCI+PHNwYW4+SW5kaWNhdGl2ZSBBbGxvd2FibGUgRHJvcDwvc3Bhbj48c3Ryb25nIGlkPSJkcm9wT3V0Ij4wLjAwMCBtYmFyPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5QYXNzIC8gRmFpbDwvc3Bhbj48c3Ryb25nIGlkPSJyZXN1bHRPdXQiPkNIRUNLPC9zdHJvbmc+PC9kaXY+CjwvZGl2PjxwIGNsYXNzPSJzbWFsbCI+Rm9yIHN1cHBvcnQgb25seS4gRmluYWwgd29yayBtdXN0IGJlIGNvbXBsZXRlZCBieSBjb21wZXRlbnQgZW5naW5lZXJzIGluIGFjY29yZGFuY2Ugd2l0aCBjb250cm9sbGVkIElHRS9VUC8xIGFuZCBJR0UvVVAvMUEgZG9jdW1lbnRzLjwvcD48L3NlY3Rpb24+CjxzZWN0aW9uIGNsYXNzPSJjYXJkIj48aDI+Ni4gUERGIC8gSm9ibG9naWMgUmVwb3J0PC9oMj48YnV0dG9uIGNsYXNzPSJidG4iIG9uY2xpY2s9IndpbmRvdy5wcmludCgpIj5QcmludCAvIFNhdmUgYXMgUERGPC9idXR0b24+PHByZSBpZD0icmVwb3J0Ij48L3ByZT48L3NlY3Rpb24+CjwvZGl2Pgo8c2NyaXB0Pgpjb25zdCBwaXBlRGF0YT17CidTdGVlbC9Jcm9uJzp7J0ROMTUnOjE2LjEsJ0ROMjAnOjIxLjYsJ0ROMjUnOjI3LjIsJ0ROMzInOjM1LjksJ0RONDAnOjQxLjgsJ0RONTAnOjUzLjAsJ0RONjUnOjY4LjgsJ0ROODAnOjgwLjgsJ0ROMTAwJzoxMDUuMywnRE4xMjUnOjEzMC44LCdETjE1MCc6MTU1LjR9LAonQ29wcGVyJzp7J0ROMTUnOjEzLjYsJ0ROMjInOjIwLjIsJ0ROMjgnOjI2LjIsJ0ROMzUnOjMyLjYsJ0RONDInOjM5LjYsJ0RONTQnOjUxLjYsJ0RONjcnOjY0LjYsJ0RONzYnOjczLjYsJ0ROMTA4JzoxMDUuNn0sCidQRSBTRFIxMSc6eydETjIwJzoxNi40LCdETjI1JzoyMC40LCdETjMyJzoyNi4yLCdETjQwJzozMi42LCdETjYzJzo1MS40LCdETjkwJzo3My42LCdETjEyNSc6MTAyLjIsJ0ROMTgwJzoxNDcuMn0sCidQRSBTRFIxNyc6eydETjYzJzo1NS40LCdETjkwJzo3OS4yLCdETjEyNSc6MTEwLjIsJ0ROMTgwJzoxNTguNiwnRE4yNTAnOjIyMC40fQp9OwpmdW5jdGlvbiBwZXJNKGlkbW0pe2xldCBkPWlkbW0vMTAwMDtyZXR1cm4gTWF0aC5QSSpkKmQvNH0KZnVuY3Rpb24gbihpZCl7cmV0dXJuIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKGlkKX0KZnVuY3Rpb24gZmlsbFJvdyh0cil7bGV0IG1hdD10ci5xdWVyeVNlbGVjdG9yKCcubWF0JyksIHNpemU9dHIucXVlcnlTZWxlY3RvcignLnNpemUnKTsgaWYoIW1hdC5vcHRpb25zLmxlbmd0aCl7T2JqZWN0LmtleXMocGlwZURhdGEpLmZvckVhY2gobT0+bWF0LmFkZChuZXcgT3B0aW9uKG0sbSkpKX07IGxldCBjdXI9c2l6ZS52YWx1ZTsgc2l6ZS5pbm5lckhUTUw9Jyc7IE9iamVjdC5rZXlzKHBpcGVEYXRhW21hdC52YWx1ZV0pLmZvckVhY2gocz0+c2l6ZS5hZGQobmV3IE9wdGlvbihzLHMpKSk7IGlmKHBpcGVEYXRhW21hdC52YWx1ZV1bY3VyXSkgc2l6ZS52YWx1ZT1jdXI7IGNhbGMoKX0KZnVuY3Rpb24gcmVudW1iZXIoKXtbLi4uZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnI3BpcGVCb2R5IHRyJyldLmZvckVhY2goKHRyLGkpPT50ci5jZWxsc1swXS50ZXh0Q29udGVudD1pKzEpfQpmdW5jdGlvbiBhZGRSb3coKXtsZXQgdHI9ZG9jdW1lbnQucXVlcnlTZWxlY3RvcignI3BpcGVCb2R5IHRyJykuY2xvbmVOb2RlKHRydWUpOyB0ci5xdWVyeVNlbGVjdG9yKCcubGVuJykudmFsdWU9JzAnOyBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncGlwZUJvZHknKS5hcHBlbmRDaGlsZCh0cik7IGJpbmRSb3codHIpOyBmaWxsUm93KHRyKTsgcmVudW1iZXIoKTt9CmZ1bmN0aW9uIGJpbmRSb3codHIpe3RyLnF1ZXJ5U2VsZWN0b3IoJy5tYXQnKS5vbmNoYW5nZT0oKT0+ZmlsbFJvdyh0cik7IHRyLnF1ZXJ5U2VsZWN0b3IoJy5zaXplJykub25jaGFuZ2U9Y2FsYzsgdHIucXVlcnlTZWxlY3RvcignLmxlbicpLm9uaW5wdXQ9Y2FsYzsgdHIucXVlcnlTZWxlY3RvcignLnJlbW92ZScpLm9uY2xpY2s9KCk9PntpZihkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcjcGlwZUJvZHkgdHInKS5sZW5ndGg+MSl7dHIucmVtb3ZlKCk7cmVudW1iZXIoKTtjYWxjKCk7fX19CmZ1bmN0aW9uIGNhbGMoKXtsZXQgcGlwZT0wOyBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcjcGlwZUJvZHkgdHInKS5mb3JFYWNoKHRyPT57bGV0IG1hdD10ci5xdWVyeVNlbGVjdG9yKCcubWF0JykudmFsdWUsIHNpemU9dHIucXVlcnlTZWxlY3RvcignLnNpemUnKS52YWx1ZSwgbGVuPXBhcnNlRmxvYXQodHIucXVlcnlTZWxlY3RvcignLmxlbicpLnZhbHVlKXx8MDsgbGV0IGlkPShwaXBlRGF0YVttYXRdfHx7fSlbc2l6ZV18fDA7IGxldCBwbT1wZXJNKGlkKTsgbGV0IHY9cG0qbGVuOyBwaXBlKz12OyB0ci5xdWVyeVNlbGVjdG9yKCcuaWRtbScpLnRleHRDb250ZW50PWlkLnRvRml4ZWQoMSk7IHRyLnF1ZXJ5U2VsZWN0b3IoJy5wZXJNJykudGV4dENvbnRlbnQ9cG0udG9GaXhlZCg2KTsgdHIucXVlcnlTZWxlY3RvcignLnZvbCcpLnRleHRDb250ZW50PXYudG9GaXhlZCg2KTt9KTsKbGV0IG10PW4oJ21ldGVyVHlwZScpLnZhbHVlLCBtZXRlcj1wYXJzZUZsb2F0KG4oJ21ldGVyTWFudWFsJykudmFsdWUpfHwwOyBpZighbWV0ZXIpIG1ldGVyPXBhcnNlRmxvYXQobignbWV0ZXJTdGQnKS52YWx1ZSl8fDA7IGlmKChtdD09PSdUdXJiaW5lJ3x8bXQ9PT0nUm90YXJ5JykgJiYgIW1ldGVyKXtsZXQgZD0ocGFyc2VGbG9hdChuKCd0dXJiaW5lRGlhJykudmFsdWUpfHwwKS8xMDAwLCBsPShwYXJzZUZsb2F0KG4oJ3R1cmJpbmVMZW4nKS52YWx1ZSl8fDApLzEwMDA7IG1ldGVyPTAuNzAqZCpkKmx9CmxldCBmaXQ9MCwgZm09bignZml0dGluZ3NNb2RlJykudmFsdWU7IGlmKGZtPT09JzEwJykgZml0PXBpcGUqMC4xMDsgZWxzZSBpZihmbT09PSdtYW51YWwnKSBmaXQ9cGFyc2VGbG9hdChuKCdtYW51YWxGaXR0aW5ncycpLnZhbHVlKXx8MDsgbGV0IHRvdGFsPXBpcGUrbWV0ZXIrZml0OyBsZXQgcHJvYz1uKCdwcm9jZWR1cmUnKS52YWx1ZTsgbGV0IHN0ZD1wcm9jPT09J2F1dG8nPyh0b3RhbDw9MT8nVFBDUDFBJzonVFBDUDEnKTpwcm9jOwoKbGV0IGdhcz1uKCdnYXNUeXBlJykudmFsdWU7CmxldCBpbnN0PW4oJ2luc3RhbGxhdGlvblR5cGUnKS52YWx1ZTsKbGV0IGFyZWE9bigndGVzdEFyZWEnKS52YWx1ZTsKbGV0IGdybT1wYXJzZUZsb2F0KG4oJ2dhdWdlVHlwZScpLnZhbHVlKXx8MC4wMTsKbGV0IHJvb21Wb2w9cGFyc2VGbG9hdChuKCdyb29tVm9sdW1lJykudmFsdWUpfHwwOwpsZXQgcnYgPSByb29tVm9sPjAgPyByb29tVm9sIDogNjA7CgovLyBGMSB2YWx1ZXMgZm9yIHRlc3QgdXNpbmcgZnVlbCBnYXMgYXQgT1AsIGZyb20gSUdFL1VQLzEgVGFibGUgMTAuCmxldCBmMU1hcD17J05hdHVyYWwgR2FzJzo0MiwnUHJvcGFuZSc6MTAyLCdCdXRhbmUnOjEyOH07CmxldCBmMT1mMU1hcFtnYXNdfHw0MjsKCi8vIFRURCBmb3JtdWxhIGZvbGxvd3MgSUdFL1VQLzEgVGFibGUgOToKLy8gTmV3IGFuZCBBcmVhIEE6IEdSTSB4IElWIHggRjEKLy8gRXhpc3RpbmcgQXJlYSBCOiAyLjggeCBHUk0geCBJViB4IFJWXi0xIHggRjEKLy8gRXhpc3RpbmcgQXJlYSBDL0Q6IDAuMDQ3IHggR1JNIHggSVYgeCBGMQpsZXQgdHRkUmF3PTA7CmlmKGluc3Q9PT0nTmV3JyB8fCBhcmVhPT09J0EnKXsKICB0dGRSYXcgPSBncm0gKiB0b3RhbCAqIGYxOwp9ZWxzZSBpZihhcmVhPT09J0InKXsKICB0dGRSYXcgPSAyLjggKiBncm0gKiB0b3RhbCAqICgxL3J2KSAqIGYxOwp9ZWxzZXsKICB0dGRSYXcgPSAwLjA0NyAqIGdybSAqIHRvdGFsICogZjE7Cn0KbGV0IHR0ZD1NYXRoLm1heCgyLE1hdGguY2VpbCh0dGRSYXcpKTsKbGV0IHN0YWI9c3RkPT09J1RQQ1AxQSc/TWF0aC5tYXgodHRkLDYpOk1hdGgubWF4KHR0ZCwxNSk7CgovLyBNUExSIHZhbHVlcyBtwrMvaCBhdCBPUCBmcm9tIElHRS9VUC8xIFRhYmxlcyA3IGFuZCA4IC8gQXBwZW5kaXggNCBUYWJsZSAxNS4KbGV0IG1wbHJOZXc9eydOYXR1cmFsIEdhcyc6MC4wMDE0LCdQcm9wYW5lJzowLjAwMDU3LCdCdXRhbmUnOjAuMDAwNDR9OwpsZXQgbXBsckJwZXJNMz17J05hdHVyYWwgR2FzJzowLjAwMDUsJ1Byb3BhbmUnOjAuMDAwMiwnQnV0YW5lJzowLjAwMDE2fTsKbGV0IG1wbHJDRD17J05hdHVyYWwgR2FzJzowLjAzLCdQcm9wYW5lJzowLjAxMjMsJ0J1dGFuZSc6MC4wMDk4fTsKCmxldCBtcGxyPTA7CmlmKGluc3Q9PT0nTmV3JyB8fCBhcmVhPT09J0EnKXsKICBtcGxyPW1wbHJOZXdbZ2FzXXx8MC4wMDE0Owp9ZWxzZSBpZihhcmVhPT09J0InKXsKICBtcGxyPShtcGxyQnBlck0zW2dhc118fDAuMDAwNSkgKiBydjsKfWVsc2V7CiAgbXBscj1tcGxyQ0RbZ2FzXXx8MC4wMzsKfQoKLy8gRjMgZm9yIHRlc3QgdXNpbmcgZnVlbCBnYXMgYXQgT1AgaXMgMC4wNTkgZnJvbSBJR0UvVVAvMSBUYWJsZSAxMS4KLy8gUmUtYXJyYW5nZWQgZnJvbSBMUiA9IEYzIHggR00geCBJViAvIHQ6Ci8vIFBlcm1pc3NpYmxlIHByZXNzdXJlIGxvc3MgR00gPSBNUExSIHggdCAvIChGMyB4IElWKS4KbGV0IGYzPTAuMDU5OwpsZXQgZHJvcCA9IHRvdGFsPjAgPyAobXBsciAqIHR0ZCkgLyAoZjMgKiB0b3RhbCkgOiAwOwpsZXQgdGVzdFByZXNzdXJlPXBhcnNlRmxvYXQobigndGVzdFByZXNzdXJlJykudmFsdWUpfHwyMTsKaWYoZHJvcD50ZXN0UHJlc3N1cmUpeyBkcm9wPXRlc3RQcmVzc3VyZTsgfQpsZXQgbWVhcz1wYXJzZUZsb2F0KG4oJ21lYXN1cmVkRHJvcCcpLnZhbHVlKXx8MDsKbigncGlwZVZvbCcpLnRleHRDb250ZW50PXBpcGUudG9GaXhlZCg2KSsnIG3Csyc7IG4oJ21ldGVyVm9sJykudGV4dENvbnRlbnQ9bWV0ZXIudG9GaXhlZCg2KSsnIG3Csyc7IG4oJ2ZpdFZvbCcpLnRleHRDb250ZW50PWZpdC50b0ZpeGVkKDYpKycgbcKzJzsgbigndG90YWxWb2wnKS50ZXh0Q29udGVudD10b3RhbC50b0ZpeGVkKDYpKycgbcKzJzsgbignc3RkT3V0JykudGV4dENvbnRlbnQ9c3RkOyBuKCdzdGFiT3V0JykudGV4dENvbnRlbnQ9c3RhYisnIG1pbnV0ZXMnOyBuKCd0dGRPdXQnKS50ZXh0Q29udGVudD10dGQrJyBtaW51dGVzJzsgbigndG90YWxUaW1lT3V0JykudGV4dENvbnRlbnQ9KHN0YWIrdHRkKSsnIG1pbnV0ZXMnOyBuKCdkcm9wT3V0JykudGV4dENvbnRlbnQ9ZHJvcC50b0ZpeGVkKDMpKycgbWJhcic7IG4oJ3Jlc3VsdE91dCcpLnRleHRDb250ZW50PW1lYXM8PWRyb3A/J1BBU1MgLyBDSEVDSyc6J0ZBSUwgLyBJTlZFU1RJR0FURSc7Cm4oJ3JlcG9ydCcpLnRleHRDb250ZW50PWBIQlMgQ29tbWVyY2lhbCBHYXMgVGlnaHRuZXNzIFRlc3QgQ2FsY3VsYXRvclxuU2l0ZTogJHtuKCdzaXRlTmFtZScpLnZhbHVlfVxuSm9iOiAke24oJ2pvYk51bWJlcicpLnZhbHVlfVxuRW5naW5lZXI6ICR7bignZW5naW5lZXInKS52YWx1ZX1cbkRhdGU6ICR7bigndGVzdERhdGUnKS52YWx1ZX1cbkdhcyBUeXBlOiAke2dhc31cbkluc3RhbGxhdGlvbiBUeXBlOiAke2luc3R9XG5TdGFuZGFyZDogJHtzdGR9XG5QaXBld29yayBWb2x1bWU6ICR7cGlwZS50b0ZpeGVkKDYpfSBtwrNcbk1ldGVyIFZvbHVtZTogJHttZXRlci50b0ZpeGVkKDYpfSBtwrNcbkZpdHRpbmdzIFZvbHVtZTogJHtmaXQudG9GaXhlZCg2KX0gbcKzXG5Ub3RhbCBJbnN0YWxsYXRpb24gVm9sdW1lOiAke3RvdGFsLnRvRml4ZWQoNil9IG3Cs1xuU3RhYmlsaXNhdGlvbjogJHtzdGFifSBtaW51dGVzXG5UVEQ6ICR7dHRkfSBtaW51dGVzXG5Ub3RhbCBUaW1lOiAke3N0YWIrdHRkfSBtaW51dGVzXG5JbmRpY2F0aXZlIEFsbG93YWJsZSBEcm9wOiAke2Ryb3AudG9GaXhlZCgzKX0gbWJhclxuTWVhc3VyZWQgRHJvcDogJHttZWFzLnRvRml4ZWQoMyl9IG1iYXJcblJlc3VsdDogJHtuKCdyZXN1bHRPdXQnKS50ZXh0Q29udGVudH1gO30KZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnI3BpcGVCb2R5IHRyJykuZm9yRWFjaCh0cj0+e2JpbmRSb3codHIpO2ZpbGxSb3codHIpfSk7IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdhZGRQaXBlJykub25jbGljaz1hZGRSb3c7IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGwoJ2lucHV0LHNlbGVjdCcpLmZvckVhY2goZWw9PmVsLmFkZEV2ZW50TGlzdGVuZXIoJ2lucHV0JyxjYWxjKSk7IGNhbGMoKTsKCmZ1bmN0aW9uIGhic1BvcnRhbENvbGxlY3RTdGF0ZSgpewogIGNhbGMoKTsKICBjb25zdCB0eHQ9aWQ9Pm4oaWQpP24oaWQpLnRleHRDb250ZW50OicnOwogIGNvbnN0IHZhbD1pZD0+bihpZCk/bihpZCkudmFsdWU6Jyc7CiAgZnVuY3Rpb24gbnVtVGV4dChpZCl7cmV0dXJuIE51bWJlcihTdHJpbmcodHh0KGlkKSkucmVwbGFjZSgvW15cZC4tXS9nLCcnKSl8fDA7fQogIHJldHVybiB7CiAgICBzaXRlX25hbWU6IHZhbCgnc2l0ZU5hbWUnKSwgYXVkaXRfcmVmOiB2YWwoJ2pvYk51bWJlcicpLCBlbmdpbmVlcl9uYW1lOiB2YWwoJ2VuZ2luZWVyJyksIHRlc3RfZGF0ZTogdmFsKCd0ZXN0RGF0ZScpLAogICAgZ2FzX3R5cGU6IHZhbCgnZ2FzVHlwZScpLCBwcm9jZWR1cmU6IHZhbCgncHJvY2VkdXJlJyksIGluc3RhbGxhdGlvbl90eXBlOiB2YWwoJ2luc3RhbGxhdGlvblR5cGUnKSwgdGVzdF9hcmVhOiB2YWwoJ3Rlc3RBcmVhJyksCiAgICBnYXVnZV90eXBlOiB2YWwoJ2dhdWdlVHlwZScpLCByb29tX3ZvbHVtZTogTnVtYmVyKHZhbCgncm9vbVZvbHVtZScpfHwwKSwgdGVzdF9wcmVzc3VyZTogTnVtYmVyKHZhbCgndGVzdFByZXNzdXJlJyl8fDApLAogICAgbWVhc3VyZWRfZHJvcDogTnVtYmVyKHZhbCgnbWVhc3VyZWREcm9wJyl8fDApLCBpbnN0YWxsYXRpb25fdm9sdW1lOiBudW1UZXh0KCd0b3RhbFZvbCcpLAogICAgc3RhYmlsaXNhdGlvbl90aW1lOiBudW1UZXh0KCdzdGFiT3V0JyksIHRlc3RfZHVyYXRpb246IG51bVRleHQoJ3R0ZE91dCcpLCBvdXRjb21lOiB0eHQoJ3Jlc3VsdE91dCcpLCByZXBvcnQ6IHR4dCgncmVwb3J0JykKICB9Owp9Cgo8L3NjcmlwdD4KPC9ib2R5PjwvaHRtbD4K";
+let user = null;
 
-function roleLabel(role){
-  if(role==='senior_engineer') return 'Senior Engineer';
-  if(role==='manager') return 'Manager';
-  return 'Engineer';
+function $(id){return document.getElementById(id)}
+function show(id){document.querySelectorAll('.section').forEach(s=>s.classList.add('hide')); $(id)?.classList.remove('hide')}
+async function api(url, opts){const r=await fetch(url, opts||{cache:'no-store'}); const t=await r.text(); let j; try{j=JSON.parse(t)}catch(e){throw new Error(t.slice(0,250))} if(!r.ok||j.ok===false) throw new Error(j.error||('HTTP '+r.status)); return j}
+function roleLabel(r){return r==='manager'?'Manager':r==='senior_engineer'?'Senior Engineer':'Engineer'}
+function outcome(score){score=Number(score||0); if(score>=95)return'Excellent'; if(score>=85)return'Pass'; if(score>=75)return'Improvement Required'; return'Fail'}
+
+async function login(){
+  try{
+    const j=await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:$('loginEmail').value,pin:$('loginPin').value})});
+    user=j.user; localStorage.setItem('hbs_user',JSON.stringify(user)); startApp();
+  }catch(e){$('loginMsg').textContent=e.message}
 }
-function applyRoleVisibility(){
-  document.querySelectorAll('.managerOnly').forEach(el=>el.classList.toggle('hide',!(user&&user.role==='manager')));
-  document.querySelectorAll('.seniorOnly').forEach(el=>el.classList.toggle('hide',!(user&&(user.role==='manager'||user.role==='senior_engineer'))));
+function logout(){localStorage.removeItem('hbs_user'); location.reload()}
+function startApp(){
+  $('loginCard').classList.add('hide'); $('app').classList.remove('hide');
+  $('loginStatus').textContent=`Logged in: ${user.name} (${roleLabel(user.role)})`;
+  buildNav(); populateEngineerSelects(); if(user.role==='manager'){show('dashboard'); loadDashboard();} else {show('toolboxTest')}
 }
-function isManager(){return user&&user.role==='manager';}
-function isSenior(){return user&&user.role==='senior_engineer';}
-function canAudit(){return user&&(user.role==='manager'||user.role==='senior_engineer');}
-
-
-
-
-let user=null, users=[], lastAudits=[], selectedPhotos=[]; const qs=id=>document.getElementById(id); qs('date').value=new Date().toISOString().slice(0,10);
-const auditQuestions=[['Safety & Compliance','Risk assessment / dynamic risk assessment completed','Gas isolation and emergency controls confirmed','Ventilation checked and suitable','Gas tightness / let-by requirements considered','Flue route, termination and condition checked'],['Technical Competence','Gas pressures recorded correctly','Combustion analysis completed and values acceptable','Gas rate / burner input checked where required','Condensate, safety devices and interlocks checked','Manufacturer instructions followed'],['Documentation & Handover','Service/audit records completed correctly','Defects classified correctly: ID / AR','Client recommendations and warning notices recorded','Photographic evidence taken where appropriate','Work area left safe and operational status confirmed']];
-function renderQuestions(){let html=''; auditQuestions.forEach((sec,si)=>{html+=`<h3 class="section-title">${sec[0]}</h3>`; sec.slice(1).forEach((q,qi)=>{const id=`q_${si}_${qi}`; html+=`<div class="q"><label>${q}</label><select id="${id}" onchange="calcScore()"><option value="10">Pass / Compliant</option><option value="5">Partial / Improvement Required</option><option value="0">Fail / Not Evidenced</option><option value="na">N/A</option></select><br><textarea id="${id}_note" rows="2" style="width:100%" placeholder="Optional notes"></textarea></div>`})}); qs('questions').innerHTML=html; calcScore()}
-
-function updateTrainingText(){
-  if(!qs('training')) return;
-  const score = Number(qs('scoreOut')?.textContent || 100);
-  const test = qs('testLevel') ? qs('testLevel').value : 'auto';
-  const map={
-    level1:'Level 1 Commercial Gas Safety Refresher required. Re-audit to be completed within 30 days.',
-    level2:'Level 2 Advanced Competency Assessment required. Practical assessment and manager sign-off required before re-audit.',
-    practical:'Practical competency assessment required by HBS Compliance Manager.',
-    manufacturer:'Manufacturer specific training required before engineer undertakes further work on this appliance.',
-    coaching:'One-to-one coaching session required with Compliance Manager.',
-    reaudit:'Engineer to undergo re-audit only.',
-    none:''
+function buildNav(){
+  const menus={
+    manager:[['New Audit','auditForm'],['My Dashboard','dashboard'],['Training / Re-audits','trainingView'],['Training Management','trainingManager'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Test Results','toolboxResults'],['Users','userAdmin'],['Record Management','recordManager'],['Backup','backup'],['Logout','logout']],
+    senior_engineer:[['Conduct Audit','auditForm'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Logout','logout']],
+    engineer:[['My Dashboard','trainingView'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Logout','logout']]
   };
-  if(test!=='auto'){qs('training').value=map[test]||'';return;}
-  if(score<75){qs('training').value=map.level2; if(qs('testLevel')) qs('testLevel').dataset.recommended='level2';}
-  else if(score<85){qs('training').value=map.level1; if(qs('testLevel')) qs('testLevel').dataset.recommended='level1';}
-  else {qs('training').value=''; if(qs('testLevel')) qs('testLevel').dataset.recommended='none';}
+  $('navButtons').innerHTML='';
+  (menus[user.role]||menus.engineer).forEach(([label,id])=>{const b=document.createElement('button'); b.textContent=label; b.onclick=()=>{if(id==='logout') logout(); else {show(id); if(id==='dashboard')loadDashboard(); if(id==='trainingView')loadTraining(); if(id==='knowledgeCentre')loadKnowledgeCentre(); if(id==='tightnessCalculator')loadTightnessCalculator(); if(id==='userAdmin')loadUsers(); if(id==='toolboxResults')loadToolboxResults();}}; $('navButtons').appendChild(b);});
 }
 
-function calcScore(){let total=0,max=0; auditQuestions.forEach((sec,si)=>sec.slice(1).forEach((q,qi)=>{const v=qs(`q_${si}_${qi}`)?.value; if(v!=='na'){max+=10; total+=Number(v||0)}})); const score=max?Math.round((total/max)*100):100; qs('scoreOut').textContent=score; const res=score>=95?'Excellent':score>=85?'Pass':score>=75?'Improvement Required':'Fail'; qs('resultOut').textContent=res; updateTrainingText(); return {score,result:res}}
-async function api(url,opts){const r=await fetch(url,opts); const t=await r.text(); if(!t) throw new Error('No response from backend function.'); let j; try{j=JSON.parse(t)}catch(e){throw new Error(t.slice(0,250))} if(!j.ok) throw new Error(j.error||'Request failed'); return j}
-async function login(){try{const j=await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:qs('email').value,pin:qs('pin').value})}); user=j.user; qs('login').classList.add('hide'); qs('app').classList.remove('hide'); qs('who').textContent=`Logged in: ${user.name} (${roleLabel(user.role)})`; qs('auditor').value=user.name; applyRoleVisibility(); await loadUsers(); renderQuestions(); await loadAudits(); await loadMyTrainingNotice()}catch(e){qs('loginMsg').textContent=e.message}}
-function applyRoleVisibility(){
-  const isManager = user && user.role === 'manager';
-  document.querySelectorAll('.managerOnly').forEach(el=>el.style.display=isManager?'':'none');
-  const h=qs('dashboard')?.querySelector('h2');
-  if(h) h.textContent = isManager ? 'Manager Dashboard / Audit Register' : 'My Audit Results / Training Dashboard';
+async function populateEngineerSelects(){
+  try{const j=await api('/api/users'); const users=j.users||[]; ['aEngineer','tmEngineer'].forEach(id=>{const s=$(id); if(s) s.innerHTML=users.map(u=>`<option>${u.name}</option>`).join('')});}
+  catch(e){console.warn(e)}
+  $('aDate').value=new Date().toISOString().slice(0,10); $('aAuditor').value=user?.name||'';
 }
-function logout(){location.reload()} function show(id){['auditForm','dashboard','booklet','trainingView','userAdmin','toolboxTest','trainingManager','toolboxResults','recordManager','knowledgeCentre','tightnessCalculator'].forEach(x=>qs(x).classList.add('hide')); qs(id).classList.remove('hide')} function newAudit(){if(!user || user.role!=='manager'){alert('Manager access only');return;} show('auditForm'); qs('saveMsg').textContent=''}
-async function loadUsers(){const j=await api(`/api/users?email=${encodeURIComponent(user.email)}&role=${roleLabel(user.role)}`); users=j.users; const eng=users.filter(u=>u.role==='engineer'&&Number(u.active)!==0); qs('engineer').innerHTML=eng.map(u=>`<option value="${u.email}" data-name="${u.name}">${u.name}</option>`).join('')}
-async function fileToDataUrl(file){return new Promise(res=>{const img=new Image(), fr=new FileReader(); fr.onload=e=>{img.onload=()=>{const c=document.createElement('canvas'); const max=900, s=Math.min(1,max/Math.max(img.width,img.height)); c.width=img.width*s; c.height=img.height*s; c.getContext('2d').drawImage(img,0,0,c.width,c.height); res({filename:file.name,mime_type:'image/jpeg',data_url:c.toDataURL('image/jpeg',0.65)})}; img.src=e.target.result}; fr.readAsDataURL(file)})}
 
-function addSelectedPhotos(files){
-  selectedPhotos.push(...Array.from(files||[]));
-  renderPhotoList();
-}
-function removeSelectedPhoto(index){
-  selectedPhotos.splice(index,1);
-  renderPhotoList();
-}
-function renderPhotoList(){
-  const box=qs('photoList');
-  if(!box) return;
-  if(!selectedPhotos.length){box.innerHTML='No photographs selected.';return;}
-  box.innerHTML=selectedPhotos.map((f,i)=>`<div class="pill">${i+1}. ${f.name||'camera photo'} <button type="button" onclick="removeSelectedPhoto(${i})">Remove</button></div>`).join('');
-}
-function collectQuestions(){const arr=[]; auditQuestions.forEach((sec,si)=>sec.slice(1).forEach((q,qi)=>{const id=`q_${si}_${qi}`; arr.push({section:sec[0],question:q,score:qs(id).value,note:qs(id+'_note').value})})); return arr}
-async function saveAudit(){try{const opt=qs('engineer').selectedOptions[0]; if(!opt) throw new Error('No engineer selected.'); const photos=[]; for(const f of selectedPhotos.slice(0,12)) photos.push(await fileToDataUrl(f)); const sr=calcScore(); const body={engineer_email:qs('engineer').value,engineer_name:opt.dataset.name,manager_email:user.email,manager_name:user.name,site_name:qs('site').value,client_name:qs('client').value,audit_date:qs('date').value,auditor:qs('auditor').value,appliance_type:qs('applianceType').value,manufacturer:qs('manufacturer').value,model:qs('model').value,serial_number:qs('serial').value,asset_number:qs('asset').value,score:sr.score,result:sr.result,questions:collectQuestions(),actions_required:qs('actions').value,training_required:qs('training').value,test_level:(qs('testLevel').value==='auto'?(qs('testLevel').dataset.recommended||'none'):qs('testLevel').value),signature:qs('signature').value,photos}; const j=await api('/api/audits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); qs('saveMsg').textContent=`Saved Audit ID ${j.id} - ${j.result}`; selectedPhotos=[]; renderPhotoList(); await loadAudits()}catch(e){qs('saveMsg').textContent=e.message}}
-async function loadAudits(){
-  show('dashboard');
-  const j=await api(`/api/audits?email=${encodeURIComponent(user.email)}&role=${roleLabel(user.role)}`);
-  const rows=j.audits||[];
-  lastAudits=rows;
-
-  const total=rows.length;
-  const excellent=rows.filter(a=>a.result==='Excellent').length;
-  const pass=rows.filter(a=>a.result==='Pass').length;
-  const improve=rows.filter(a=>a.result==='Improvement Required').length;
-  const fail=rows.filter(a=>a.result==='Fail').length;
-  const passRate=total?Math.round(((excellent+pass)/total)*100):0;
-  const avgScore=total?Math.round(rows.reduce((s,a)=>s+Number(a.score||0),0)/total):0;
-
-  let openTraining=0, openReaudits=0;
+async function loadDashboard(){
+  if(user.role!=='manager') return;
   try{
-    const t=await api('/api/training');
-    openTraining=(t.training||[]).filter(x=>(x.status||'').toLowerCase()!=='closed' && (x.status||'').toLowerCase()!=='complete' && (x.status||'').toLowerCase()!=='completed').length;
-  }catch(e){}
+    const j=await api('/api/dashboard');
+    const s=j.summary||{};
+    $('stTotal').textContent=s.total_audits||0; $('stAvg').textContent=(s.average_score||0)+'%'; $('stPassRate').textContent=(s.pass_rate||0)+'%';
+    $('stExcellent').textContent=s.excellent||0; $('stPass').textContent=s.pass||0; $('stImprovement').textContent=s.improvement||0; $('stFail').textContent=s.fail||0; $('stOpen').textContent=(s.open_training||0)+' / '+(s.open_reaudits||0);
+    $('leagueRows').innerHTML=(j.league||[]).map((r,i)=>`<tr><td>${i+1}</td><td>${r.engineer}</td><td>${r.audits}</td><td>${r.avg_score}%</td><td>${r.excellent}</td><td>${r.improvement}</td><td>${r.fails}</td></tr>`).join('');
+    $('trendRows').innerHTML=(j.trends||[]).map(r=>`<tr><td>${r.month}</td><td>${r.audits}</td><td>${r.avg_score}%</td><td>${r.improvement}</td><td>${r.fails}</td></tr>`).join('');
+    $('auditRows').innerHTML=(j.audits||[]).map(a=>`<tr><td>${a.ref}</td><td>${a.date}</td><td>${a.engineer}</td><td>${a.site}</td><td>${a.manufacturer}</td><td>${a.model}</td><td>${a.score}</td><td>${a.result}</td><td><button onclick="alert('Booklet ref: ${a.ref}')">View</button></td></tr>`).join('');
+    $('dashboardMsg').textContent=(j.audits||[]).length?'':'No audit records returned by /api/dashboard.';
+  }catch(e){$('dashboardMsg').textContent=e.message}
+}
+
+async function saveAudit(){
   try{
-    const r=await api('/api/reaudits');
-    openReaudits=(r.reaudits||[]).filter(x=>(x.status||'').toLowerCase()!=='closed' && (x.status||'').toLowerCase()!=='complete' && (x.status||'').toLowerCase()!=='completed').length;
-  }catch(e){}
-
-  qs('stats').innerHTML=`<div class="grid">
-    <div class="card"><b>Total Audits</b><br><span class="scorebox">${total}</span></div>
-    <div class="card"><b>Average Score</b><br><span class="scorebox">${avgScore}%</span></div>
-    <div class="card"><b>Pass Rate</b><br><span class="scorebox">${passRate}%</span></div>
-    <div class="card"><b>Excellent</b><br><span class="scorebox">${excellent}</span></div>
-    <div class="card"><b>Pass</b><br><span class="scorebox">${pass}</span></div>
-    <div class="card"><b>Improvement Required</b><br><span class="scorebox">${improve}</span></div>
-    <div class="card"><b>Fail</b><br><span class="scorebox">${fail}</span></div>
-    <div class="card"><b>Open Training / Re-audits</b><br><span class="scorebox">${openTraining} / ${openReaudits}</span></div>
-  </div>`;
-
-  renderLeague(rows);
-  renderTrends(rows);
-  renderFailureAnalysis(rows);
-
-  qs('auditRows').innerHTML=rows.map(a=>{let d={};try{d=JSON.parse(a.audit_json||'{}')}catch(e){};return `<tr><td>HBS-${a.id}</td><td>${a.audit_date||''}</td><td>${a.engineer_name||''}</td><td>${a.site_name||''}</td><td>${d.manufacturer||''}</td><td>${d.model||''}</td><td>${a.score||0}%</td><td><span class="pill ${a.result==='Excellent'?'excellent':a.result==='Pass'?'pass':a.result==='Fail'?'fail':'warn'}">${a.result||''}</span></td><td><button onclick="booklet(${a.id})">Open</button></td></tr>`}).join('')
+    const score=Number($('aScore').value||0);
+    const body={role:user.role,engineer_name:$('aEngineer').value,site_name:$('aSite').value,client:$('aClient').value,audit_date:$('aDate').value,auditor:$('aAuditor').value,manufacturer:$('aManufacturer').value,model:$('aModel').value,score,result:outcome(score),findings:$('aFindings').value};
+    const j=await api('/api/audits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    $('auditMsg').textContent='Saved audit '+(j.ref||('HBS-'+j.id)); if(user.role==='manager') loadDashboard();
+  }catch(e){$('auditMsg').textContent=e.message}
 }
 
-function renderLeague(rows){
-  const map={};
-  rows.forEach(a=>{
-    const name=a.engineer_name||'Unknown';
-    if(!map[name]) map[name]={name,audits:0,total:0,fail:0,improve:0,excellent:0};
-    map[name].audits++;
-    map[name].total+=Number(a.score||0);
-    if(a.result==='Fail') map[name].fail++;
-    if(a.result==='Improvement Required') map[name].improve++;
-    if(a.result==='Excellent') map[name].excellent++;
-  });
-  const league=Object.values(map).map(x=>({...x,avg:Math.round(x.total/x.audits)})).sort((a,b)=>b.avg-a.avg||b.audits-a.audits);
-  qs('leagueTable').innerHTML=`<table><thead><tr><th>Rank</th><th>Engineer</th><th>Audits</th><th>Avg Score</th><th>Excellent</th><th>Improvement</th><th>Fails</th></tr></thead><tbody>${league.map((x,i)=>`<tr><td>${i+1}</td><td>${x.name}</td><td>${x.audits}</td><td>${x.avg}%</td><td>${x.excellent}</td><td>${x.improve}</td><td>${x.fail}</td></tr>`).join('')}</tbody></table>`;
-  qs('performanceGraph').innerHTML = league.length ? league.map(x=>`<div class="barrow"><div class="barname">${x.name}<br><span class="muted">${x.audits} audit${x.audits===1?'':'s'}</span></div><div class="barwrap"><div class="barfill" style="width:${Math.max(3,x.avg)}%">${x.avg}%</div></div><div class="barvalue">${x.avg}%</div></div>`).join('') : '<p class="muted">No engineer performance data available yet.</p>';
-}
-
-function renderTrends(rows){
-  const map={};
-  rows.forEach(a=>{
-    const month=(a.audit_date||'').slice(0,7)||'Unknown';
-    if(!map[month]) map[month]={month,audits:0,total:0,fail:0,improve:0};
-    map[month].audits++;
-    map[month].total+=Number(a.score||0);
-    if(a.result==='Fail') map[month].fail++;
-    if(a.result==='Improvement Required') map[month].improve++;
-  });
-  const trend=Object.values(map).map(x=>({...x,avg:Math.round(x.total/x.audits)})).sort((a,b)=>a.month.localeCompare(b.month));
-  qs('trendTable').innerHTML=`<table><thead><tr><th>Month</th><th>Audits</th><th>Average Score</th><th>Trend Bar</th><th>Improvement</th><th>Fails</th></tr></thead><tbody>${trend.map(x=>`<tr><td>${x.month}</td><td>${x.audits}</td><td>${x.avg}%</td><td><div style="background:#e6eef8;border-radius:8px;overflow:hidden"><div style="width:${x.avg}%;background:#123f6d;color:white;padding:4px 0;text-align:center">${x.avg}%</div></div></td><td>${x.improve}</td><td>${x.fail}</td></tr>`).join('')}</tbody></table>`;
-}
-
-function renderFailureAnalysis(rows){
-  const counts={};
-  rows.forEach(a=>{
-    let d={};try{d=JSON.parse(a.audit_json||'{}')}catch(e){}
-    (d.questions||[]).forEach(q=>{
-      if(String(q.score)==='0' || String(q.score)==='5'){
-        const key=q.question||'Unknown question';
-        if(!counts[key]) counts[key]={question:key,fail:0,improve:0,total:0};
-        counts[key].total++;
-        if(String(q.score)==='0') counts[key].fail++;
-        if(String(q.score)==='5') counts[key].improve++;
-      }
-    });
-  });
-  const list=Object.values(counts).sort((a,b)=>b.total-a.total).slice(0,10);
-  qs('failAnalysis').innerHTML=list.length?`<table><thead><tr><th>Question / Audit Area</th><th>Total Issues</th><th>Fails</th><th>Improvements</th></tr></thead><tbody>${list.map(x=>`<tr><td>${x.question}</td><td>${x.total}</td><td>${x.fail}</td><td>${x.improve}</td></tr>`).join('')}</tbody></table>`:'<p class="muted">No failed or improvement questions recorded yet.</p>';
-}
 async function loadTraining(){
-  show('trainingView');
-  const t=await api(`/api/training?role=${roleLabel(user.role)}&engineer=${encodeURIComponent(user.name)}`);
-  const r=await api(`/api/reaudits?role=${roleLabel(user.role)}&engineer=${encodeURIComponent(user.name)}`);
-
-  qs('trainingRows').innerHTML=(t.training||[]).map(x=>{
-    const status=(x.status||'Open');
-    const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
-    const testBtn=done?'<span class="muted">Closed</span>':`<button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||'').replaceAll("'","&#39;")}','${trainingTestLevel(x)}')">Start ${testLevelText(trainingTestLevel(x))}</button>`;
-    const btn=done?'<span class="muted">Closed</span>':(user.role==='manager'?`<button onclick="completeTraining(${x.id})">Mark Complete</button>`:'<span class="muted">Awaiting manager sign-off</span>');
-    return `<tr><td>${x.engineer_name||''}</td><td>${x.training_type||''}</td><td>${x.assigned_date||''}</td><td>${status}</td><td>${testBtn} ${btn}</td></tr>`;
-  }).join('');
-
-  qs('reauditRows').innerHTML=(r.reaudits||[]).map(x=>{
-    const status=(x.status||'Open');
-    const done=['complete','completed','closed','cancelled'].includes(status.toLowerCase());
-    const btn=done?'<span class="muted">Closed</span>':(user.role==='manager'?`${user.role==='manager'?`<button onclick="completeReaudit(${x.id})">Mark Complete</button>`:''}`:'');
-    return `<tr><td>HBS-${x.audit_id||''}</td><td>${x.engineer_name||''}</td><td>${x.due_date||''}</td><td>${status}</td><td>${btn}</td></tr>`;
-  }).join('');
-}
-
-
-
-const toolboxQuestionBanks={
- level1:[
-  {q:'Under GSIUR, who is responsible for leaving the gas installation safe after attending site?',a:'Gas Engineer',opts:['Client','Building Manager','Gas Engineer','Manufacturer']},
-  {q:'What is the correct action where an Immediately Dangerous situation is identified?',a:'Isolate or disconnect where possible and issue warning notice',opts:['Record only','Quote for repair','Isolate or disconnect where possible and issue warning notice','Leave running until next visit']},
-  {q:'Which unsafe classification applies where there is immediate danger to life or property?',a:'ID',opts:['Advisory','AR','ID','Service Required']},
-  {q:'Which unsafe classification applies where danger may occur if the situation continues?',a:'AR',opts:['AR','ID','Passed','Routine']},
-  {q:'What document should be issued where an unsafe gas situation is identified?',a:'Warning Notice',opts:['Invoice only','Warning Notice','Delivery note','Verbal advice only']},
-  {q:'What does a gas tightness test confirm?',a:'Integrity of the gas installation',opts:['Appliance efficiency','Water pressure','Integrity of the gas installation','Flue dilution rate only']},
-  {q:'When should ventilation be considered on commercial gas appliances?',a:'During service, audit, repair or safety inspection where relevant',opts:['Only on new installations','Never','During service, audit, repair or safety inspection where relevant','Only after a complaint']},
-  {q:'If mechanical ventilation serving gas appliances fails, what should normally happen?',a:'Gas appliances must be safely interlocked or isolated as required',opts:['Appliances continue running','Only reduce appliance output','Gas appliances must be safely interlocked or isolated as required','Open a window']},
-  {q:'Before combustion analysis, what should the engineer confirm?',a:'Appliance is operating correctly under suitable load',opts:['Only the case temperature','Appliance is operating correctly under suitable load','That the client is present','That the room is empty']},
-  {q:'Which instructions must be followed during servicing and maintenance?',a:'Manufacturer instructions',opts:['Manufacturer instructions','Previous engineer notes only','Client preference','Online forum advice']},
-  {q:'What should be verified when checking a commercial flue system?',a:'Route, integrity, termination, support and signs of leakage or distress',opts:['Colour only','Route, integrity, termination, support and signs of leakage or distress','Only external terminal paint','Nothing if appliance lights']},
-  {q:'What should be recorded for combustion analysis?',a:'Relevant combustion readings and whether they are acceptable against manufacturer data',opts:['Only temperature','Relevant combustion readings and whether they are acceptable against manufacturer data','Nothing if the appliance runs','Only a photograph']},
-  {q:'What should be checked where condensate is produced by a commercial boiler?',a:'Correct discharge route, trap condition and safe termination',opts:['Nothing','Correct discharge route, trap condition and safe termination','Only pipe colour','Only water pressure']},
-  {q:'What evidence should support audit findings where appropriate?',a:'Photographs and clear written notes',opts:['Photographs and clear written notes','Verbal explanation only','No evidence required','Timesheet only']},
-  {q:'If an engineer is unsure of a classification or safety decision, what should they do?',a:'Stop and contact technical support or compliance management',opts:['Guess','Ignore it','Stop and contact technical support or compliance management','Ask the client to decide']}
- ],
- level2:[
-  {q:'Mechanical ventilation serving a commercial plantroom fails. What should happen?',a:'Gas appliances should be prevented from operating until ventilation is restored and proven',opts:['Continue operation at reduced rate','Open the plantroom door','Gas appliances should be prevented from operating until ventilation is restored and proven','Record only']},
-  {q:'Working pressure is 18.1 mbar and manufacturer minimum is 17 mbar. What is the correct approach?',a:'Continue only if appliance performance is correct and no adverse conditions exist, recording readings clearly',opts:['Classify ID immediately','Ignore because above 17 mbar','Continue only if appliance performance is correct and no adverse conditions exist, recording readings clearly','Increase pressure at the meter']},
-  {q:'A flue shows signs of leakage into the plantroom. What is the appropriate action?',a:'Assess as unsafe, isolate where necessary and issue warning notice',opts:['Tape the joint','Leave operational','Assess as unsafe, isolate where necessary and issue warning notice','Only photograph it']},
-  {q:'Combustion readings show significantly elevated CO and unstable flame picture. What should happen?',a:'Investigate, make safe and do not leave operating if unsafe',opts:['Record as passed','Increase gas rate','Investigate, make safe and do not leave operating if unsafe','Ignore if boiler is heating']},
-  {q:'What is the main purpose of proving and interlocking systems?',a:'To prevent gas flow or appliance operation unless required safety conditions are proven',opts:['To improve efficiency','To reduce paperwork','To prevent gas flow or appliance operation unless required safety conditions are proven','To increase inlet pressure']},
-  {q:'Manufacturer instructions conflict with a generic checklist. What takes priority?',a:'Manufacturer instructions and relevant standards',opts:['Generic checklist','Customer instruction','Manufacturer instructions and relevant standards','Previous engineer notes']},
-  {q:'A tightness test indicates pressure loss above permitted limits. What is correct?',a:'Do not leave the installation in unsafe operation; investigate and classify accordingly',opts:['Record as N/A','Do not leave the installation in unsafe operation; investigate and classify accordingly','Retest at lower pressure until it passes','Only tell reception']},
-  {q:'Burner pressure cannot be measured. What should be recorded?',a:'Reason it cannot be measured and alternative relevant readings such as inlet working pressure where appropriate',opts:['Leave blank','Write OK','Reason it cannot be measured and alternative relevant readings such as inlet working pressure where appropriate','Invent the value']},
-  {q:'A CP15 has missing combustion readings where readings were required. What should the audit reflect?',a:'Documentation and technical evidence failure requiring corrective action',opts:['No issue','Documentation and technical evidence failure requiring corrective action','Pass because service was done','Only housekeeping issue']},
-  {q:'A commercial boiler locks out repeatedly on flame failure after ignition. What should the engineer assess?',a:'Gas supply, ignition, flame detection, combustion setup and manufacturer fault guidance',opts:['Reset only','Gas supply, ignition, flame detection, combustion setup and manufacturer fault guidance','Change the thermostat','Ignore if it relights']},
-  {q:'A proving system fails to prove closed position before gas is enabled. What should happen?',a:'Do not permit operation until the proving fault is investigated and rectified',opts:['Bypass proving','Do not permit operation until the proving fault is investigated and rectified','Open valve manually','Leave running']},
-  {q:'A commercial appliance has no accessible test point for burner pressure. What is the correct audit expectation?',a:'Record why it cannot be tested and verify other required pressures and performance data where appropriate',opts:['Invent a burner pressure','Record why it cannot be tested and verify other required pressures and performance data where appropriate','Leave the form blank','Mark all readings N/A']},
-  {q:'If an engineer fails Level 2 twice, what should follow?',a:'Manager competency review and practical assessment',opts:['No further action','Automatic pass','Manager competency review and practical assessment','Delete the record']},
-  {q:'What evidence is strongest for a competency concern?',a:'Audit findings, photographs, readings, training record and re-audit outcome',opts:['Verbal memory only','Audit findings, photographs, readings, training record and re-audit outcome','A text message','No record needed']},
-  {q:'A gas train has pressure switches, proving valve and slam shut. What should be verified?',a:'Correct operation, settings where applicable and safe sequence of operation',opts:['Only paint condition','Correct operation, settings where applicable and safe sequence of operation','Only manufacturer name','Nothing if boiler runs']},
-  {q:'Before returning a commercial appliance to service after safety work, what is required?',a:'Complete relevant safety checks, functional checks, combustion checks and documentation',opts:['Switch on only','Complete relevant safety checks, functional checks and documentation','Ask client to monitor','Leave paperwork blank']},
-  {q:'A room-sealed fan flued appliance has a damaged case seal. What is the concern?',a:'Potential effect on combustion air/flue integrity requiring assessment and action',opts:['Cosmetic only','Potential effect on combustion air/flue integrity requiring assessment and action','No issue if warm','Only clean it']},
-  {q:'Repeated failure in gas pressure recording usually indicates what?',a:'Training and competency gap in technical recording and pressure verification',opts:['Nothing','Training and competency gap in technical recording and pressure verification','Client issue only','IT issue only']},
-  {q:'Why should photographs be linked to failed findings?',a:'They provide evidence and support technical review and training',opts:['For decoration','They provide evidence and support technical review and training','To fill space','Not necessary']},
-  {q:'If unsafe classification is uncertain, what should the engineer do?',a:'Make safe and seek competent technical/compliance support',opts:['Guess','Make safe and seek competent technical/compliance support','Leave site','Ask the customer to choose']},
-  {q:'What is the purpose of a re-audit after training?',a:'To verify that the engineer has corrected the competency gap in practice',opts:['To punish the engineer','To verify that the engineer has corrected the competency gap in practice','To close paperwork only','To replace ACS']},
-  {q:'Which evidence is strongest for restored competence?',a:'Passed assessment plus observed correct site performance or successful re-audit',opts:['Verbal promise','Passed assessment plus observed correct site performance or successful re-audit','One email','Timesheet']},
-  {q:'A boiler operates but flue termination is obstructed. What is the priority?',a:'Safety assessment and making the appliance/installation safe',opts:['Leave running','Safety assessment and making the appliance/installation safe','Only quote later','No action']},
-  {q:'Why check gas rates and burner input where required?',a:'To confirm correct appliance input and safe operation against manufacturer data',opts:['To fill the form','To confirm correct appliance input and safe operation against manufacturer data','Only for domestic appliances','Never required']},
-  {q:'What should be done with incomplete audit records?',a:'Correct them promptly and use as training evidence where failures occurred',opts:['Ignore','Correct them promptly and use as training evidence where failures occurred','Delete all audits','Tell engineer verbally only']},
-  {q:'What is the correct treatment of failed safety devices?',a:'Do not leave appliance operating unsafely; repair, isolate or classify as required',opts:['Bypass temporarily','Do not leave appliance operating unsafely; repair, isolate or classify as required','Note for next year','Reset only']},
-  {q:'What does competency evidence require in practical terms?',a:'Traceable records showing knowledge, practical ability and supervision where needed',opts:['One certificate only','Traceable records showing knowledge, practical ability and supervision where needed','No evidence','Only job title']},
-  {q:'A client pressures an engineer to leave unsafe equipment running. What should happen?',a:'Engineer must follow safety duties and company escalation, not client pressure',opts:['Agree with client','Engineer must follow safety duties and company escalation, not client pressure','Turn a blind eye','Ask reception']},
-  {q:'Why might manufacturer-specific training be needed after an audit?',a:'Because controls, combustion setup and fault diagnosis vary by appliance range',opts:['It is never useful','Because controls, combustion setup and fault diagnosis vary by appliance range','Only for new starters','To avoid paperwork']},
-  {q:'What is the correct closing action after Level 2 pass?',a:'Close training only when assessment and any required re-audit/practical sign-off are complete',opts:['Close immediately regardless','Close training only when assessment and any required re-audit/practical sign-off are complete','Delete the fail','No record needed']}
- ]
-};
-function currentToolboxQuestions(){return toolboxQuestionBanks[qs('tbLevel')?.value||'level1'];}
-
-async function loadMyTrainingNotice(){
-  try{
-    if(!user || user.role!=='engineer') return;
-    const t=await api(`/api/training?role=${roleLabel(user.role)}&engineer=${encodeURIComponent(user.name)}`);
-    const open=(t.training||[]).filter(x=>(x.engineer_name||'').toLowerCase()===(user.name||'').toLowerCase()).filter(x=>!['complete','completed','closed','cancelled'].includes((x.status||'Open').toLowerCase()));
-    if(!open.length){qs('trainingNotice').classList.add('hide');return;}
-    qs('trainingNotice').classList.remove('hide');
-    qs('trainingNoticeBody').innerHTML=open.map(x=>`<p><b>${x.training_type||'Post audit training required'}</b><br>Status: ${x.status||'Open'}<br>Assigned: ${x.assigned_date||''}<br><button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||user.name).replaceAll("'","&#39;")}','${trainingTestLevel(x)}')">Start ${testLevelText(trainingTestLevel(x))}</button></p>`).join('');
-  }catch(e){}
-}
-
-function openToolboxTest(trainingId='', auditId='', engineerName='', assignedLevel='level1'){
-  show('toolboxTest');
-  qs('tbTrainingId').value = trainingId || '';
-  qs('tbAuditId').value = auditId || '';
-  qs('tbEngineer').value = engineerName || (user?user.name:'');
-  qs('tbDate').value = new Date().toISOString().slice(0,10);
-  qs('tbLevel').value = assignedLevel || 'level1';
-  if(qs('tbLevelLabel')) qs('tbLevelLabel').value = testLevelText(qs('tbLevel').value);
-  renderToolboxQuestions();
-  qs('tbMsg').textContent='';
-}
-
-function renderToolboxQuestions(){
-  let html='';
-  const bank=currentToolboxQuestions();
-  bank.forEach((x,i)=>{
-    html+=`<div class="q"><label>${i+1}. ${x.q}</label><select id="tbq_${i}" onchange="calcToolboxScore()"><option value="">Select answer</option>${x.opts.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
-  });
-  qs('toolboxQuestions').innerHTML=html;
-  calcToolboxScore();
-}
-
-function calcToolboxScore(){
-  let score=0;
-  const bank=currentToolboxQuestions();
-  bank.forEach((x,i)=>{ if(qs('tbq_'+i)?.value===x.a) score++; });
-  const level=qs('tbLevel')?.value||'level1';
-  const passMark=level==='level2'?27:14;
-  const result = score>=passMark ? 'PASS' : 'FAIL';
-  const total=bank.length;
-  const scoreBox=qs('tbScoreOut')?.parentElement;
-  if(scoreBox){
-    if(user && user.role==='manager'){
-      scoreBox.innerHTML=`Test Score: <span id="tbScoreOut">${score}</span>/${total} - Pass mark ${passMark} - <span id="tbResultOut">${result}</span>`;
-    } else {
-      scoreBox.innerHTML=`Test in progress. Results will be recorded for manager review.`;
-    }
-  }
-  return {score,result,level,total,passMark};
-}
-
-async function submitToolboxTest(){
-  try{
-    const sr=calcToolboxScore();
-    const answers=currentToolboxQuestions().map((x,i)=>({question:x.q,selected:qs('tbq_'+i).value,correct:x.a,pass:qs('tbq_'+i).value===x.a}));
-    const body={training_id:qs('tbTrainingId').value,audit_id:qs('tbAuditId').value,engineer_name:qs('tbEngineer').value,test_date:qs('tbDate').value,test_level:sr.level,total_questions:sr.total,pass_mark:sr.passMark,score:sr.score,result:sr.result,answers};
-    const j=await api('/api/toolbox-test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    qs('tbMsg').textContent = (user && user.role==='manager') 
-      ? `Toolbox test saved. Result: ${j.result}, Score: ${j.score}/${sr.total}`
-      : 'Toolbox test submitted. Your manager will review the result.';
-    await loadTraining();
-    await loadAudits();
-    await loadMyTrainingNotice();
-  }catch(e){qs('tbMsg').textContent=e.message}
-}
-
-async function completeTraining(id){if(!user || user.role!=='manager'){alert('Manager access only');return;}
-  if(!confirm('Mark this training record as completed?')) return;
-  await api('/api/training',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed',role:user.role})});
-  await loadTraining();
-  await loadAudits();
-}
-
-async function completeReaudit(id){if(!user || user.role!=='manager'){alert('Manager access only');return;}
-  if(!confirm('Mark this re-audit as completed?')) return;
-  await api('/api/reaudits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed',role:user.role})});
-  await loadTraining();
-  await loadAudits();
-}
-
-function trainingTestLevel(x){
-  const text=((x&&x.training_type)||'').toLowerCase();
-  if(text.includes('level 2') || text.includes('advanced')) return 'level2';
-  return 'level1';
-}
-function testLevelText(level){
-  return level==='level2'?'Level 2 Advanced Competency Assessment':'Level 1 Commercial Gas Safety Refresher';
-}
-function trainingTypeText(level){
-  if(level==='level2') return 'Level 2 Advanced Competency Assessment required. Practical assessment and manager sign-off required before re-audit.';
-  if(level==='practical') return 'Practical Assessment required. Manager observation and sign-off required.';
-  if(level==='manufacturer') return 'Manufacturer Product Training required.';
-  if(level==='coaching') return 'One-to-One Coaching required.';
-  if(level==='reaudit') return 'Re-audit Only required.';
-  return 'Level 1 Commercial Gas Safety Refresher required. Re-audit to be completed within 30 days.';
-}
-async function loadTrainingManager(){
-  if(!user || user.role!=='manager'){alert('Manager access only');return;}
-  show('trainingManager');
-  await loadUsers();
-  const eng=users.filter(u=>u.role==='engineer'&&Number(u.active)!==0);
-  qs('tmEngineer').innerHTML=eng.map(u=>`<option value="${u.name}">${u.name}</option>`).join('');
-  qs('tmDue').value=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
-  const t=await api('/api/training?role=manager');
-  qs('tmRows').innerHTML=(t.training||[]).map(x=>{
-    const done=['complete','completed','closed','cancelled'].includes((x.status||'Open').toLowerCase());
-    const assignedLevel=trainingTestLevel(x);
-    const canTest=assignedLevel==='level1'||assignedLevel==='level2';
-    const testBtn=done?'<span class="muted">Closed</span>':(canTest?`<button onclick="openToolboxTest('${x.id||''}','','${(x.engineer_name||'').replaceAll("'","&#39;")}','${assignedLevel}')">Open ${testLevelText(assignedLevel)}</button>`:'');
-    const closeBtn=done?'':`<button onclick="completeTraining(${x.id})">Mark Complete</button>`;
-    return `<tr><td>${x.id||''}</td><td>${x.engineer_name||''}</td><td>${x.training_type||''}</td><td>${x.assigned_date||''}</td><td>${x.status||''}</td><td>${testBtn} ${closeBtn}</td></tr>`;
-  }).join('');
+  const role=user.role, eng=encodeURIComponent(user.name||'');
+  const [t,r]=await Promise.all([api(`/api/training?role=${role}&engineer=${eng}`).catch(e=>({training:[]})), api(`/api/reaudits?role=${role}&engineer=${eng}`).catch(e=>({reaudits:[]}))]);
+  $('trainingRows').innerHTML=(t.training||[]).map(x=>`<tr><td>${x.engineer_name||''}</td><td>${x.training_type||''}</td><td>${x.assigned_date||''}</td><td>${x.status||''}</td><td>${x.completion_date||''}</td></tr>`).join('');
+  $('reauditRows').innerHTML=(r.reaudits||[]).map(x=>`<tr><td>${x.audit_ref||''}</td><td>${x.engineer_name||''}</td><td>${x.due_date||''}</td><td>${x.status||''}</td></tr>`).join('');
 }
 async function assignTraining(){
-  try{
-    const body={
-      engineer_name:qs('tmEngineer').value,
-      training_type:trainingTypeText(qs('tmType').value)+(qs('tmNotes').value?(' Notes: '+qs('tmNotes').value):''),
-      assigned_date:new Date().toISOString().slice(0,10),
-      completion_date:'',
-      status:'Open'
-    };
-    await api('/api/training',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    qs('tmMsg').textContent='Training assigned to '+body.engineer_name;
-    await loadTrainingManager();
-  }catch(e){qs('tmMsg').textContent=e.message;}
+  try{const j=await api('/api/training',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({role:user.role,engineer_name:$('tmEngineer').value,training_type:$('tmType').value,status:'Open'})}); $('tmMsg').textContent='Training assigned ID '+j.id;}
+  catch(e){$('tmMsg').textContent=e.message}
 }
 
-async function loadToolboxResults(){
-  if(!user || user.role!=='manager'){alert('Manager access only');return;}
-  show('toolboxResults');
-  try{
-    const j=await api('/api/toolbox-test?role=manager');
-    const rows=j.results||[];
-    const total=rows.length;
-    const passes=rows.filter(x=>(x.result||'').toUpperCase()==='PASS').length;
-    const fails=rows.filter(x=>(x.result||'').toUpperCase()==='FAIL').length;
-    qs('toolboxResultStats').innerHTML=`<p><span class="pill">Total tests: ${total}</span> <span class="pill pass">Pass: ${passes}</span> <span class="pill fail">Fail: ${fails}</span></p>`;
-    qs('toolboxResultRows').innerHTML=rows.map(x=>{
-      let info={};
-      try{info=JSON.parse(x.answers_json||'{}')}catch(e){}
-      const level=info.test_level||'';
-      const totalQ=info.total_questions||'';
-      const label=level==='level2'?'Level 2 Advanced':level==='level1'?'Level 1 Refresher':level;
-      return `<tr>
-        <td>${x.id||''}</td>
-        <td>${x.test_date||x.created_at||''}</td>
-        <td>${x.engineer_name||''}</td>
-        <td>${label}</td>
-        <td>${x.score||0}${totalQ?'/'+totalQ:''}</td>
-        <td><span class="pill ${(x.result||'').toUpperCase()==='PASS'?'pass':'fail'}">${x.result||''}</span></td>
-        <td>${x.training_id||''}</td>
-        <td><button onclick="viewToolboxResult(${x.id})">View</button></td>
-      </tr>`;
-    }).join('');
-    window._toolboxResults=rows;
-  }catch(e){
-    qs('toolboxResultRows').innerHTML=`<tr><td colspan="8">${e.message}</td></tr>`;
+async function loadUsers(){const j=await api('/api/users'); $('userRows').innerHTML=(j.users||[]).map(u=>`<tr><td>${u.name}</td><td>${u.email}</td><td>${roleLabel(u.role)}</td><td>${u.title||''}</td><td>${u.pin||''}</td></tr>`).join('')}
+async function loadToolboxResults(){try{const j=await api('/api/toolbox-test?role=manager'); $('toolboxRows').innerHTML=(j.results||j.records||[]).map(r=>`<tr><td>${r.id}</td><td>${r.engineer_name||r.engineer||''}</td><td>${r.score||''}</td><td>${r.result||r.outcome||''}</td><td>${r.created_at||r.test_date||''}</td></tr>`).join('')}catch(e){$('toolboxRows').innerHTML='<tr><td colspan="5">'+e.message+'</td></tr>'}}
+
+function prettyName(file){return file.name.replace(/\.[^.]+$/,'').replace(/[._-]+/g,' ').replace(/\bUP\s*(\d+)/i,'UP/$1')}
+async function uploadKnowledge(){
+  const files=[...$('kcFiles').files]; if(!files.length){$('kcMsg').textContent='Choose a file first.'; return}
+  let ok=0;
+  for(const file of files){
+    const data=await new Promise((resolve,reject)=>{const fr=new FileReader(); fr.onload=()=>resolve(fr.result); fr.onerror=reject; fr.readAsDataURL(file)});
+    await api('/api/library-upload',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:$('kcTitle').value||prettyName(file),category:$('kcCategory').value,reference:$('kcReference').value,keywords:$('kcKeywords').value,file_name:file.name,mime_type:file.type,file_data:data,uploaded_by:user.name})});
+    ok++;
   }
+  $('kcMsg').textContent='Uploaded '+ok+' document(s).'; loadKnowledgeCentre();
 }
-function viewToolboxResult(id){
-  const row=(window._toolboxResults||[]).find(x=>Number(x.id)===Number(id));
-  if(!row){qs('toolboxResultDetail').textContent='Result not found.';return;}
-  let info={};
-  try{info=JSON.parse(row.answers_json||'{}')}catch(e){}
-  const answers=info.answers||[];
-  qs('toolboxResultDetail').innerHTML=`
-    <p><b>Engineer:</b> ${row.engineer_name||''}<br>
-    <b>Date:</b> ${row.test_date||row.created_at||''}<br>
-    <b>Result:</b> ${row.result||''}<br>
-    <b>Score:</b> ${row.score||0}/${info.total_questions||answers.length||''}<br>
-    <b>Pass Mark:</b> ${info.pass_mark||''}</p>
-    <table><thead><tr><th>Question</th><th>Selected</th><th>Correct Answer</th><th>Outcome</th></tr></thead>
-    <tbody>${answers.map(a=>`<tr><td>${a.question||''}</td><td>${a.selected||''}</td><td>${a.correct||''}</td><td>${a.pass?'Correct':'Incorrect'}</td></tr>`).join('')}</tbody></table>`;
-}
-
-
-async function loadRecordManager(){
-  if(!user || user.role!=='manager'){alert('Manager access only');return;}
-  show('recordManager');
-  await loadDeletionLog();
-}
-async function deleteAuditBundle(){
-  if(!user || user.role!=='manager'){alert('Manager access only');return;}
-  const id=Number(qs('rmAuditId').value);
-  if(!id){qs('rmAuditMsg').textContent='Enter an audit ID.';return;}
-  const reason=qs('rmAuditReason').value||'No reason entered';
-  if(!confirm(`Delete HBS-${id} and all linked photos, training, re-audits and test results? This cannot be undone.`)) return;
-  try{
-    const j=await api('/api/admin-delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'delete_audit_bundle',audit_id:id,manager:user.name,reason})});
-    qs('rmAuditMsg').textContent=`Deleted HBS-${id}. Records affected: ${JSON.stringify(j.deleted)}`;
-    await loadDeletionLog();
-    await loadAudits();
-  }catch(e){qs('rmAuditMsg').textContent=e.message;}
-}
-async function deleteEngineerTraining(){
-  if(!user || user.role!=='manager'){alert('Manager access only');return;}
-  const engineer=qs('rmEngineer').value.trim();
-  if(!engineer){qs('rmEngineerMsg').textContent='Enter an engineer name.';return;}
-  const reason=qs('rmEngineerReason').value||'No reason entered';
-  if(!confirm(`Delete all training, re-audits and toolbox results for ${engineer}? This cannot be undone.`)) return;
-  try{
-    const j=await api('/api/admin-delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'delete_engineer_training',engineer_name:engineer,manager:user.name,reason})});
-    qs('rmEngineerMsg').textContent=`Deleted records for ${engineer}. Records affected: ${JSON.stringify(j.deleted)}`;
-    await loadDeletionLog();
-    await loadAudits();
-  }catch(e){qs('rmEngineerMsg').textContent=e.message;}
-}
-async function loadDeletionLog(){
-  try{
-    const j=await api('/api/admin-delete');
-    qs('deletionLogRows').innerHTML=(j.logs||[]).map(x=>`<tr><td>${x.created_at||''}</td><td>${x.manager_name||''}</td><td>${x.action||''}</td><td>${x.target||''}</td><td>${x.reason||''}</td></tr>`).join('');
-  }catch(e){
-    if(qs('deletionLogRows')) qs('deletionLogRows').innerHTML=`<tr><td colspan="5">${e.message}</td></tr>`;
-  }
-}
-
-
-
-async function fileToBase64(file){
-  return new Promise((resolve,reject)=>{
-    const fr=new FileReader();
-    fr.onload=()=>resolve(fr.result);
-    fr.onerror=()=>reject(fr.error);
-    fr.readAsDataURL(file);
-  });
-}
-function formatBytes(bytes){
-  bytes=Number(bytes||0);
-  if(!bytes) return '';
-  const units=['B','KB','MB','GB'];
-  let i=0;
-  while(bytes>=1024 && i<units.length-1){bytes/=1024;i++;}
-  return bytes.toFixed(i?1:0)+' '+units[i];
-}
-function setKnowledgeCategory(category){
-  if(qs('kcFilter')) qs('kcFilter').value=category;
-  loadKnowledgeCentre();
-}
-
-function prettifyFileTitle(fileName){
-  let n=String(fileName||'').replace(/\.[^.]+$/,'');
-  n=n.replace(/_/g,' ').replace(/\s+/g,' ').trim();
-  n=n.replace(/\bUP[ ._-]?(\d+[A-Z]?)\b/ig,'UP/$1');
-  n=n.replace(/\bEd(?:ition)?[ ._-]?(\d+)\b/ig,'Edition $1');
-  n=n.replace(/\bIGEM\b/ig,'IGEM');
-  return n;
-}
-function inferReference(fileName, fallback){
-  if(fallback) return fallback;
-  const n=String(fileName||'');
-  const m=n.match(/UP[ ._-]?(\d+[A-Z]?)/i);
-  const e=n.match(/(?:Ed|Edition)[ ._-]?(\d+)/i);
-  if(m && e) return `UP/${m[1].toUpperCase()} Ed.${e[1]}`;
-  if(m) return `UP/${m[1].toUpperCase()}`;
-  return '';
-}
-function inferKeywords(fileName, category, existing){
-  if(existing) return existing;
-  const title=prettifyFileTitle(fileName).toLowerCase();
-  const words=[];
-  if((category||'').includes('IGEM')) words.push('IGEM','commercial gas','standard');
-  if(title.includes('flue')) words.push('flues','flued gas appliances','ventilation');
-  if(title.includes('tight')) words.push('tightness testing','direct purging','pressure testing');
-  if(title.includes('purge')) words.push('purging','testing');
-  if(title.includes('vent')) words.push('ventilation');
-  if(title.includes('combust')) words.push('combustion');
-  return [...new Set(words)].join(', ');
-}
-
-async function uploadKnowledgeDocument(){
-  if(!user || user.role!=='manager'){alert('Manager access only');return;}
-  const fileInput = qs('kcFiles') || qs('libFile');
-  const files=[...(fileInput?.files||[])];
-  const msg=qs('kcUploadMsg')||qs('libUploadMsg');
-  const progress=qs('kcUploadProgress');
-  if(!files.length){
-    if(msg) msg.textContent='Select one or more files first.';
-    return;
-  }
-
-  if(msg) msg.textContent=`Uploading ${files.length} document(s) directly to Cloudflare R2...`;
-  if(progress) progress.innerHTML='';
-
-  let ok=0, failed=[];
-  for(let i=0;i<files.length;i++){
-    const file=files[i];
-    try{
-      const categoryValue=(qs('kcCategory')?.value||qs('libCategory')?.value||'Other');
-      const titleInput=(qs('kcTitle')?.value||qs('libTitle')?.value||'');
-      const refInput=(qs('kcReference')?.value||qs('libReference')?.value||'');
-      const keyInput=(qs('kcKeywords')?.value||qs('libKeywords')?.value||'');
-      const title = files.length===1 ? (titleInput || prettifyFileTitle(file.name)) : prettifyFileTitle(file.name);
-      const params = new URLSearchParams({
-        title,
-        category:categoryValue,
-        reference:inferReference(file.name, refInput),
-        keywords:inferKeywords(file.name, categoryValue, keyInput),
-        file_name:file.name,
-        mime_type:file.type||'application/octet-stream',
-        uploaded_by:user.name
-      });
-
-      if(progress) progress.innerHTML += `<div>Uploading ${i+1}/${files.length}: ${file.name} (${formatBytes(file.size)})...</div>`;
-
-      const response = await fetch('/api/library-upload?'+params.toString(), {
-        method:'POST',
-        headers:{'content-type':file.type||'application/octet-stream'},
-        body:file
-      });
-
-      const text = await response.text();
-      let json;
-      try { json = JSON.parse(text); }
-      catch(e) { throw new Error(text.slice(0,300)); }
-
-      if(!json.ok) throw new Error(json.error||'Upload failed');
-
-      ok++;
-      if(msg) msg.textContent=`Uploaded ${ok}/${files.length} document(s) to R2 Knowledge Centre.`;
-      if(progress) progress.innerHTML += `<div>✓ Uploaded: ${file.name}</div>`;
-    }catch(e){
-      failed.push(file.name+': '+(String(e.message).startsWith('<!DOCTYPE')?'Cloudflare rejected the upload request before reaching the function. Use direct R2 upload/register for this file.':e.message));
-      if(progress) progress.innerHTML += `<div>✗ Failed: ${file.name}</div>`;
-    }
-  }
-
-  if(msg) msg.textContent=failed.length?`Uploaded ${ok}/${files.length}. Failed: ${failed.join(' | ')}`:`Uploaded ${ok}/${files.length} document(s) to R2 Knowledge Centre.`;
-
-  ['kcTitle','kcReference','kcKeywords','kcFiles','libTitle','libReference','libKeywords','libFile'].forEach(id=>{if(qs(id))qs(id).value='';});
-  await loadKnowledgeCentre();
-}
-async function uploadLibraryDocument(){return uploadKnowledgeDocument();}
-
-async function uploadLibraryDocument(){ return uploadKnowledgeDocument(); }
 async function loadKnowledgeCentre(){
-  show('knowledgeCentre');
-  const q=encodeURIComponent(qs('kcSearch')?.value||'');
-  const c=encodeURIComponent(qs('kcFilter')?.value||'');
-  try{
-    const j=await api(`/api/library?q=${q}&category=${c}&user=${encodeURIComponent(user.name)}`);
-    const rows=j.documents||[];
-    const counts={};
-    rows.forEach(d=>counts[d.category||'Other']=(counts[d.category||'Other']||0)+1);
-    if(qs('kcSectionCounts')){
-      qs('kcSectionCounts').innerHTML=Object.entries(counts).length
-        ? Object.entries(counts).map(([k,v])=>`<span class="pill">${k}: ${v}</span>`).join(' ')
-        : '<span class="muted">No documents uploaded yet.</span>';
-    }
-    qs('knowledgeRows').innerHTML=rows.map(d=>{
-      const del=(user&&user.role==='manager')?`<button class="danger" onclick="deleteKnowledgeDocument(${d.id})">Delete</button>`:'';
-      return `<tr><td>${d.title||''}</td><td>${d.category||''}</td><td>${d.reference||''}</td><td>${d.keywords||''}</td><td>${formatBytes(d.file_size||0)}</td><td>${d.created_at||''}</td><td><button onclick="openKnowledgeDocument(${d.id})">Open</button> ${user&&user.role==='manager'?`<button onclick="editKnowledgeDocument(${d.id})">Edit</button>`:''} ${del}</td></tr>`;
-    }).join('');
-    if(!rows.length) qs('knowledgeRows').innerHTML='<tr><td colspan="7">No documents found.</td></tr>';
-  }catch(e){
-    qs('knowledgeRows').innerHTML=`<tr><td colspan="7">${e.message}</td></tr>`;
-  }
+  const q=encodeURIComponent($('kcSearch')?.value||''), cat=encodeURIComponent($('kcFilter')?.value||'');
+  try{const j=await api(`/api/library?q=${q}&category=${cat}`); $('kcRows').innerHTML=(j.documents||[]).map(d=>`<tr><td>${d.title||''}</td><td>${d.category||''}</td><td>${d.reference||''}</td><td>${d.keywords||''}</td><td>${d.file_size||''}</td><td>${d.created_at||''}</td><td><button onclick="openDoc(${d.id})">Open</button></td></tr>`).join('')}
+  catch(e){$('kcRows').innerHTML='<tr><td colspan="7">'+e.message+'</td></tr>'}
 }
-async function loadTechnicalLibrary(){ return loadKnowledgeCentre(); }
-async function openKnowledgeDocument(id){
-  try{
-    const j=await api('/api/library?id='+encodeURIComponent(id)+'&open_by='+encodeURIComponent(user.name));
-    const d=j.document;
-    const url=d.file_url;
-    const isPdf=(d.mime_type||'').includes('pdf') || (d.file_name||'').toLowerCase().endsWith('.pdf');
-    const isImage=(d.mime_type||'').startsWith('image/');
-    const isVideo=(d.mime_type||'').startsWith('video/');
-    let viewer='';
-    if(isPdf){
-      viewer=`<iframe src="${url}" style="width:100%;height:720px;border:1px solid #ddd;border-radius:8px"></iframe>`;
-    } else if(isImage){
-      viewer=`<img src="${url}" style="max-width:100%;border:1px solid #ddd;border-radius:8px">`;
-    } else if(isVideo){
-      viewer=`<video src="${url}" controls style="max-width:100%;border:1px solid #ddd;border-radius:8px"></video>`;
-    } else {
-      viewer=`<p class="muted">Preview not available for this file type. Use Open / Download.</p>`;
-    }
-    qs('knowledgeViewer').innerHTML=`<h4>${d.title}</h4><p><b>Category:</b> ${d.category||''}<br><b>Reference:</b> ${d.reference||''}<br><b>Keywords:</b> ${d.keywords||''}<br><b>File:</b> ${d.file_name||''}<br><b>Size:</b> ${formatBytes(d.file_size||0)}</p><p><a href="${url}" target="_blank"><button>Open / Download</button></a></p>${viewer}`;
-  }catch(e){qs('knowledgeViewer').textContent=e.message;}
-}
-async function openLibraryDocument(id){ return openKnowledgeDocument(id); }
-async function deleteKnowledgeDocument(id){
-  if(!user || user.role!=='manager'){alert('Manager access only');return;}
-  if(!confirm('Delete this Knowledge Centre document?')) return;
-  try{
-    await api('/api/library',{method:'DELETE',headers:{'content-type':'application/json'},body:JSON.stringify({id,manager:user.name})});
-    await loadKnowledgeCentre();
-    qs('knowledgeViewer').textContent='Document deleted.';
-  }catch(e){alert(e.message);}
-}
-async function deleteLibraryDocument(id){ return deleteKnowledgeDocument(id); }
+async function openDoc(id){const j=await api('/api/library?id='+id+'&open_by='+encodeURIComponent(user.name)); if(j.document?.file_url) window.open(j.document.file_url,'_blank')}
 
-async function downloadBackup(){
-  try{
-    const j=await api('/api/backup');
-    const blob=new Blob([JSON.stringify(j.backup,null,2)],{type:'application/json'});
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download='HBS_Gas_Audit_Backup_'+new Date().toISOString().slice(0,10)+'.json';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }catch(e){alert('Backup failed: '+e.message)}
-}
-
-async function loadUserAdmin(){if(!user || user.role!=='manager'){alert('Manager access only');return;} show('userAdmin'); await loadUsers(); qs('userRows').innerHTML=users.map(u=>`<tr><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td>${Number(u.active)!==0?'Yes':'No'}</td><td><button onclick='editUser(${JSON.stringify(u).replaceAll("'","&#39;")})'>Edit</button></td></tr>`).join('')}
-function editUser(u){qs('userId').value=u.id; qs('userName').value=u.name||''; qs('userEmail').value=u.email||''; qs('userPin').value=''; qs('userRole').value=u.role||'engineer'; qs('userActive').value=String(Number(u.active)!==0?1:0); qs('userMsg').textContent='Leave PIN blank only if you intend to reset it to 1234 in this simple version.'}
-function clearUserForm(){['userId','userName','userEmail','userPin'].forEach(id=>qs(id).value=''); qs('userRole').value='engineer'; qs('userActive').value='1'; qs('userMsg').textContent=''}
-async function saveUser(){try{const body={id:qs('userId').value||undefined,name:qs('userName').value,email:qs('userEmail').value,pin:qs('userPin').value||'1234',role:qs('userRole').value,active:Number(qs('userActive').value)}; await api('/api/users',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); qs('userMsg').textContent='User saved.'; clearUserForm(); await loadUserAdmin()}catch(e){qs('userMsg').textContent=e.message}}
-async function booklet(id){const j=await api('/api/audit?id='+encodeURIComponent(id)); const a=j.audit, data=JSON.parse(a.audit_json||'{}'); show('booklet'); qs('bookletBody').innerHTML=`<h3>HBS-${a.id}</h3><p><b>Engineer:</b> ${a.engineer_name}<br><b>Auditor:</b> ${a.auditor||''}<br><b>Site:</b> ${a.site_name}<br><b>Client:</b> ${data.client_name||''}<br><b>Date:</b> ${a.audit_date}<br><b>Appliance Type:</b> ${data.appliance_type||''}<br><b>Manufacturer:</b> ${data.manufacturer||''}<br><b>Model:</b> ${data.model||''}<br><b>Serial Number:</b> ${data.serial_number||''}<br><b>Asset Number:</b> ${data.asset_number||''}<br><b>Score:</b> ${a.score}% - ${a.result}</p><h3>Audit Questions</h3><table><tr><th>Section</th><th>Question</th><th>Score</th><th>Notes</th></tr>${(data.questions||[]).map(q=>`<tr><td>${q.section}</td><td>${q.question}</td><td>${q.score}</td><td>${q.note||''}</td></tr>`).join('')}</table><h3>Findings / Actions</h3><p>${(data.actions_required||'').replaceAll('\n','<br>')}</p><h3>Training / Re-audit</h3><p>${(data.training_required||'').replaceAll('\n','<br>')}</p><h3>Photos</h3>${(j.photos||[]).map(p=>`<img class=photo src="${p.photo_url}">`).join('')}<h3>Signed</h3><p>${data.signature||''}</p>`}
-
-
-
-
-async function editKnowledgeDocument(id){
-  if(!user || user.role!=='manager'){alert('Manager access only');return;}
-  try{
-    const j=await api('/api/library?id='+encodeURIComponent(id));
-    const d=j.document;
-    qs('kcEditId').value=d.id;
-    qs('kcEditTitle').value=d.title||'';
-    qs('kcEditCategory').value=d.category||'Other';
-    qs('kcEditReference').value=d.reference||'';
-    qs('kcEditKeywords').value=d.keywords||'';
-    qs('kcEditMsg').textContent='';
-    qs('kcEditPanel').classList.remove('hide');
-    qs('kcEditPanel').scrollIntoView({behavior:'smooth',block:'start'});
-  }catch(e){alert(e.message);}
-}
-function cancelKnowledgeEdit(){
-  qs('kcEditPanel').classList.add('hide');
-  qs('kcEditMsg').textContent='';
-}
-async function saveKnowledgeEdit(){
-  if(!user || user.role!=='manager'){alert('Manager access only');return;}
-  try{
-    const body={
-      id:Number(qs('kcEditId').value),
-      title:qs('kcEditTitle').value,
-      category:qs('kcEditCategory').value,
-      reference:qs('kcEditReference').value,
-      keywords:qs('kcEditKeywords').value,
-      updated_by:user.name
-    };
-    await api('/api/library',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    qs('kcEditMsg').textContent='Document details updated.';
-    await loadKnowledgeCentre();
-  }catch(e){qs('kcEditMsg').textContent=e.message;}
-}
-
-
-
-
-
-function newSeniorAudit(){
-  if(!canAudit()){alert('Access denied');return;}
-  show('auditForm');
-  if(qs('auditor')) qs('auditor').value=user.name;
-  applyRoleVisibility();
-}
-
-
-
-
-
-
-
-
-
-
-
-function ensureConductAuditButton(){
-  if(!user) return;
-  const isAllowed = user.role==='manager' || user.role==='senior_engineer';
-  const nav = document.querySelector('nav') || document.querySelector('.nav') || document.querySelector('.toolbar') || document.querySelector('.topbar') || document.body;
-  if(!isAllowed) return;
-  if(document.querySelector('#conductAuditBtn')) return;
-  const btn=document.createElement('button');
-  btn.id='conductAuditBtn';
-  btn.textContent=user.role==='senior_engineer'?'Conduct Audit':'New Audit';
-  btn.onclick=function(){
-    if(typeof show==='function') show('auditForm');
-    const auditor=document.querySelector('#auditor');
-    if(auditor) auditor.value=user.name;
-  };
-  const logout=[...document.querySelectorAll('button')].find(b=>(b.textContent||'').trim().toLowerCase()==='logout');
-  if(logout && logout.parentNode) logout.parentNode.insertBefore(btn, logout);
-  else nav.appendChild(btn);
-}
-setInterval(function(){try{ensureConductAuditButton();}catch(e){}},1000);
-
-
-
-
-
-
-
-
-
-// --- HBS embedded Netlify tightness calculator integration ---
-const HBS_TIGHTNESS_CALC_B64 = "PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9ImVuIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9InV0Zi04Ij4KPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xIj4KPHRpdGxlPkhCUyBHYXMgVGlnaHRuZXNzIFRlc3QgQ2FsY3VsYXRvciB2MC42LjE8L3RpdGxlPgo8bGluayByZWw9Im1hbmlmZXN0IiBocmVmPSJtYW5pZmVzdC53ZWJtYW5pZmVzdCI+CjxzdHlsZT4KOnJvb3R7LS1oYnM6IzEyM2M0YTstLWdyZWVuOiNlNmY2ZTY7LS1ibHVlOiNlYWYzZmY7LS1saW5lOiNjZmQ4ZGM7LS1yZWQ6I2ZmZjBmMH0KKntib3gtc2l6aW5nOmJvcmRlci1ib3h9Ym9keXtmb250LWZhbWlseTpBcmlhbCxIZWx2ZXRpY2Esc2Fucy1zZXJpZjttYXJnaW46MDtiYWNrZ3JvdW5kOiNmNGY2Zjg7Y29sb3I6IzFkMWQxZjtmb250LXNpemU6MTZweH0udG9we2JhY2tncm91bmQ6dmFyKC0taGJzKTtjb2xvcjp3aGl0ZTtwYWRkaW5nOjE4cHh9LnRvcCBoMXttYXJnaW46NHB4IDA7Zm9udC1zaXplOjI0cHh9LndyYXB7bWF4LXdpZHRoOjEwODBweDttYXJnaW46MCBhdXRvO3BhZGRpbmc6MTJweH0uY2FyZHtiYWNrZ3JvdW5kOndoaXRlO2JvcmRlcjoxcHggc29saWQgdmFyKC0tbGluZSk7Ym9yZGVyLXJhZGl1czoxMnB4O3BhZGRpbmc6MTRweDttYXJnaW46MTJweCAwO2JveC1zaGFkb3c6MCAxcHggM3B4IHJnYmEoMCwwLDAsLjA2KX1oMnttYXJnaW46MCAwIDEwcHg7Y29sb3I6dmFyKC0taGJzKTtmb250LXNpemU6MjFweH0uZ3JpZHtkaXNwbGF5OmdyaWQ7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCgyLG1pbm1heCgwLDFmcikpO2dhcDoxMHB4fWxhYmVse2ZvbnQtd2VpZ2h0OjcwMDtmb250LXNpemU6MTRweH0uaW5wdXQsc2VsZWN0e3dpZHRoOjEwMCU7bWluLWhlaWdodDo0NHB4O2ZvbnQtc2l6ZToxN3B4O3BhZGRpbmc6OXB4O2JvcmRlcjoycHggc29saWQgIzliYjBiODtib3JkZXItcmFkaXVzOjhweDtiYWNrZ3JvdW5kOnZhcigtLWdyZWVuKTttYXJnaW4tdG9wOjRweH0uY2FsY3tiYWNrZ3JvdW5kOnZhcigtLWJsdWUpfXRhYmxle3dpZHRoOjEwMCU7Ym9yZGVyLWNvbGxhcHNlOmNvbGxhcHNlO2ZvbnQtc2l6ZToxNHB4fXRoLHRke2JvcmRlcjoxcHggc29saWQgdmFyKC0tbGluZSk7cGFkZGluZzo2cHg7dmVydGljYWwtYWxpZ246bWlkZGxlfXRoe2JhY2tncm91bmQ6I2VlZjRmNjtjb2xvcjojMTIzYzRhfXRkIGlucHV0LHRkIHNlbGVjdHttaW4taGVpZ2h0OjQwcHg7Zm9udC1zaXplOjE1cHh9LmJ0bntiYWNrZ3JvdW5kOiMxMjNjNGE7Y29sb3I6I2ZmZjtib3JkZXI6bm9uZTtib3JkZXItcmFkaXVzOjhweDtwYWRkaW5nOjEycHggMTZweDtmb250LXNpemU6MTZweDtmb250LXdlaWdodDo3MDA7bWFyZ2luOjhweCA0cHggOHB4IDB9LmJ0bi5kYW5nZXJ7YmFja2dyb3VuZDojOGIxZTFlfS5yZXN1bHQtZ3JpZHtkaXNwbGF5OmdyaWQ7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCgzLG1pbm1heCgwLDFmcikpO2dhcDoxMHB4fS5yZXN1bHR7YmFja2dyb3VuZDp2YXIoLS1ibHVlKTtib3JkZXI6MXB4IHNvbGlkICNiOWQ0ZjM7Ym9yZGVyLXJhZGl1czo5cHg7cGFkZGluZzoxMHB4fS5yZXN1bHQgc3BhbntkaXNwbGF5OmJsb2NrO2ZvbnQtc2l6ZToxM3B4fS5yZXN1bHQgc3Ryb25ne2ZvbnQtc2l6ZToxOHB4fS53YXJuaW5ne2JhY2tncm91bmQ6I2ZmZjhkYztib3JkZXI6MnB4IHNvbGlkICNlMGIwMDB9LnBpcGUtc2VjdGlvbi10aXRsZXtmb250LXNpemU6MjRweDtiYWNrZ3JvdW5kOiMxNjNmNGQ7Y29sb3I6I2ZmZjtwYWRkaW5nOjEycHg7Ym9yZGVyLXJhZGl1czo4cHg7bWFyZ2luLWJvdHRvbToxMHB4fS52aXNpYmxlLWJhbm5lcntiYWNrZ3JvdW5kOiNlNmY2ZTY7Ym9yZGVyOjJweCBzb2xpZCAjMWY3YTFmO3BhZGRpbmc6MTBweDtib3JkZXItcmFkaXVzOjhweDtmb250LXdlaWdodDo3MDB9LnRhYmxlLXdyYXB7b3ZlcmZsb3cteDphdXRvfS5zbWFsbHtmb250LXNpemU6MTJweDtjb2xvcjojNTU1fXByZXt3aGl0ZS1zcGFjZTpwcmUtd3JhcDtiYWNrZ3JvdW5kOiNmOGZhZmI7Ym9yZGVyOjFweCBzb2xpZCB2YXIoLS1saW5lKTtwYWRkaW5nOjEwcHg7Ym9yZGVyLXJhZGl1czo4cHh9QG1lZGlhKG1heC13aWR0aDo3NjBweCl7LmdyaWQsLnJlc3VsdC1ncmlke2dyaWQtdGVtcGxhdGUtY29sdW1uczoxZnJ9dGFibGV7Zm9udC1zaXplOjEzcHh9LnRvcCBoMXtmb250LXNpemU6MjBweH19CkBtZWRpYSBwcmludHsuYnRue2Rpc3BsYXk6bm9uZX0uY2FyZHtib3gtc2hhZG93Om5vbmU7YnJlYWstaW5zaWRlOmF2b2lkfWJvZHl7YmFja2dyb3VuZDojZmZmfS5pbnB1dCxzZWxlY3R7Ym9yZGVyOjFweCBzb2xpZCAjOTk5O2JhY2tncm91bmQ6I2ZmZn19Cjwvc3R5bGU+CjwvaGVhZD4KPGJvZHk+CjxoZWFkZXIgY2xhc3M9InRvcCI+PGRpdj5Ib2NrbGV5IEJ1aWxkaW5nIFNlcnZpY2VzIEx0ZDwvZGl2PjxoMT5Db21tZXJjaWFsIEdhcyBUaWdodG5lc3MgVGVzdCBDYWxjdWxhdG9yIHYwLjYuMS4xPC9oMT48ZGl2PlRQQ1AxIC8gVFBDUDFBIMK3IFBpcGV3b3JrIFNlY3Rpb25zIHZpc2libGUgwrcgR2FzIHR5cGUgdmlzaWJsZSDCtyBQcmVzc3VyZSBsb3NzIGNvcnJlY3RlZDwvZGl2PjwvaGVhZGVyPgo8ZGl2IGNsYXNzPSJ3cmFwIj4KPHNlY3Rpb24gY2xhc3M9ImNhcmQgd2FybmluZyI+PGgyPkVuZ2luZWVyIFVzZTwvaDI+PHA+PGI+R3JlZW4gY2VsbHMgYXJlIGVuZ2luZWVyIGVudHJpZXMuPC9iPiBDYWxjdWxhdGVkIGNlbGxzIGFyZSBibHVlLiBUaGUgUGlwZXdvcmsgU2VjdGlvbnMgdGFibGUgYmVsb3cgaXMgaGFyZC1jb2RlZCBpbnRvIHRoaXMgcGFnZSBhbmQgZG9lcyBub3QgcmVseSBvbiBoaWRkZW4gbmF2aWdhdGlvbi48L3A+PC9zZWN0aW9uPgo8c2VjdGlvbiBjbGFzcz0iY2FyZCI+PGgyPjEuIFNpdGUgRGV0YWlsczwvaDI+PGRpdiBjbGFzcz0iZ3JpZCI+CjxsYWJlbD5TaXRlIE5hbWU8aW5wdXQgY2xhc3M9ImlucHV0IiBpZD0ic2l0ZU5hbWUiPjwvbGFiZWw+PGxhYmVsPkpvYiBOdW1iZXI8aW5wdXQgY2xhc3M9ImlucHV0IiBpZD0iam9iTnVtYmVyIj48L2xhYmVsPgo8bGFiZWw+RW5naW5lZXI8aW5wdXQgY2xhc3M9ImlucHV0IiBpZD0iZW5naW5lZXIiPjwvbGFiZWw+PGxhYmVsPkRhdGU8aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJkYXRlIiBpZD0idGVzdERhdGUiPjwvbGFiZWw+CjwvZGl2Pjwvc2VjdGlvbj4KPHNlY3Rpb24gY2xhc3M9ImNhcmQiPjxoMj4yLiBHYXMgYW5kIFRlc3QgRGV0YWlsczwvaDI+PGRpdiBjbGFzcz0iZ3JpZCI+CjxsYWJlbD5HYXMgVHlwZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0iZ2FzVHlwZSI+PG9wdGlvbj5OYXR1cmFsIEdhczwvb3B0aW9uPjxvcHRpb24+UHJvcGFuZTwvb3B0aW9uPjxvcHRpb24+QnV0YW5lPC9vcHRpb24+PC9zZWxlY3Q+PC9sYWJlbD4KPGxhYmVsPlByb2NlZHVyZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0icHJvY2VkdXJlIj48b3B0aW9uIHZhbHVlPSJhdXRvIj5BdXRvIGJhc2VkIG9uIHZvbHVtZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IlRQQ1AxQSI+VFBDUDFBIHVwIHRvIDFtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJUUENQMSI+VFBDUDEgYWJvdmUgMW3Cszwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5JbnN0YWxsYXRpb24gVHlwZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0iaW5zdGFsbGF0aW9uVHlwZSI+PG9wdGlvbj5FeGlzdGluZzwvb3B0aW9uPjxvcHRpb24+TmV3PC9vcHRpb24+PC9zZWxlY3Q+PC9sYWJlbD4KPGxhYmVsPlRlc3QgQXJlYTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0idGVzdEFyZWEiPjxvcHRpb24gdmFsdWU9IkEiPlR5cGUgQSAtIE5ldyAmIGluYWRlcXVhdGVseSB2ZW50aWxhdGVkPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iQiI+VHlwZSBCIC0gRXhpc3Rpbmcgcm9vbXMgdW5kZXIgNjBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJDIj5UeXBlIEMgLSBSb29tIHZvbHVtZSBvdmVyIDYwbcKzICsgcGlwZSB2b2x1bWU8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJEIj5UeXBlIEQgLSBVbmRlcmdyb3VuZDwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5HYXVnZSBUeXBlPHNlbGVjdCBjbGFzcz0iaW5wdXQiIGlkPSJnYXVnZVR5cGUiPjxvcHRpb24gdmFsdWU9IjAuMDEiPkVsZWN0cm9uaWMgR2F1Z2UgMiBkZWNpbWFsIHBsYWNlPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC4xIj5FbGVjdHJvbmljIEdhdWdlIDEgZGVjaW1hbCBwbGFjZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjEiPkVsZWN0cm9uaWMgR2F1Z2UgMCBkZWNpbWFsIHBsYWNlPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC41Ij5XYXRlciBHYXVnZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjAuMSI+SGlnaCBTLkcgR2F1Z2U8L29wdGlvbj48L3NlbGVjdD48L2xhYmVsPgo8bGFiZWw+Um9vbSBWb2x1bWUgbcKzPGlucHV0IGNsYXNzPSJpbnB1dCIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjAwMSIgaWQ9InJvb21Wb2x1bWUiIHZhbHVlPSIwIj48L2xhYmVsPgo8bGFiZWw+TU9QIG1iYXI8aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJudW1iZXIiIHN0ZXA9IjAuMSIgaWQ9Im1vcCIgdmFsdWU9IjIxIj48L2xhYmVsPgo8bGFiZWw+TUlQIG1iYXI8aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJudW1iZXIiIHN0ZXA9IjAuMSIgaWQ9Im1pcCIgdmFsdWU9Ijc1Ij48L2xhYmVsPgo8bGFiZWw+VGVzdCBQcmVzc3VyZSBtYmFyPGlucHV0IGNsYXNzPSJpbnB1dCIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjEiIGlkPSJ0ZXN0UHJlc3N1cmUiIHZhbHVlPSIyMSI+PC9sYWJlbD4KPGxhYmVsPk1lYXN1cmVkIFByZXNzdXJlIERyb3AgbWJhcjxpbnB1dCBjbGFzcz0iaW5wdXQiIHR5cGU9Im51bWJlciIgc3RlcD0iMC4wMDEiIGlkPSJtZWFzdXJlZERyb3AiIHZhbHVlPSIwIj48L2xhYmVsPgo8L2Rpdj48L3NlY3Rpb24+CjxzZWN0aW9uIGNsYXNzPSJjYXJkIiBpZD0icGlwZXdvcmtTZWN0aW9ucyI+CjxkaXYgY2xhc3M9InBpcGUtc2VjdGlvbi10aXRsZSI+My4gUElQRVdPUksgU0VDVElPTlMgLSBWSVNJQkxFIEVOR0lORUVSIElOUFVUPC9kaXY+CjxwIGNsYXNzPSJ2aXNpYmxlLWJhbm5lciI+VGhpcyBzZWN0aW9uIGlzIHZpc2libGUgYnkgZGVmYXVsdC4gQWRkIGV2ZXJ5IHBpcGUgc2VjdGlvbiBiZWxvdy48L3A+CjxkaXYgY2xhc3M9InRhYmxlLXdyYXAiPjx0YWJsZSBpZD0icGlwZVRhYmxlIj48dGhlYWQ+PHRyPjx0aD5Oby48L3RoPjx0aD5NYXRlcmlhbDwvdGg+PHRoPlNpemU8L3RoPjx0aD5MZW5ndGggbTwvdGg+PHRoPkludGVybmFsIERpYSBtbTwvdGg+PHRoPm3Csy9tPC90aD48dGg+Vm9sdW1lIG3CszwvdGg+PHRoPlJlbW92ZTwvdGg+PC90cj48L3RoZWFkPjx0Ym9keSBpZD0icGlwZUJvZHkiPgo8dHI+PHRkPjE8L3RkPjx0ZD48c2VsZWN0IGNsYXNzPSJpbnB1dCBtYXQiPjwvc2VsZWN0PjwvdGQ+PHRkPjxzZWxlY3QgY2xhc3M9ImlucHV0IHNpemUiPjwvc2VsZWN0PjwvdGQ+PHRkPjxpbnB1dCBjbGFzcz0iaW5wdXQgbGVuIiB0eXBlPSJudW1iZXIiIHN0ZXA9IjAuMDEiIHZhbHVlPSIwIj48L3RkPjx0ZCBjbGFzcz0iY2FsYyBpZG1tIj4wPC90ZD48dGQgY2xhc3M9ImNhbGMgcGVyTSI+MC4wMDAwMDA8L3RkPjx0ZCBjbGFzcz0iY2FsYyB2b2wiPjAuMDAwMDAwPC90ZD48dGQ+PGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJidG4gZGFuZ2VyIHJlbW92ZSI+WDwvYnV0dG9uPjwvdGQ+PC90cj4KPHRyPjx0ZD4yPC90ZD48dGQ+PHNlbGVjdCBjbGFzcz0iaW5wdXQgbWF0Ij48L3NlbGVjdD48L3RkPjx0ZD48c2VsZWN0IGNsYXNzPSJpbnB1dCBzaXplIj48L3NlbGVjdD48L3RkPjx0ZD48aW5wdXQgY2xhc3M9ImlucHV0IGxlbiIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjAxIiB2YWx1ZT0iMCI+PC90ZD48dGQgY2xhc3M9ImNhbGMgaWRtbSI+MDwvdGQ+PHRkIGNsYXNzPSJjYWxjIHBlck0iPjAuMDAwMDAwPC90ZD48dGQgY2xhc3M9ImNhbGMgdm9sIj4wLjAwMDAwMDwvdGQ+PHRkPjxidXR0b24gdHlwZT0iYnV0dG9uIiBjbGFzcz0iYnRuIGRhbmdlciByZW1vdmUiPlg8L2J1dHRvbj48L3RkPjwvdHI+Cjx0cj48dGQ+MzwvdGQ+PHRkPjxzZWxlY3QgY2xhc3M9ImlucHV0IG1hdCI+PC9zZWxlY3Q+PC90ZD48dGQ+PHNlbGVjdCBjbGFzcz0iaW5wdXQgc2l6ZSI+PC9zZWxlY3Q+PC90ZD48dGQ+PGlucHV0IGNsYXNzPSJpbnB1dCBsZW4iIHR5cGU9Im51bWJlciIgc3RlcD0iMC4wMSIgdmFsdWU9IjAiPjwvdGQ+PHRkIGNsYXNzPSJjYWxjIGlkbW0iPjA8L3RkPjx0ZCBjbGFzcz0iY2FsYyBwZXJNIj4wLjAwMDAwMDwvdGQ+PHRkIGNsYXNzPSJjYWxjIHZvbCI+MC4wMDAwMDA8L3RkPjx0ZD48YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9ImJ0biBkYW5nZXIgcmVtb3ZlIj5YPC9idXR0b24+PC90ZD48L3RyPgo8L3Rib2R5PjwvdGFibGU+PC9kaXY+PGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJidG4iIGlkPSJhZGRQaXBlIj4rIEFkZCBQaXBld29yayBTZWN0aW9uPC9idXR0b24+PC9zZWN0aW9uPgo8c2VjdGlvbiBjbGFzcz0iY2FyZCI+PGgyPjQuIE1ldGVyIC8gVHVyYmluZSBNZXRlcjwvaDI+PGRpdiBjbGFzcz0iZ3JpZCI+CjxsYWJlbD5NZXRlciBUeXBlPHNlbGVjdCBjbGFzcz0iaW5wdXQiIGlkPSJtZXRlclR5cGUiPjxvcHRpb24gdmFsdWU9Ik5vbmUiPk5vbmU8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJEaWFwaHJhZ20iPkRpYXBocmFnbTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IlJvdGFyeSI+Um90YXJ5PC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iVHVyYmluZSI+VHVyYmluZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9Ik90aGVyIj5PdGhlciAvIE1hbnVhbDwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5NZXRlciBTaXplIC8gU3RhbmRhcmQgVm9sdW1lPHNlbGVjdCBjbGFzcz0iaW5wdXQiIGlkPSJtZXRlclN0ZCI+PG9wdGlvbiB2YWx1ZT0iMCI+Tm9uZS9tYW51YWw8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjAwNiI+VTYgMC4wMDZtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjAxNiI+VTE2IDAuMDE2bcKzPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC4wMjUiPlUyNSAwLjAyNW3Cszwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjAuMDQwIj5VNDAgMC4wNDBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjA2NSI+VTY1IDAuMDY1bcKzPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC4xMDAiPlUxMDAgMC4xMDBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjE2MCI+RzE2MCAwLjE2MG3Cszwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjAuMjUwIj5HMjUwIDAuMjUwbcKzPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC40MDAiPkc0MDAgMC40MDBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjY1MCI+RzY1MCAwLjY1MG3Cszwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5NYW51YWwgLyBNYW51ZmFjdHVyZXIgTWV0ZXIgVm9sdW1lIG3CszxpbnB1dCBjbGFzcz0iaW5wdXQiIHR5cGU9Im51bWJlciIgc3RlcD0iMC4wMDEiIGlkPSJtZXRlck1hbnVhbCIgdmFsdWU9IjAiPjwvbGFiZWw+CjxsYWJlbD5Sb3RhcnkgLyBUdXJiaW5lIEZsYW5nZSBEaWFtZXRlciBtbTxpbnB1dCBjbGFzcz0iaW5wdXQiIHR5cGU9Im51bWJlciIgc3RlcD0iMSIgaWQ9InR1cmJpbmVEaWEiIHZhbHVlPSIwIj48L2xhYmVsPgo8bGFiZWw+Um90YXJ5IC8gVHVyYmluZSBNZXRlciBMZW5ndGggbW08aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJudW1iZXIiIHN0ZXA9IjEiIGlkPSJ0dXJiaW5lTGVuIiB2YWx1ZT0iMCI+PC9sYWJlbD4KPGxhYmVsPkZpdHRpbmdzIEFsbG93YW5jZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0iZml0dGluZ3NNb2RlIj48b3B0aW9uIHZhbHVlPSIxMCI+QXBwbHkgMTAlIG9mIHBpcGUgdm9sdW1lPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0ibWFudWFsIj5NYW51YWwgZml0dGluZ3Mgdm9sdW1lPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMCI+Tm8gZml0dGluZ3MgYWxsb3dhbmNlPC9vcHRpb24+PC9zZWxlY3Q+PC9sYWJlbD4KPGxhYmVsPk1hbnVhbCBGaXR0aW5ncyBWb2x1bWUgbcKzPGlucHV0IGNsYXNzPSJpbnB1dCIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjAwMSIgaWQ9Im1hbnVhbEZpdHRpbmdzIiB2YWx1ZT0iMCI+PC9sYWJlbD4KPC9kaXY+PC9zZWN0aW9uPgo8c2VjdGlvbiBjbGFzcz0iY2FyZCI+PGgyPjUuIFJlc3VsdHM8L2gyPjxkaXYgY2xhc3M9InJlc3VsdC1ncmlkIj4KPGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5QaXBld29yayBWb2x1bWU8L3NwYW4+PHN0cm9uZyBpZD0icGlwZVZvbCI+MC4wMDAwMDAgbcKzPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5NZXRlciBWb2x1bWU8L3NwYW4+PHN0cm9uZyBpZD0ibWV0ZXJWb2wiPjAuMDAwMDAwIG3Cszwvc3Ryb25nPjwvZGl2PjxkaXYgY2xhc3M9InJlc3VsdCI+PHNwYW4+Rml0dGluZ3MgVm9sdW1lPC9zcGFuPjxzdHJvbmcgaWQ9ImZpdFZvbCI+MC4wMDAwMDAgbcKzPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5Ub3RhbCBJbnN0YWxsYXRpb24gVm9sdW1lPC9zcGFuPjxzdHJvbmcgaWQ9InRvdGFsVm9sIj4wLjAwMDAwMCBtwrM8L3N0cm9uZz48L2Rpdj48ZGl2IGNsYXNzPSJyZXN1bHQiPjxzcGFuPlNlbGVjdGVkIFN0YW5kYXJkPC9zcGFuPjxzdHJvbmcgaWQ9InN0ZE91dCI+VFBDUDFBPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5TdGFiaWxpc2F0aW9uIFBlcmlvZDwvc3Bhbj48c3Ryb25nIGlkPSJzdGFiT3V0Ij42IG1pbnV0ZXM8L3N0cm9uZz48L2Rpdj48ZGl2IGNsYXNzPSJyZXN1bHQiPjxzcGFuPlRlc3QgVGltZSBEdXJhdGlvbjwvc3Bhbj48c3Ryb25nIGlkPSJ0dGRPdXQiPjIgbWludXRlczwvc3Ryb25nPjwvZGl2PjxkaXYgY2xhc3M9InJlc3VsdCI+PHNwYW4+VG90YWwgVGltZTwvc3Bhbj48c3Ryb25nIGlkPSJ0b3RhbFRpbWVPdXQiPjggbWludXRlczwvc3Ryb25nPjwvZGl2PjxkaXYgY2xhc3M9InJlc3VsdCI+PHNwYW4+SW5kaWNhdGl2ZSBBbGxvd2FibGUgRHJvcDwvc3Bhbj48c3Ryb25nIGlkPSJkcm9wT3V0Ij4wLjAwMCBtYmFyPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5QYXNzIC8gRmFpbDwvc3Bhbj48c3Ryb25nIGlkPSJyZXN1bHRPdXQiPkNIRUNLPC9zdHJvbmc+PC9kaXY+CjwvZGl2PjxwIGNsYXNzPSJzbWFsbCI+Rm9yIHN1cHBvcnQgb25seS4gRmluYWwgd29yayBtdXN0IGJlIGNvbXBsZXRlZCBieSBjb21wZXRlbnQgZW5naW5lZXJzIGluIGFjY29yZGFuY2Ugd2l0aCBjb250cm9sbGVkIElHRS9VUC8xIGFuZCBJR0UvVVAvMUEgZG9jdW1lbnRzLjwvcD48L3NlY3Rpb24+CjxzZWN0aW9uIGNsYXNzPSJjYXJkIj48aDI+Ni4gUERGIC8gSm9ibG9naWMgUmVwb3J0PC9oMj48YnV0dG9uIGNsYXNzPSJidG4iIG9uY2xpY2s9IndpbmRvdy5wcmludCgpIj5QcmludCAvIFNhdmUgYXMgUERGPC9idXR0b24+PHByZSBpZD0icmVwb3J0Ij48L3ByZT48L3NlY3Rpb24+CjwvZGl2Pgo8c2NyaXB0Pgpjb25zdCBwaXBlRGF0YT17CidTdGVlbC9Jcm9uJzp7J0ROMTUnOjE2LjEsJ0ROMjAnOjIxLjYsJ0ROMjUnOjI3LjIsJ0ROMzInOjM1LjksJ0RONDAnOjQxLjgsJ0RONTAnOjUzLjAsJ0RONjUnOjY4LjgsJ0ROODAnOjgwLjgsJ0ROMTAwJzoxMDUuMywnRE4xMjUnOjEzMC44LCdETjE1MCc6MTU1LjR9LAonQ29wcGVyJzp7J0ROMTUnOjEzLjYsJ0ROMjInOjIwLjIsJ0ROMjgnOjI2LjIsJ0ROMzUnOjMyLjYsJ0RONDInOjM5LjYsJ0RONTQnOjUxLjYsJ0RONjcnOjY0LjYsJ0RONzYnOjczLjYsJ0ROMTA4JzoxMDUuNn0sCidQRSBTRFIxMSc6eydETjIwJzoxNi40LCdETjI1JzoyMC40LCdETjMyJzoyNi4yLCdETjQwJzozMi42LCdETjYzJzo1MS40LCdETjkwJzo3My42LCdETjEyNSc6MTAyLjIsJ0ROMTgwJzoxNDcuMn0sCidQRSBTRFIxNyc6eydETjYzJzo1NS40LCdETjkwJzo3OS4yLCdETjEyNSc6MTEwLjIsJ0ROMTgwJzoxNTguNiwnRE4yNTAnOjIyMC40fQp9OwpmdW5jdGlvbiBwZXJNKGlkbW0pe2xldCBkPWlkbW0vMTAwMDtyZXR1cm4gTWF0aC5QSSpkKmQvNH0KZnVuY3Rpb24gbihpZCl7cmV0dXJuIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKGlkKX0KZnVuY3Rpb24gZmlsbFJvdyh0cil7bGV0IG1hdD10ci5xdWVyeVNlbGVjdG9yKCcubWF0JyksIHNpemU9dHIucXVlcnlTZWxlY3RvcignLnNpemUnKTsgaWYoIW1hdC5vcHRpb25zLmxlbmd0aCl7T2JqZWN0LmtleXMocGlwZURhdGEpLmZvckVhY2gobT0+bWF0LmFkZChuZXcgT3B0aW9uKG0sbSkpKX07IGxldCBjdXI9c2l6ZS52YWx1ZTsgc2l6ZS5pbm5lckhUTUw9Jyc7IE9iamVjdC5rZXlzKHBpcGVEYXRhW21hdC52YWx1ZV0pLmZvckVhY2gocz0+c2l6ZS5hZGQobmV3IE9wdGlvbihzLHMpKSk7IGlmKHBpcGVEYXRhW21hdC52YWx1ZV1bY3VyXSkgc2l6ZS52YWx1ZT1jdXI7IGNhbGMoKX0KZnVuY3Rpb24gcmVudW1iZXIoKXtbLi4uZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnI3BpcGVCb2R5IHRyJyldLmZvckVhY2goKHRyLGkpPT50ci5jZWxsc1swXS50ZXh0Q29udGVudD1pKzEpfQpmdW5jdGlvbiBhZGRSb3coKXtsZXQgdHI9ZG9jdW1lbnQucXVlcnlTZWxlY3RvcignI3BpcGVCb2R5IHRyJykuY2xvbmVOb2RlKHRydWUpOyB0ci5xdWVyeVNlbGVjdG9yKCcubGVuJykudmFsdWU9JzAnOyBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncGlwZUJvZHknKS5hcHBlbmRDaGlsZCh0cik7IGJpbmRSb3codHIpOyBmaWxsUm93KHRyKTsgcmVudW1iZXIoKTt9CmZ1bmN0aW9uIGJpbmRSb3codHIpe3RyLnF1ZXJ5U2VsZWN0b3IoJy5tYXQnKS5vbmNoYW5nZT0oKT0+ZmlsbFJvdyh0cik7IHRyLnF1ZXJ5U2VsZWN0b3IoJy5zaXplJykub25jaGFuZ2U9Y2FsYzsgdHIucXVlcnlTZWxlY3RvcignLmxlbicpLm9uaW5wdXQ9Y2FsYzsgdHIucXVlcnlTZWxlY3RvcignLnJlbW92ZScpLm9uY2xpY2s9KCk9PntpZihkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcjcGlwZUJvZHkgdHInKS5sZW5ndGg+MSl7dHIucmVtb3ZlKCk7cmVudW1iZXIoKTtjYWxjKCk7fX19CmZ1bmN0aW9uIGNhbGMoKXtsZXQgcGlwZT0wOyBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcjcGlwZUJvZHkgdHInKS5mb3JFYWNoKHRyPT57bGV0IG1hdD10ci5xdWVyeVNlbGVjdG9yKCcubWF0JykudmFsdWUsIHNpemU9dHIucXVlcnlTZWxlY3RvcignLnNpemUnKS52YWx1ZSwgbGVuPXBhcnNlRmxvYXQodHIucXVlcnlTZWxlY3RvcignLmxlbicpLnZhbHVlKXx8MDsgbGV0IGlkPShwaXBlRGF0YVttYXRdfHx7fSlbc2l6ZV18fDA7IGxldCBwbT1wZXJNKGlkKTsgbGV0IHY9cG0qbGVuOyBwaXBlKz12OyB0ci5xdWVyeVNlbGVjdG9yKCcuaWRtbScpLnRleHRDb250ZW50PWlkLnRvRml4ZWQoMSk7IHRyLnF1ZXJ5U2VsZWN0b3IoJy5wZXJNJykudGV4dENvbnRlbnQ9cG0udG9GaXhlZCg2KTsgdHIucXVlcnlTZWxlY3RvcignLnZvbCcpLnRleHRDb250ZW50PXYudG9GaXhlZCg2KTt9KTsKbGV0IG10PW4oJ21ldGVyVHlwZScpLnZhbHVlLCBtZXRlcj1wYXJzZUZsb2F0KG4oJ21ldGVyTWFudWFsJykudmFsdWUpfHwwOwppZighbWV0ZXIpIG1ldGVyPXBhcnNlRmxvYXQobignbWV0ZXJTdGQnKS52YWx1ZSl8fDA7CmlmKChtdD09PSdUdXJiaW5lJyB8fCBtdD09PSdSb3RhcnknKSAmJiAhbWV0ZXIpewogIGxldCBkPShwYXJzZUZsb2F0KG4oJ3R1cmJpbmVEaWEnKS52YWx1ZSl8fDApLzEwMDA7CiAgbGV0IGw9KHBhcnNlRmxvYXQobigndHVyYmluZUxlbicpLnZhbHVlKXx8MCkvMTAwMDsKICAvLyBIQlMgZmFsbGJhY2sgZ2VvbWV0cmljIHZvbHVtZSBjYWxjdWxhdGlvbiBmb3IgdHVyYmluZS9yb3RhcnkgYm9kaWVzIHdoZXJlIG1hbnVmYWN0dXJlciB2b2x1bWUgaXMgbm90IGF2YWlsYWJsZS4KICAvLyBVc2VzIHNhbWUgZmxhbmdlIGRpYW1ldGVyIGFuZCBtZXRlciBsZW5ndGggaW5wdXRzIHNvIGVuZ2luZWVycyBjYW4gY2FsY3VsYXRlIHJvdGFyeSB2b2x1bWVzIHdpdGhvdXQgYSBzdGFuZGFyZCBtZXRlciB2b2x1bWUuCiAgbWV0ZXI9MC43MCpkKmQqbDsKfQpsZXQgZml0PTAsIGZtPW4oJ2ZpdHRpbmdzTW9kZScpLnZhbHVlOyBpZihmbT09PScxMCcpIGZpdD1waXBlKjAuMTA7IGVsc2UgaWYoZm09PT0nbWFudWFsJykgZml0PXBhcnNlRmxvYXQobignbWFudWFsRml0dGluZ3MnKS52YWx1ZSl8fDA7IGxldCB0b3RhbD1waXBlK21ldGVyK2ZpdDsgbGV0IHByb2M9bigncHJvY2VkdXJlJykudmFsdWU7IGxldCBzdGQ9cHJvYz09PSdhdXRvJz8odG90YWw8PTE/J1RQQ1AxQSc6J1RQQ1AxJyk6cHJvYzsKCmxldCBnYXM9bignZ2FzVHlwZScpLnZhbHVlOwpsZXQgaW5zdD1uKCdpbnN0YWxsYXRpb25UeXBlJykudmFsdWU7CmxldCBhcmVhPW4oJ3Rlc3RBcmVhJykudmFsdWU7CmxldCBncm09cGFyc2VGbG9hdChuKCdnYXVnZVR5cGUnKS52YWx1ZSl8fDAuMDE7CmxldCByb29tVm9sPXBhcnNlRmxvYXQobigncm9vbVZvbHVtZScpLnZhbHVlKXx8MDsKbGV0IHJ2ID0gcm9vbVZvbD4wID8gcm9vbVZvbCA6IDYwOwoKLy8gRjEgdmFsdWVzIGZvciB0ZXN0IHVzaW5nIGZ1ZWwgZ2FzIGF0IE9QLCBmcm9tIElHRS9VUC8xIFRhYmxlIDEwLgpsZXQgZjFNYXA9eydOYXR1cmFsIEdhcyc6NDIsJ1Byb3BhbmUnOjEwMiwnQnV0YW5lJzoxMjh9OwpsZXQgZjE9ZjFNYXBbZ2FzXXx8NDI7CgovLyBUVEQgZm9ybXVsYSBmb2xsb3dzIElHRS9VUC8xIFRhYmxlIDk6Ci8vIE5ldyBhbmQgQXJlYSBBOiBHUk0geCBJViB4IEYxCi8vIEV4aXN0aW5nIEFyZWEgQjogMi44IHggR1JNIHggSVYgeCBSVl4tMSB4IEYxCi8vIEV4aXN0aW5nIEFyZWEgQy9EOiAwLjA0NyB4IEdSTSB4IElWIHggRjEKbGV0IHR0ZFJhdz0wOwppZihpbnN0PT09J05ldycgfHwgYXJlYT09PSdBJyl7CiAgdHRkUmF3ID0gZ3JtICogdG90YWwgKiBmMTsKfWVsc2UgaWYoYXJlYT09PSdCJyl7CiAgdHRkUmF3ID0gMi44ICogZ3JtICogdG90YWwgKiAoMS9ydikgKiBmMTsKfWVsc2V7CiAgdHRkUmF3ID0gMC4wNDcgKiBncm0gKiB0b3RhbCAqIGYxOwp9CmxldCB0dGQ9TWF0aC5tYXgoMixNYXRoLmNlaWwodHRkUmF3KSk7CmxldCBzdGFiPXN0ZD09PSdUUENQMUEnP01hdGgubWF4KHR0ZCw2KTpNYXRoLm1heCh0dGQsMTUpOwoKLy8gTVBMUiB2YWx1ZXMgbcKzL2ggYXQgT1AgZnJvbSBJR0UvVVAvMSBUYWJsZXMgNyBhbmQgOCAvIEFwcGVuZGl4IDQgVGFibGUgMTUuCmxldCBtcGxyTmV3PXsnTmF0dXJhbCBHYXMnOjAuMDAxNCwnUHJvcGFuZSc6MC4wMDA1NywnQnV0YW5lJzowLjAwMDQ0fTsKbGV0IG1wbHJCcGVyTTM9eydOYXR1cmFsIEdhcyc6MC4wMDA1LCdQcm9wYW5lJzowLjAwMDIsJ0J1dGFuZSc6MC4wMDAxNn07CmxldCBtcGxyQ0Q9eydOYXR1cmFsIEdhcyc6MC4wMywnUHJvcGFuZSc6MC4wMTIzLCdCdXRhbmUnOjAuMDA5OH07CgpsZXQgbXBscj0wOwppZihpbnN0PT09J05ldycgfHwgYXJlYT09PSdBJyl7CiAgbXBscj1tcGxyTmV3W2dhc118fDAuMDAxNDsKfWVsc2UgaWYoYXJlYT09PSdCJyl7CiAgbXBscj0obXBsckJwZXJNM1tnYXNdfHwwLjAwMDUpICogcnY7Cn1lbHNlewogIG1wbHI9bXBsckNEW2dhc118fDAuMDM7Cn0KCi8vIEYzIGZvciB0ZXN0IHVzaW5nIGZ1ZWwgZ2FzIGF0IE9QIGlzIDAuMDU5IGZyb20gSUdFL1VQLzEgVGFibGUgMTEuCi8vIFJlLWFycmFuZ2VkIGZyb20gTFIgPSBGMyB4IEdNIHggSVYgLyB0OgovLyBQZXJtaXNzaWJsZSBwcmVzc3VyZSBsb3NzIEdNID0gTVBMUiB4IHQgLyAoRjMgeCBJVikuCmxldCBmMz0wLjA1OTsKbGV0IGRyb3AgPSB0b3RhbD4wID8gKG1wbHIgKiB0dGQpIC8gKGYzICogdG90YWwpIDogMDsKbGV0IHRlc3RQcmVzc3VyZT1wYXJzZUZsb2F0KG4oJ3Rlc3RQcmVzc3VyZScpLnZhbHVlKXx8MjE7CmlmKGRyb3A+dGVzdFByZXNzdXJlKXsgZHJvcD10ZXN0UHJlc3N1cmU7IH0KbGV0IG1lYXM9cGFyc2VGbG9hdChuKCdtZWFzdXJlZERyb3AnKS52YWx1ZSl8fDA7Cm4oJ3BpcGVWb2wnKS50ZXh0Q29udGVudD1waXBlLnRvRml4ZWQoNikrJyBtwrMnOyBuKCdtZXRlclZvbCcpLnRleHRDb250ZW50PW1ldGVyLnRvRml4ZWQoNikrJyBtwrMnOyBuKCdmaXRWb2wnKS50ZXh0Q29udGVudD1maXQudG9GaXhlZCg2KSsnIG3Csyc7IG4oJ3RvdGFsVm9sJykudGV4dENvbnRlbnQ9dG90YWwudG9GaXhlZCg2KSsnIG3Csyc7IG4oJ3N0ZE91dCcpLnRleHRDb250ZW50PXN0ZDsgbignc3RhYk91dCcpLnRleHRDb250ZW50PXN0YWIrJyBtaW51dGVzJzsgbigndHRkT3V0JykudGV4dENvbnRlbnQ9dHRkKycgbWludXRlcyc7IG4oJ3RvdGFsVGltZU91dCcpLnRleHRDb250ZW50PShzdGFiK3R0ZCkrJyBtaW51dGVzJzsgbignZHJvcE91dCcpLnRleHRDb250ZW50PWRyb3AudG9GaXhlZCgzKSsnIG1iYXInOyBuKCdyZXN1bHRPdXQnKS50ZXh0Q29udGVudD1tZWFzPD1kcm9wPydQQVNTIC8gQ0hFQ0snOidGQUlMIC8gSU5WRVNUSUdBVEUnOwpuKCdyZXBvcnQnKS50ZXh0Q29udGVudD1gSEJTIENvbW1lcmNpYWwgR2FzIFRpZ2h0bmVzcyBUZXN0IENhbGN1bGF0b3JcblNpdGU6ICR7bignc2l0ZU5hbWUnKS52YWx1ZX1cbkpvYjogJHtuKCdqb2JOdW1iZXInKS52YWx1ZX1cbkVuZ2luZWVyOiAke24oJ2VuZ2luZWVyJykudmFsdWV9XG5EYXRlOiAke24oJ3Rlc3REYXRlJykudmFsdWV9XG5HYXMgVHlwZTogJHtnYXN9XG5JbnN0YWxsYXRpb24gVHlwZTogJHtpbnN0fVxuU3RhbmRhcmQ6ICR7c3RkfVxuUGlwZXdvcmsgVm9sdW1lOiAke3BpcGUudG9GaXhlZCg2KX0gbcKzXG5NZXRlciBWb2x1bWU6ICR7bWV0ZXIudG9GaXhlZCg2KX0gbcKzXG5GaXR0aW5ncyBWb2x1bWU6ICR7Zml0LnRvRml4ZWQoNil9IG3Cs1xuVG90YWwgSW5zdGFsbGF0aW9uIFZvbHVtZTogJHt0b3RhbC50b0ZpeGVkKDYpfSBtwrNcblN0YWJpbGlzYXRpb246ICR7c3RhYn0gbWludXRlc1xuVFREOiAke3R0ZH0gbWludXRlc1xuVG90YWwgVGltZTogJHtzdGFiK3R0ZH0gbWludXRlc1xuSW5kaWNhdGl2ZSBBbGxvd2FibGUgRHJvcDogJHtkcm9wLnRvRml4ZWQoMyl9IG1iYXJcbk1lYXN1cmVkIERyb3A6ICR7bWVhcy50b0ZpeGVkKDMpfSBtYmFyXG5SZXN1bHQ6ICR7bigncmVzdWx0T3V0JykudGV4dENvbnRlbnR9YDt9CmRvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGwoJyNwaXBlQm9keSB0cicpLmZvckVhY2godHI9PntiaW5kUm93KHRyKTtmaWxsUm93KHRyKX0pOyBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYWRkUGlwZScpLm9uY2xpY2s9YWRkUm93OyBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCdpbnB1dCxzZWxlY3QnKS5mb3JFYWNoKGVsPT5lbC5hZGRFdmVudExpc3RlbmVyKCdpbnB1dCcsY2FsYykpOyBjYWxjKCk7CgpmdW5jdGlvbiBoYnNQb3J0YWxDb2xsZWN0U3RhdGUoKXsKICBjYWxjKCk7CiAgY29uc3QgdHh0PWlkPT5uKGlkKT9uKGlkKS50ZXh0Q29udGVudDonJzsKICBjb25zdCB2YWw9aWQ9Pm4oaWQpP24oaWQpLnZhbHVlOicnOwogIGZ1bmN0aW9uIG51bVRleHQoaWQpe3JldHVybiBOdW1iZXIoU3RyaW5nKHR4dChpZCkpLnJlcGxhY2UoL1teXGQuLV0vZywnJykpfHwwO30KICBjb25zdCBzdGF0ZT17CiAgICBzaXRlX25hbWU6IHZhbCgnc2l0ZU5hbWUnKSwKICAgIGF1ZGl0X3JlZjogdmFsKCdqb2JOdW1iZXInKSwKICAgIGVuZ2luZWVyX25hbWU6IHZhbCgnZW5naW5lZXInKSwKICAgIHRlc3RfZGF0ZTogdmFsKCd0ZXN0RGF0ZScpLAogICAgZ2FzX3R5cGU6IHZhbCgnZ2FzVHlwZScpLAogICAgcHJvY2VkdXJlOiB2YWwoJ3Byb2NlZHVyZScpLAogICAgaW5zdGFsbGF0aW9uX3R5cGU6IHZhbCgnaW5zdGFsbGF0aW9uVHlwZScpLAogICAgdGVzdF9hcmVhOiB2YWwoJ3Rlc3RBcmVhJyksCiAgICBnYXVnZV90eXBlOiB2YWwoJ2dhdWdlVHlwZScpLAogICAgcm9vbV92b2x1bWU6IE51bWJlcih2YWwoJ3Jvb21Wb2x1bWUnKXx8MCksCiAgICBtb3A6IE51bWJlcih2YWwoJ21vcCcpfHwwKSwKICAgIG1pcDogTnVtYmVyKHZhbCgnbWlwJyl8fDApLAogICAgdGVzdF9wcmVzc3VyZTogTnVtYmVyKHZhbCgndGVzdFByZXNzdXJlJyl8fDApLAogICAgbWVhc3VyZWRfZHJvcDogTnVtYmVyKHZhbCgnbWVhc3VyZWREcm9wJyl8fDApLAogICAgcGlwZXdvcmtfdm9sdW1lOiBudW1UZXh0KCdwaXBlVm9sJyksCiAgICBtZXRlcl92b2x1bWU6IG51bVRleHQoJ21ldGVyVm9sJyksCiAgICBmaXR0aW5nc192b2x1bWU6IG51bVRleHQoJ2ZpdFZvbCcpLAogICAgaW5zdGFsbGF0aW9uX3ZvbHVtZTogbnVtVGV4dCgndG90YWxWb2wnKSwKICAgIHNlbGVjdGVkX3N0YW5kYXJkOiB0eHQoJ3N0ZE91dCcpLAogICAgc3RhYmlsaXNhdGlvbl90aW1lOiBudW1UZXh0KCdzdGFiT3V0JyksCiAgICB0ZXN0X2R1cmF0aW9uOiBudW1UZXh0KCd0dGRPdXQnKSwKICAgIHRvdGFsX3RpbWU6IG51bVRleHQoJ3RvdGFsVGltZU91dCcpLAogICAgcGVybWl0dGVkX3ByZXNzdXJlX2Ryb3A6IG51bVRleHQoJ2Ryb3BPdXQnKSwKICAgIG91dGNvbWU6IHR4dCgncmVzdWx0T3V0JyksCiAgICByZXBvcnQ6IHR4dCgncmVwb3J0JyksCiAgICBwaXBlczpbLi4uZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnI3BpcGVCb2R5IHRyJyldLm1hcCh0cj0+KHsKICAgICAgbWF0ZXJpYWw6IHRyLnF1ZXJ5U2VsZWN0b3IoJy5tYXQnKS52YWx1ZSwKICAgICAgc2l6ZTogdHIucXVlcnlTZWxlY3RvcignLnNpemUnKS52YWx1ZSwKICAgICAgbGVuZ3RoOiBOdW1iZXIodHIucXVlcnlTZWxlY3RvcignLmxlbicpLnZhbHVlfHwwKSwKICAgICAgaW50ZXJuYWxfZGlhX21tOiBOdW1iZXIodHIucXVlcnlTZWxlY3RvcignLmlkbW0nKS50ZXh0Q29udGVudHx8MCksCiAgICAgIHZvbHVtZV9tMzogTnVtYmVyKHRyLnF1ZXJ5U2VsZWN0b3IoJy52b2wnKS50ZXh0Q29udGVudHx8MCkKICAgIH0pKQogIH07CiAgcmV0dXJuIHN0YXRlOwp9Cgo8L3NjcmlwdD4KPC9ib2R5PjwvaHRtbD4K";
-function hbsDecodeB64Utf8(b64){
-  const bin=atob(b64);
-  const bytes=new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-  return new TextDecoder().decode(bytes);
-}
-function hbsLoadEmbeddedTightness(){
-  const frame=document.getElementById('hbsTightnessFrame');
-  if(!frame) return;
-  frame.srcdoc=hbsDecodeB64Utf8(HBS_TIGHTNESS_CALC_B64);
-  setTimeout(()=>{
-    try{
-      const d=frame.contentDocument;
-      if(d?.getElementById('engineer')) d.getElementById('engineer').value=user?.name||'';
-      if(d?.getElementById('testDate')) d.getElementById('testDate').value=new Date().toISOString().slice(0,10);
-      if(frame.contentWindow?.calc) frame.contentWindow.calc();
-    }catch(e){}
-  },500);
-}
+function decodeCalc(){try{const bin=atob(CALC_B64); const bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i); return new TextDecoder().decode(bytes)}catch(e){return '<h1>Tightness calculator source missing</h1>'}}
 async function loadTightnessCalculator(){
-  show('tightnessCalculator');
-  hbsLoadEmbeddedTightness();
-  await hbsLoadTightnessRecords();
+  const f=$('ttFrame'); f.srcdoc=decodeCalc();
+  setTimeout(()=>{try{const d=f.contentDocument; if(d.getElementById('engineer'))d.getElementById('engineer').value=user.name; if(d.getElementById('testDate'))d.getElementById('testDate').value=new Date().toISOString().slice(0,10); if(f.contentWindow.calc)f.contentWindow.calc();}catch(e){}},400);
+  loadTightnessRecords();
 }
-function hbsGetEmbeddedState(){
-  const frame=document.getElementById('hbsTightnessFrame');
-  if(!frame?.contentWindow) throw new Error('Calculator has not loaded yet.');
-  if(frame.contentWindow.hbsPortalCollectState) return frame.contentWindow.hbsPortalCollectState();
-  throw new Error('Calculator state function not available. Reload the calculator and try again.');
+function getTightnessState(){const w=$('ttFrame').contentWindow; if(w?.hbsPortalCollectState)return w.hbsPortalCollectState(); throw new Error('Calculator not loaded yet.')}
+async function saveTightness(){
+  try{const s=getTightnessState(); const body={engineer_name:user.name,role:user.role,site_name:s.site_name,audit_ref:s.audit_ref,test_date:s.test_date,area_tested:s.test_area,test_type:s.selected_standard||s.procedure,installation_volume:s.installation_volume,test_pressure:s.test_pressure,stabilisation_time:s.stabilisation_time,test_duration:s.test_duration,measured_drop:s.measured_drop,outcome:s.outcome,notes:s.report,details_json:JSON.stringify(s)}; const j=await api('/api/tightness',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); $('ttMsg').textContent='Saved tightness record ID '+j.id; loadTightnessRecords();}
+  catch(e){$('ttMsg').textContent=e.message}
 }
-async function hbsSaveEmbeddedTightness(){
-  try{
-    const s=hbsGetEmbeddedState();
-    const body={
-      engineer_name:user?.name||s.engineer_name||'',
-      role:user?.role||'engineer',
-      site_name:s.site_name||'',
-      client:'',
-      audit_ref:s.audit_ref||'',
-      test_date:s.test_date||new Date().toISOString().slice(0,10),
-      area_tested:s.test_area||'',
-      test_type:s.selected_standard||s.procedure||'',
-      installation_volume:Number(s.installation_volume||0),
-      test_pressure:Number(s.test_pressure||0),
-      stabilisation_time:Number(s.stabilisation_time||0),
-      test_duration:Number(s.test_duration||0),
-      measured_drop:Number(s.measured_drop||0),
-      permitted_leak_rate:0,
-      calculated_leak_rate:0,
-      outcome:s.outcome||'CHECK',
-      notes:s.report||'',
-      details_json:JSON.stringify(s)
-    };
-    const j=await api('/api/tightness',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    document.getElementById('ttMsg').textContent='Saved tightness calculation record ID '+j.id;
-    await hbsLoadTightnessRecords();
-  }catch(e){
-    document.getElementById('ttMsg').textContent=e.message;
-  }
-}
-async function hbsLoadTightnessRecords(){
-  try{
-    const j=await api(`/api/tightness?role=${user?.role||'engineer'}&engineer=${encodeURIComponent(user?.name||'')}`);
-    const rows=j.records||[];
-    window._tightnessRecords=rows;
-    const el=document.getElementById('ttRows');
-    if(!el) return;
-    el.innerHTML=rows.length?rows.map(r=>`<tr>
-      <td>${r.id}</td><td>${r.test_date||''}</td><td>${r.engineer_name||''}</td><td>${r.site_name||''}</td>
-      <td>${Number(r.installation_volume||0).toFixed(6)}</td><td>${Number(r.measured_drop||0).toFixed(3)}</td>
-      <td>${r.outcome||''}</td><td><button onclick="hbsViewTightnessRecord(${r.id})">View</button></td>
-    </tr>`).join(''):'<tr><td colspan="8">No saved records found.</td></tr>';
-  }catch(e){
-    const el=document.getElementById('ttRows');
-    if(el) el.innerHTML=`<tr><td colspan="8">${e.message}</td></tr>`;
-  }
-}
-function hbsViewTightnessRecord(id){
-  const r=(window._tightnessRecords||[]).find(x=>Number(x.id)===Number(id));
-  const el=document.getElementById('ttRecordDetail');
-  if(!r||!el) return;
-  let details=null;
-  try{details=JSON.parse(r.details_json||'null');}catch(e){}
-  el.innerHTML=`<table>
-    <tr><th>ID</th><td>${r.id}</td></tr>
-    <tr><th>Engineer</th><td>${r.engineer_name||''}</td></tr>
-    <tr><th>Site</th><td>${r.site_name||''}</td></tr>
-    <tr><th>Job/Audit Ref</th><td>${r.audit_ref||''}</td></tr>
-    <tr><th>Installation Volume</th><td>${Number(r.installation_volume||0).toFixed(6)} m³</td></tr>
-    <tr><th>Measured Drop</th><td>${Number(r.measured_drop||0).toFixed(3)} mbar</td></tr>
-    <tr><th>Stabilisation</th><td>${r.stabilisation_time||''} minutes</td></tr>
-    <tr><th>Test Duration</th><td>${r.test_duration||''} minutes</td></tr>
-    <tr><th>Outcome</th><td>${r.outcome||''}</td></tr>
-    <tr><th>Report</th><td><pre>${(details?.report||r.notes||'')}</pre></td></tr>
-  </table>`;
-}
+async function loadTightnessRecords(){const j=await api(`/api/tightness?role=${user.role}&engineer=${encodeURIComponent(user.name)}`); $('ttRows').innerHTML=(j.records||[]).map(r=>`<tr><td>${r.id}</td><td>${r.test_date||''}</td><td>${r.engineer_name||''}</td><td>${r.site_name||''}</td><td>${Number(r.installation_volume||0).toFixed(6)}</td><td>${Number(r.measured_drop||0).toFixed(3)}</td><td>${r.outcome||''}</td></tr>`).join('')}
 
+function downloadBackup(){window.open('/api/backup','_blank')}
 
-
-// --- HBS Hard Navigation De-duplication Fix ---
-(function(){
-  const NAV_TEXTS = [
-    'New Audit',
-    'Conduct Audit',
-    'My Dashboard',
-    'Training / Re-audits',
-    'Training Management',
-    'Toolbox Test',
-    'Knowledge Centre',
-    'Tightness Calculator',
-    'Test Results',
-    'Users',
-    'Record Management',
-    'Backup',
-    'Logout'
-  ];
-
-  function norm(s){
-    return String(s || '').replace(/\s+/g,' ').trim();
-  }
-
-  function isNavButton(btn){
-    const t = norm(btn.textContent);
-    return NAV_TEXTS.includes(t);
-  }
-
-  function roleAllowed(label){
-    if(!window.user) return true;
-
-    if(user.role === 'manager'){
-      return [
-        'New Audit',
-        'My Dashboard',
-        'Training / Re-audits',
-        'Training Management',
-        'Toolbox Test',
-        'Knowledge Centre',
-        'Tightness Calculator',
-        'Test Results',
-        'Users',
-        'Record Management',
-        'Backup',
-        'Logout'
-      ].includes(label);
-    }
-
-    if(user.role === 'senior_engineer'){
-      return [
-        'Conduct Audit',
-        'Toolbox Test',
-        'Knowledge Centre',
-        'Tightness Calculator',
-        'Logout'
-      ].includes(label);
-    }
-
-    return [
-      'My Dashboard',
-      'Toolbox Test',
-      'Knowledge Centre',
-      'Tightness Calculator',
-      'Logout'
-    ].includes(label);
-  }
-
-  function convertNewAuditForSenior(btn){
-    if(window.user && user.role === 'senior_engineer' && norm(btn.textContent) === 'New Audit'){
-      btn.textContent = 'Conduct Audit';
-    }
-  }
-
-  window.hbsHardDeduplicateNav = function(){
-    const seen = new Set();
-
-    [...document.querySelectorAll('button')].forEach(btn => {
-      convertNewAuditForSenior(btn);
-
-      const t = norm(btn.textContent);
-      if(!NAV_TEXTS.includes(t)) return;
-
-      // Remove role-inappropriate nav buttons.
-      if(!roleAllowed(t)){
-        btn.remove();
-        return;
-      }
-
-      // Remove duplicate nav buttons anywhere on the page, not just inside one container.
-      if(seen.has(t)){
-        btn.remove();
-        return;
-      }
-
-      seen.add(t);
-    });
-
-    // If manager has no New Audit because an older script renamed it, restore one Conduct Audit label back.
-    if(window.user && user.role === 'manager'){
-      const conduct = [...document.querySelectorAll('button')].find(b => norm(b.textContent) === 'Conduct Audit');
-      const newAudit = [...document.querySelectorAll('button')].find(b => norm(b.textContent) === 'New Audit');
-      if(conduct && !newAudit) conduct.textContent = 'New Audit';
-    }
-  };
-
-  // Run after login and continue for a short period because older code can append buttons late.
-  setInterval(() => {
-    try { window.hbsHardDeduplicateNav(); } catch(e) {}
-  }, 250);
-})();
-
-
-// --- HBS Manager Dashboard Data Restore Fix ---
-(function(){
-  function isMgr(){ return window.user && user.role === 'manager'; }
-
-  async function hbsFetchJson(url, options){
-    const res = await fetch(url, options || {});
-    const text = await res.text();
-    let json;
-    try { json = JSON.parse(text); }
-    catch(e) { throw new Error(text.slice(0,300)); }
-    if(!res.ok || json.ok === false) throw new Error(json.error || ('Request failed: ' + res.status));
-    return json;
-  }
-
-  function setText(id, value){
-    const el=document.getElementById(id);
-    if(el) el.textContent=value;
-  }
-
-  function getScore(a){
-    return Number(a.score ?? a.audit_score ?? a.total_score ?? a.calculated_score ?? 0);
-  }
-
-  function getEngineer(a){
-    return a.engineer_name || a.engineer || a.engineerName || '';
-  }
-
-  function getResult(a){
-    return a.result || a.outcome || a.audit_result || '';
-  }
-
-  window.hbsManagerDashboardRefresh = async function(){
-    if(!isMgr()) return;
-
-    try{
-      const auditsJson = await hbsFetchJson('/api/audits?role=manager&engineer=' + encodeURIComponent(user.name || ''));
-      const trainingJson = await hbsFetchJson('/api/training?role=manager&engineer=' + encodeURIComponent(user.name || '')).catch(()=>({training:[]}));
-      const reauditsJson = await hbsFetchJson('/api/reaudits?role=manager&engineer=' + encodeURIComponent(user.name || '')).catch(()=>({reaudits:[]}));
-
-      const audits = auditsJson.audits || auditsJson.records || [];
-      const training = trainingJson.training || trainingJson.records || [];
-      const reaudits = reauditsJson.reaudits || reauditsJson.records || [];
-
-      const scores = audits.map(getScore).filter(v=>Number.isFinite(v));
-      const avg = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
-
-      const excellent = audits.filter(a=>getScore(a)>=95 || /excellent/i.test(getResult(a))).length;
-      const pass = audits.filter(a=>getScore(a)>=85 && getScore(a)<95 || /^pass$/i.test(getResult(a))).length;
-      const improvement = audits.filter(a=>getScore(a)>=75 && getScore(a)<85 || /improvement/i.test(getResult(a))).length;
-      const fail = audits.filter(a=>getScore(a)<75 && scores.length || /fail/i.test(getResult(a))).length;
-      const openTraining = training.filter(t=>/open|pending/i.test(t.status || '')).length;
-      const openReaudits = reaudits.filter(r=>/open|pending/i.test(r.status || '')).length;
-
-      // Update summary cards by visible text fallback.
-      const cards=[...document.querySelectorAll('.card, div')];
-      cards.forEach(c=>{
-        const txt=(c.textContent||'').trim();
-        if(/^Total Audits/i.test(txt)) c.innerHTML='<b>Total Audits</b><br><b>'+audits.length+'</b>';
-        if(/^Average Score/i.test(txt)) c.innerHTML='<b>Average Score</b><br><b>'+avg+'%</b>';
-        if(/^Pass Rate/i.test(txt)){
-          const pr=audits.length?Math.round(((excellent+pass)/audits.length)*100):0;
-          c.innerHTML='<b>Pass Rate</b><br><b>'+pr+'%</b>';
-        }
-        if(/^Excellent/i.test(txt)) c.innerHTML='<b>Excellent</b><br><b>'+excellent+'</b>';
-        if(/^Pass\s/i.test(txt)) c.innerHTML='<b>Pass</b><br><b>'+pass+'</b>';
-        if(/^Improvement Required/i.test(txt)) c.innerHTML='<b>Improvement Required</b><br><b>'+improvement+'</b>';
-        if(/^Fail/i.test(txt)) c.innerHTML='<b>Fail</b><br><b>'+fail+'</b>';
-        if(/^Open Training \/ Re-audits/i.test(txt)) c.innerHTML='<b>Open Training / Re-audits</b><br><b>'+openTraining+' / '+openReaudits+'</b>';
-      });
-
-      // Populate Audit Register if a likely tbody exists after headers Ref Date Engineer Site.
-      const tables=[...document.querySelectorAll('table')];
-      const auditTable=tables.find(t=>{
-        const h=(t.querySelector('thead')?.textContent || t.textContent || '').toLowerCase();
-        return h.includes('ref') && h.includes('engineer') && h.includes('site') && h.includes('score');
-      });
-      if(auditTable){
-        const body=auditTable.querySelector('tbody') || auditTable.appendChild(document.createElement('tbody'));
-        body.innerHTML = audits.map(a=>{
-          const ref=a.audit_ref || a.ref || a.id || '';
-          const date=a.audit_date || a.date || a.created_at || '';
-          const eng=getEngineer(a);
-          const site=a.site_name || a.site || '';
-          const manu=a.manufacturer || '';
-          const model=a.model || '';
-          const score=getScore(a);
-          const result=getResult(a);
-          return `<tr><td>${ref}</td><td>${date}</td><td>${eng}</td><td>${site}</td><td>${manu}</td><td>${model}</td><td>${score}</td><td>${result}</td><td>${ref}</td></tr>`;
-        }).join('');
-      }
-
-      // Populate league table if present.
-      const league=tables.find(t=>{
-        const h=(t.querySelector('thead')?.textContent || t.textContent || '').toLowerCase();
-        return h.includes('rank') && h.includes('avg score');
-      });
-      if(league){
-        const stats={};
-        audits.forEach(a=>{
-          const eng=getEngineer(a) || 'Unknown';
-          if(!stats[eng]) stats[eng]={count:0,total:0,excellent:0,improvement:0,fail:0};
-          const s=getScore(a);
-          stats[eng].count++; stats[eng].total+=s;
-          if(s>=95) stats[eng].excellent++;
-          else if(s>=75 && s<85) stats[eng].improvement++;
-          else if(s<75) stats[eng].fail++;
-        });
-        const rows=Object.entries(stats).map(([eng,v])=>({eng,...v,avg:v.count?Math.round(v.total/v.count):0})).sort((a,b)=>b.avg-a.avg);
-        const body=league.querySelector('tbody') || league.appendChild(document.createElement('tbody'));
-        body.innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.eng}</td><td>${r.count}</td><td>${r.avg}%</td><td>${r.excellent}</td><td>${r.improvement}</td><td>${r.fail}</td></tr>`).join('');
-      }
-
-    }catch(e){
-      console.warn('Manager dashboard refresh failed:', e);
-    }
-  };
-
-  const oldLoadDashboard = window.loadDashboard;
-  window.loadDashboard = async function(){
-    if(oldLoadDashboard) {
-      try { await oldLoadDashboard.apply(this, arguments); } catch(e) { console.warn(e); }
-    } else if(typeof show === 'function') {
-      show('dashboard');
-    }
-    if(isMgr()) setTimeout(window.hbsManagerDashboardRefresh, 150);
-  };
-
-  document.addEventListener('click', function(e){
-    if((e.target?.textContent||'').trim()==='Refresh' && isMgr()){
-      setTimeout(window.hbsManagerDashboardRefresh, 150);
-    }
-  });
-
-  setInterval(()=>{try{
-    const title=[...document.querySelectorAll('h2,h3')].find(h=>/Manager Dashboard|Audit Register/i.test(h.textContent||''));
-    if(isMgr() && title) window.hbsManagerDashboardRefresh();
-  }catch(e){}}, 5000);
-})();
-
-
-// --- HBS Direct Dashboard Fix ---
-(function(){
-  function text(v){ return String(v||'').replace(/\s+/g,' ').trim(); }
-  async function getDashboard(){
-    const r = await fetch('/api/dashboard?_=' + Date.now(), { cache:'no-store' });
-    const t = await r.text();
-    let j;
-    try { j = JSON.parse(t); } catch(e) { throw new Error(t.slice(0,250)); }
-    if(!r.ok || j.ok === false) throw new Error(j.error || ('HTTP ' + r.status));
-    return j;
-  }
-  function setCard(label, value){
-    [...document.querySelectorAll('.card, div')].forEach(el=>{
-      const s = text(el.textContent);
-      if(s.startsWith(label) && s.length < 120){
-        el.innerHTML = '<b>' + label + '</b><br><b>' + value + '</b>';
-      }
-    });
-  }
-  function findTable(words){
-    return [...document.querySelectorAll('table')].find(t=>{
-      const h = (t.querySelector('thead')?.textContent || t.textContent || '').toLowerCase();
-      return words.every(w => h.includes(w));
-    });
-  }
-  window.hbsLoadDirectDashboard = async function(){
-    if(!window.user || user.role !== 'manager') return;
-    try{
-      const j = await getDashboard();
-      const s = j.summary || {};
-      setCard('Total Audits', s.total_audits || 0);
-      setCard('Average Score', (s.average_score || 0) + '%');
-      setCard('Pass Rate', (s.pass_rate || 0) + '%');
-      setCard('Excellent', s.excellent || 0);
-      setCard('Pass', s.pass || 0);
-      setCard('Improvement Required', s.improvement || 0);
-      setCard('Fail', s.fail || 0);
-      setCard('Open Training / Re-audits', (s.open_training || 0) + ' / ' + (s.open_reaudits || 0));
-
-      const leagueTable = findTable(['rank','engineer','avg score']);
-      if(leagueTable){
-        const body = leagueTable.querySelector('tbody') || leagueTable.appendChild(document.createElement('tbody'));
-        body.innerHTML = (j.league || []).map((r,i)=>`<tr>
-          <td>${i+1}</td><td>${r.engineer}</td><td>${r.audits}</td><td>${r.avg_score}%</td>
-          <td>${r.excellent}</td><td>${r.improvement}</td><td>${r.fails}</td>
-        </tr>`).join('');
-      }
-
-      const auditTable = findTable(['ref','engineer','site','score']);
-      if(auditTable){
-        const body = auditTable.querySelector('tbody') || auditTable.appendChild(document.createElement('tbody'));
-        body.innerHTML = (j.audits || []).map(a=>`<tr>
-          <td>${a.ref}</td><td>${a.date}</td><td>${a.engineer}</td><td>${a.site}</td>
-          <td>${a.manufacturer}</td><td>${a.model}</td><td>${a.score}</td><td>${a.result}</td><td>${a.ref}</td>
-        </tr>`).join('');
-      }
-    }catch(e){
-      console.error('Direct dashboard load failed:', e);
-    }
-  };
-
-  const oldLoadDashboard = window.loadDashboard;
-  window.loadDashboard = async function(){
-    if(oldLoadDashboard){ try{ await oldLoadDashboard.apply(this, arguments); }catch(e){} }
-    setTimeout(window.hbsLoadDirectDashboard, 250);
-  };
-
-  document.addEventListener('click', e=>{
-    if(text(e.target?.textContent) === 'Refresh') setTimeout(window.hbsLoadDirectDashboard, 250);
-  });
-
-  setInterval(()=>{
-    try{
-      if(window.user && user.role === 'manager' && document.body.textContent.includes('Manager Dashboard')){
-        window.hbsLoadDirectDashboard();
-      }
-    }catch(e){}
-  }, 3000);
-})();
-
+try{const saved=localStorage.getItem('hbs_user'); if(saved){user=JSON.parse(saved); startApp();}}catch(e){}
 </script>
 </body>
 </html>
