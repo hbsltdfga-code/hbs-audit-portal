@@ -1165,6 +1165,147 @@ function hbsViewTightnessRecord(id){
   </table>`;
 }
 
+
+// --- HBS Navigation Cleanup Fix ---
+(function(){
+  const managerMenu = [
+    'New Audit',
+    'My Dashboard',
+    'Training / Re-audits',
+    'Training Management',
+    'Toolbox Test',
+    'Knowledge Centre',
+    'Tightness Calculator',
+    'Test Results',
+    'Users',
+    'Record Management',
+    'Backup',
+    'Logout'
+  ];
+
+  const seniorMenu = [
+    'Conduct Audit',
+    'Toolbox Test',
+    'Knowledge Centre',
+    'Tightness Calculator',
+    'Logout'
+  ];
+
+  const engineerMenu = [
+    'My Dashboard',
+    'Toolbox Test',
+    'Knowledge Centre',
+    'Tightness Calculator',
+    'Logout'
+  ];
+
+  function normaliseButtonText(txt){
+    return String(txt || '').replace(/\s+/g,' ').trim();
+  }
+
+  function desiredMenu(){
+    if(!window.user) return [];
+    if(user.role === 'manager') return managerMenu;
+    if(user.role === 'senior_engineer') return seniorMenu;
+    return engineerMenu;
+  }
+
+  function buttonAction(label){
+    return function(){
+      switch(label){
+        case 'New Audit':
+        case 'Conduct Audit':
+          if(typeof show === 'function') show('auditForm');
+          if(document.querySelector('#auditor') && window.user) document.querySelector('#auditor').value = user.name;
+          break;
+        case 'My Dashboard':
+          if(typeof loadDashboard === 'function') loadDashboard();
+          else if(typeof show === 'function') show('dashboard');
+          break;
+        case 'Training / Re-audits':
+          if(typeof loadTraining === 'function') loadTraining();
+          else if(typeof show === 'function') show('trainingView');
+          break;
+        case 'Training Management':
+          if(typeof show === 'function') show('trainingManager');
+          break;
+        case 'Toolbox Test':
+          if(typeof loadToolboxTest === 'function') loadToolboxTest();
+          else if(typeof show === 'function') show('toolboxTest');
+          break;
+        case 'Knowledge Centre':
+          if(typeof loadKnowledgeCentre === 'function') loadKnowledgeCentre();
+          else if(typeof loadTechnicalLibrary === 'function') loadTechnicalLibrary();
+          else if(typeof show === 'function') show('knowledgeCentre');
+          break;
+        case 'Tightness Calculator':
+          if(typeof loadTightnessCalculator === 'function') loadTightnessCalculator();
+          break;
+        case 'Test Results':
+          if(typeof show === 'function') show('toolboxResults');
+          break;
+        case 'Users':
+          if(typeof show === 'function') show('userAdmin');
+          break;
+        case 'Record Management':
+          if(typeof show === 'function') show('recordManager');
+          break;
+        case 'Backup':
+          if(typeof downloadBackup === 'function') downloadBackup();
+          else if(typeof show === 'function') show('backup');
+          break;
+        case 'Logout':
+          if(typeof logout === 'function') logout();
+          else location.reload();
+          break;
+      }
+    };
+  }
+
+  window.hbsCleanNavigation = function(){
+    if(!window.user) return;
+
+    const loginText = [...document.querySelectorAll('body *')]
+      .find(el => normaliseButtonText(el.textContent).startsWith('Logged in:'));
+
+    let nav = null;
+    if(loginText){
+      nav = loginText.closest('.card') || loginText.parentElement;
+    }
+    if(!nav){
+      nav = document.querySelector('nav') || document.querySelector('.nav') || document.querySelector('.toolbar') || document.body;
+    }
+
+    // Remove duplicate/old nav buttons by their text.
+    const navLabels = new Set([...managerMenu, ...seniorMenu, ...engineerMenu]);
+    [...nav.querySelectorAll('button')].forEach(btn=>{
+      const t = normaliseButtonText(btn.textContent);
+      if(navLabels.has(t)) btn.remove();
+    });
+
+    const menu = desiredMenu();
+    const logoutExisting = [...nav.querySelectorAll('button')].find(b=>normaliseButtonText(b.textContent)==='Logout');
+    menu.forEach(label=>{
+      const btn=document.createElement('button');
+      btn.textContent=label;
+      btn.onclick=buttonAction(label);
+      if(label === 'Logout' && logoutExisting) return;
+      nav.appendChild(btn);
+    });
+
+    // Remove duplicate buttons across the nav after rebuild.
+    const seen = new Set();
+    [...nav.querySelectorAll('button')].forEach(btn=>{
+      const t=normaliseButtonText(btn.textContent);
+      if(seen.has(t)) btn.remove();
+      else seen.add(t);
+    });
+  };
+
+  // Run repeatedly because older code may add buttons after login.
+  setInterval(()=>{try{window.hbsCleanNavigation();}catch(e){}},800);
+})();
+
 </script>
 </body>
 </html>
