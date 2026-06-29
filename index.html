@@ -148,9 +148,9 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
 
   <div class="managerOnly">
     <h3>Upload Document(s) to R2</h3>
-  <p class="muted"><b>Important:</b> Large PDFs now upload directly to Cloudflare R2 using a streaming upload route. Do not close this page during upload.</p>
+  <p class="muted"><b>Important:</b> Large PDFs upload directly to Cloudflare R2. You can select one or more documents at the same time. Do not close this page during upload.</p>
     <div class="grid noprint">
-      <label>Document Title<br><input id="kcTitle" placeholder="Example: IGEM/UP/10 Edition 3"></label>
+      <label>Document Title<br><input id="kcTitle" placeholder="Optional - auto-generated if blank"></label>
       <label>Category<br>
         <select id="kcCategory">
           <option>IGEM Standards</option>
@@ -169,7 +169,7 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
           <option>Other</option>
         </select>
       </label>
-      <label>Reference / Version<br><input id="kcReference" placeholder="Example: UP/10 Ed.3"></label>
+      <label>Reference / Version<br><input id="kcReference" placeholder="Optional - auto-detected where possible"></label>
       <label>Keywords<br><input id="kcKeywords" placeholder="ventilation, flues, tightness, purge"></label>
       <label>Document Files<br><input id="kcFiles" type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.mp4,.mov"></label>
       <label><br><button onclick="uploadLibraryDocument()">Upload Document(s) to R2</button></label>
@@ -178,25 +178,7 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
   </div>
 
   
-<h3>Register Existing R2 File</h3>
-<p class="muted managerOnly">For large IGEM PDFs, upload the file directly into the Cloudflare R2 bucket first, then register the R2 object key here. This avoids browser upload limits.</p>
-<div class="grid noprint managerOnly">
-  <label>Document Title<br><input id="kcRegTitle" placeholder="Example: IGEM/UP/2 Edition 4"></label>
-  <label>Category<br><select id="kcRegCategory">
-    <option>IGEM Standards</option><option>British Standards</option><option>Manufacturer Manuals</option>
-    <option>HBS Technical Bulletins</option><option>HBS Procedures</option><option>Risk Assessments</option>
-    <option>Gas Safe Guidance</option><option>Gas Installer Magazine</option><option>CP15 Guidance</option>
-    <option>Toolbox Talks</option><option>Technical Images</option><option>Training Videos</option><option>Fault Library</option><option>Other</option>
-  </select></label>
-  <label>Reference / Version<br><input id="kcRegReference" placeholder="Example: UP/2 Ed.4"></label>
-  <label>Keywords<br><input id="kcRegKeywords" placeholder="installation pipework, testing, purging"></label>
-  <label>R2 Object Key<br><input id="kcR2Key" placeholder="Example: IGEM Standards/IGEM.UP.2 Edition 4.pdf"></label>
-  <label>File Name<br><input id="kcRegFileName" placeholder="Example: IGEM.UP.2 Edition 4.pdf"></label>
-  <label>MIME Type<br><input id="kcRegMime" value="application/pdf"></label>
-  <label><br><button onclick="registerR2Document()">Register R2 Document</button></label>
-</div>
-<p id="kcRegisterMsg"></p>
-<h3>Library Sections</h3>
+<h3>Library Sections</h3><div id="kcSectionCounts" class="muted"></div>
   <div id="kcQuickCards" class="grid noprint">
     <button onclick="setKnowledgeCategory('IGEM Standards')">📘 IGEM Standards</button>
     <button onclick="setKnowledgeCategory('Manufacturer Manuals')">🏭 Manufacturer Manuals</button>
@@ -701,6 +683,37 @@ function setKnowledgeCategory(category){
   if(qs('kcFilter')) qs('kcFilter').value=category;
   loadKnowledgeCentre();
 }
+
+function prettifyFileTitle(fileName){
+  let n=String(fileName||'').replace(/\.[^.]+$/,'');
+  n=n.replace(/_/g,' ').replace(/\s+/g,' ').trim();
+  n=n.replace(/\bUP[ ._-]?(\d+[A-Z]?)\b/ig,'UP/$1');
+  n=n.replace(/\bEd(?:ition)?[ ._-]?(\d+)\b/ig,'Edition $1');
+  n=n.replace(/\bIGEM\b/ig,'IGEM');
+  return n;
+}
+function inferReference(fileName, fallback){
+  if(fallback) return fallback;
+  const n=String(fileName||'');
+  const m=n.match(/UP[ ._-]?(\d+[A-Z]?)/i);
+  const e=n.match(/(?:Ed|Edition)[ ._-]?(\d+)/i);
+  if(m && e) return `UP/${m[1].toUpperCase()} Ed.${e[1]}`;
+  if(m) return `UP/${m[1].toUpperCase()}`;
+  return '';
+}
+function inferKeywords(fileName, category, existing){
+  if(existing) return existing;
+  const title=prettifyFileTitle(fileName).toLowerCase();
+  const words=[];
+  if((category||'').includes('IGEM')) words.push('IGEM','commercial gas','standard');
+  if(title.includes('flue')) words.push('flues','flued gas appliances','ventilation');
+  if(title.includes('tight')) words.push('tightness testing','direct purging','pressure testing');
+  if(title.includes('purge')) words.push('purging','testing');
+  if(title.includes('vent')) words.push('ventilation');
+  if(title.includes('combust')) words.push('combustion');
+  return [...new Set(words)].join(', ');
+}
+
 async function uploadKnowledgeDocument(){
   if(!user || user.role!=='manager'){alert('Manager access only');return;}
   const fileInput = qs('kcFiles') || qs('libFile');
@@ -719,12 +732,16 @@ async function uploadKnowledgeDocument(){
   for(let i=0;i<files.length;i++){
     const file=files[i];
     try{
-      const title = files.length===1 ? ((qs('kcTitle')?.value||qs('libTitle')?.value)||file.name) : file.name;
+      const categoryValue=(qs('kcCategory')?.value||qs('libCategory')?.value||'Other');
+      const titleInput=(qs('kcTitle')?.value||qs('libTitle')?.value||'');
+      const refInput=(qs('kcReference')?.value||qs('libReference')?.value||'');
+      const keyInput=(qs('kcKeywords')?.value||qs('libKeywords')?.value||'');
+      const title = files.length===1 ? (titleInput || prettifyFileTitle(file.name)) : prettifyFileTitle(file.name);
       const params = new URLSearchParams({
         title,
-        category:(qs('kcCategory')?.value||qs('libCategory')?.value||'Other'),
-        reference:(qs('kcReference')?.value||qs('libReference')?.value||''),
-        keywords:(qs('kcKeywords')?.value||qs('libKeywords')?.value||''),
+        category:categoryValue,
+        reference:inferReference(file.name, refInput),
+        keywords:inferKeywords(file.name, categoryValue, keyInput),
         file_name:file.name,
         mime_type:file.type||'application/octet-stream',
         uploaded_by:user.name
@@ -769,6 +786,13 @@ async function loadKnowledgeCentre(){
   try{
     const j=await api(`/api/library?q=${q}&category=${c}&user=${encodeURIComponent(user.name)}`);
     const rows=j.documents||[];
+    const counts={};
+    rows.forEach(d=>counts[d.category||'Other']=(counts[d.category||'Other']||0)+1);
+    if(qs('kcSectionCounts')){
+      qs('kcSectionCounts').innerHTML=Object.entries(counts).length
+        ? Object.entries(counts).map(([k,v])=>`<span class="pill">${k}: ${v}</span>`).join(' ')
+        : '<span class="muted">No documents uploaded yet.</span>';
+    }
     qs('knowledgeRows').innerHTML=rows.map(d=>{
       const del=(user&&user.role==='manager')?`<button class="danger" onclick="deleteKnowledgeDocument(${d.id})">Delete</button>`:'';
       return `<tr><td>${d.title||''}</td><td>${d.category||''}</td><td>${d.reference||''}</td><td>${d.keywords||''}</td><td>${formatBytes(d.file_size||0)}</td><td>${d.created_at||''}</td><td><button onclick="openKnowledgeDocument(${d.id})">Open</button> ${del}</td></tr>`;
@@ -830,28 +854,7 @@ function clearUserForm(){['userId','userName','userEmail','userPin'].forEach(id=
 async function saveUser(){try{const body={id:qs('userId').value||undefined,name:qs('userName').value,email:qs('userEmail').value,pin:qs('userPin').value||'1234',role:qs('userRole').value,active:Number(qs('userActive').value)}; await api('/api/users',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); qs('userMsg').textContent='User saved.'; clearUserForm(); await loadUserAdmin()}catch(e){qs('userMsg').textContent=e.message}}
 async function booklet(id){const j=await api('/api/audit?id='+encodeURIComponent(id)); const a=j.audit, data=JSON.parse(a.audit_json||'{}'); show('booklet'); qs('bookletBody').innerHTML=`<h3>HBS-${a.id}</h3><p><b>Engineer:</b> ${a.engineer_name}<br><b>Auditor:</b> ${a.auditor||''}<br><b>Site:</b> ${a.site_name}<br><b>Client:</b> ${data.client_name||''}<br><b>Date:</b> ${a.audit_date}<br><b>Appliance Type:</b> ${data.appliance_type||''}<br><b>Manufacturer:</b> ${data.manufacturer||''}<br><b>Model:</b> ${data.model||''}<br><b>Serial Number:</b> ${data.serial_number||''}<br><b>Asset Number:</b> ${data.asset_number||''}<br><b>Score:</b> ${a.score}% - ${a.result}</p><h3>Audit Questions</h3><table><tr><th>Section</th><th>Question</th><th>Score</th><th>Notes</th></tr>${(data.questions||[]).map(q=>`<tr><td>${q.section}</td><td>${q.question}</td><td>${q.score}</td><td>${q.note||''}</td></tr>`).join('')}</table><h3>Findings / Actions</h3><p>${(data.actions_required||'').replaceAll('\n','<br>')}</p><h3>Training / Re-audit</h3><p>${(data.training_required||'').replaceAll('\n','<br>')}</p><h3>Photos</h3>${(j.photos||[]).map(p=>`<img class=photo src="${p.photo_url}">`).join('')}<h3>Signed</h3><p>${data.signature||''}</p>`}
 
-async function registerR2Document(){
-  if(!user || user.role!=='manager'){alert('Manager access only');return;}
-  const key=qs('kcR2Key').value.trim();
-  if(!key){qs('kcRegisterMsg').textContent='Enter the R2 object key.';return;}
-  try{
-    const body={
-      mode:'register_existing',
-      title:qs('kcRegTitle').value || qs('kcRegFileName').value || key.split('/').pop(),
-      category:qs('kcRegCategory').value,
-      reference:qs('kcRegReference').value,
-      keywords:qs('kcRegKeywords').value,
-      file_key:key,
-      file_name:qs('kcRegFileName').value || key.split('/').pop(),
-      mime_type:qs('kcRegMime').value || 'application/pdf',
-      uploaded_by:user.name
-    };
-    await api('/api/library',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    qs('kcRegisterMsg').textContent='R2 document registered in Knowledge Centre.';
-    ['kcRegTitle','kcRegReference','kcRegKeywords','kcR2Key','kcRegFileName'].forEach(id=>qs(id).value='');
-    await loadKnowledgeCentre();
-  }catch(e){qs('kcRegisterMsg').textContent=e.message;}
-}
+
 
 </script>
 </body>
