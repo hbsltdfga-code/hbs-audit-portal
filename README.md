@@ -1,7 +1,7 @@
 # HBS Audit Portal Phase 2
 
 This version works with the existing D1 tables you have already created:
-users, audits, audit_photos, training_records, competency_records and reaudits.
+users, audits, audit_photos, training_records, competency_records and reaudits..
 
 ## Upload to GitHub
 Replace the current repository files with these root items:
