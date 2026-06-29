@@ -160,13 +160,65 @@ textarea{width:100%;min-height:80px}
       <table><thead><tr><th>ID</th><th>Date</th><th>Engineer</th><th>Site</th><th>Volume</th><th>Drop</th><th>Result</th></tr></thead><tbody id="ttRows"></tbody></table>
     </section>
 
+    
+    <section id="managerTestSignoff" class="card section hide">
+      <h2>Manager Test Sign-Off</h2>
+      <p class="muted">Managers can review engineer toolbox/competency tests, mark them complete, return for further training, or manually add a test record.</p>
+      <p><button onclick="loadManagerTests()">Refresh Test Records</button></p>
+
+      <h3>Manually Add Test Record</h3>
+      <div class="grid">
+        <label>Engineer<br><select id="mtEngineer"></select></label>
+        <label>Assessment / Test Type<br><input id="mtType" placeholder="Level 1 / Level 2 / Toolbox / Bespoke"></label>
+        <label>Score %<br><input id="mtScore" type="number" min="0" max="100"></label>
+        <label>Result<br><select id="mtResult"><option>Pass</option><option>Fail</option><option>Improvement Required</option><option>Complete</option></select></label>
+        <label>Status<br><select id="mtStatus"><option>Pending Manager Review</option><option>Completed</option><option>Returned for Further Training</option></select></label>
+      </div>
+      <label>Manager Notes<br><textarea id="mtNotes"></textarea></label>
+      <p><button onclick="manualAddTestRecord()">Add Test Record</button></p>
+      <p id="mtMsg" class="muted"></p>
+
+      <h3>Engineer Test Records</h3>
+      <table>
+        <thead><tr><th>ID</th><th>Engineer</th><th>Test</th><th>Score</th><th>Result</th><th>Status</th><th>Submitted</th><th>Manager</th><th>Action</th></tr></thead>
+        <tbody id="managerTestRows"></tbody>
+      </table>
+    </section>
+
+    <section id="recordManager" class="card section hide">
+      <h2>Record Management</h2>
+      <p class="notice card"><b>Manager only:</b> Use this area to remove old or test records. Deletion cannot be undone unless you have a backup.</p>
+      <div class="grid">
+        <label>Record Type<br>
+          <select id="delType">
+            <option value="audit">Audit</option>
+            <option value="training">Training Record</option>
+            <option value="reaudit">Re-audit</option>
+            <option value="toolbox">Toolbox/Test Result</option>
+            <option value="tightness">Tightness Test</option>
+          </select>
+        </label>
+        <label>Record ID<br><input id="delId" placeholder="Example: 10"></label>
+      </div>
+      <p>
+        <button class="danger" onclick="deleteRecordById()">Delete Selected Record</button>
+        <button onclick="loadRecordManager()">Refresh Records</button>
+      </p>
+      <p id="delMsg" class="muted"></p>
+
+      <h3>Audit Records</h3>
+      <table><thead><tr><th>ID</th><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Score</th><th>Result</th><th>Delete</th></tr></thead><tbody id="rmAuditRows"></tbody></table>
+      <h3>Toolbox/Test Records</h3>
+      <table><thead><tr><th>ID</th><th>Engineer</th><th>Test</th><th>Score</th><th>Status</th><th>Delete</th></tr></thead><tbody id="rmTestRows"></tbody></table>
+    </section>
+
     <section id="userAdmin" class="card section hide">
       <h2>Users</h2>
       <button onclick="loadUsers()">Refresh</button>
       <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Title</th><th>PIN</th></tr></thead><tbody id="userRows"></tbody></table>
     </section>
 
-    <section id="recordManager" class="card section hide"><h2>Record Management</h2><p>Record management tools remain available through admin-delete API.</p></section>
+    
     <section id="backup" class="card section hide"><h2>Backup</h2><button onclick="downloadBackup()">Download Backup</button></section>
   </main>
 </section>
@@ -195,16 +247,16 @@ function startApp(){
 }
 function buildNav(){
   const menus={
-    manager:[['New Audit','auditForm'],['My Dashboard','dashboard'],['Training / Re-audits','trainingView'],['Training Management','trainingManager'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Test Results','toolboxResults'],['Users','userAdmin'],['Record Management','recordManager'],['Backup','backup'],['Logout','logout']],
+    manager:[['New Audit','auditForm'],['My Dashboard','dashboard'],['Training / Re-audits','trainingView'],['Training Management','trainingManager'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Test Results','toolboxResults'],['Test Sign-Off','managerTestSignoff'],['Users','userAdmin'],['Record Management','recordManager'],['Backup','backup'],['Logout','logout']],
     senior_engineer:[['Conduct Audit','auditForm'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Logout','logout']],
     engineer:[['My Dashboard','trainingView'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Logout','logout']]
   };
   $('navButtons').innerHTML='';
-  (menus[user.role]||menus.engineer).forEach(([label,id])=>{const b=document.createElement('button'); b.textContent=label; b.onclick=()=>{if(id==='logout') logout(); else {show(id); if(id==='dashboard')loadDashboard(); if(id==='trainingView')loadTraining(); if(id==='knowledgeCentre')loadKnowledgeCentre(); if(id==='tightnessCalculator')loadTightnessCalculator(); if(id==='userAdmin')loadUsers(); if(id==='toolboxResults')loadToolboxResults();}}; $('navButtons').appendChild(b);});
+  (menus[user.role]||menus.engineer).forEach(([label,id])=>{const b=document.createElement('button'); b.textContent=label; b.onclick=()=>{if(id==='logout') logout(); else {show(id); if(id==='dashboard')loadDashboard(); if(id==='trainingView')loadTraining(); if(id==='knowledgeCentre')loadKnowledgeCentre(); if(id==='tightnessCalculator')loadTightnessCalculator(); if(id==='userAdmin')loadUsers(); if(id==='managerTestSignoff')loadManagerTests(); if(id==='recordManager')loadRecordManager(); if(id==='toolboxResults')loadToolboxResults();}}; $('navButtons').appendChild(b);});
 }
 
 async function populateEngineerSelects(){
-  try{const j=await api('/api/users'); const users=j.users||[]; ['aEngineer','tmEngineer'].forEach(id=>{const s=$(id); if(s) s.innerHTML=users.map(u=>`<option>${u.name}</option>`).join('')});}
+  try{const j=await api('/api/users'); const users=j.users||[]; ['aEngineer','tmEngineer','mtEngineer'].forEach(id=>{const s=$(id); if(s) s.innerHTML=users.map(u=>`<option>${u.name}</option>`).join('')});}
   catch(e){console.warn(e)}
   $('aDate').value=new Date().toISOString().slice(0,10); $('aAuditor').value=user?.name||'';
 }
@@ -280,6 +332,65 @@ async function loadTightnessRecords(){const j=await api(`/api/tightness?role=${u
 function downloadBackup(){window.open('/api/backup','_blank')}
 
 try{const saved=localStorage.getItem('hbs_user'); if(saved){user=JSON.parse(saved); startApp();}}catch(e){}
+
+async function loadManagerTests(){
+  if(user.role!=='manager') return;
+  try{
+    const j=await api('/api/toolbox-test?role=manager');
+    const rows=j.results||j.records||j.tests||[];
+    $('managerTestRows').innerHTML=rows.map(r=>`<tr>
+      <td>${r.id||''}</td><td>${r.engineer_name||r.engineer||''}</td><td>${r.test_type||r.assessment_type||r.level||'Toolbox Test'}</td>
+      <td>${r.score??''}</td><td>${r.result||r.outcome||''}</td><td>${r.status||'Pending Manager Review'}</td>
+      <td>${r.created_at||r.submitted_at||r.test_date||''}</td><td>${r.manager_name||r.signed_off_by||''}</td>
+      <td>
+        <button onclick="signoffTest(${r.id},'Completed')">Complete</button>
+        <button class="secondary" onclick="signoffTest(${r.id},'Returned for Further Training')">Return</button>
+        <button class="danger" onclick="deleteRecord('toolbox',${r.id})">Delete</button>
+      </td>
+    </tr>`).join('');
+    if(!rows.length) $('managerTestRows').innerHTML='<tr><td colspan="9">No test records found.</td></tr>';
+  }catch(e){$('managerTestRows').innerHTML='<tr><td colspan="9">'+e.message+'</td></tr>'}
+}
+async function signoffTest(id,status){
+  try{
+    const notes=prompt('Manager notes / comments:', status==='Completed'?'Completed and signed off.':'Returned for further training.');
+    const j=await api('/api/toolbox-test',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({id,status,manager_name:user.name,manager_notes:notes||''})});
+    await loadManagerTests();
+  }catch(e){alert(e.message)}
+}
+async function manualAddTestRecord(){
+  try{
+    const body={role:user.role,engineer_name:$('mtEngineer').value,test_type:$('mtType').value||'Manual Test Record',score:Number($('mtScore').value||0),result:$('mtResult').value,status:$('mtStatus').value,manager_name:user.name,manager_notes:$('mtNotes').value};
+    const j=await api('/api/toolbox-test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    $('mtMsg').textContent='Manual test record added ID '+j.id;
+    await loadManagerTests();
+  }catch(e){$('mtMsg').textContent=e.message}
+}
+async function loadRecordManager(){
+  if(user.role!=='manager') return;
+  try{
+    const d=await api('/api/dashboard');
+    $('rmAuditRows').innerHTML=(d.audits||[]).map(a=>`<tr><td>${a.id||String(a.ref||'').replace('HBS-','')}</td><td>${a.ref}</td><td>${a.date}</td><td>${a.engineer}</td><td>${a.site}</td><td>${a.score}</td><td>${a.result}</td><td><button class="danger" onclick="deleteRecord('audit','${a.id||String(a.ref||'').replace('HBS-','')}')">Delete</button></td></tr>`).join('');
+  }catch(e){$('rmAuditRows').innerHTML='<tr><td colspan="8">'+e.message+'</td></tr>'}
+  try{
+    const t=await api('/api/toolbox-test?role=manager');
+    const rows=t.results||t.records||t.tests||[];
+    $('rmTestRows').innerHTML=rows.map(r=>`<tr><td>${r.id}</td><td>${r.engineer_name||r.engineer||''}</td><td>${r.test_type||r.assessment_type||'Toolbox Test'}</td><td>${r.score||''}</td><td>${r.status||''}</td><td><button class="danger" onclick="deleteRecord('toolbox',${r.id})">Delete</button></td></tr>`).join('');
+  }catch(e){$('rmTestRows').innerHTML='<tr><td colspan="6">'+e.message+'</td></tr>'}
+}
+async function deleteRecordById(){ await deleteRecord($('delType').value,$('delId').value); }
+async function deleteRecord(type,id){
+  if(!id){alert('Enter a record ID');return;}
+  if(!confirm('Delete '+type+' record ID '+id+'? This cannot be undone unless you have a backup.')) return;
+  try{
+    const j=await api('/api/admin-delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({role:user.role,type,id,manager:user.name})});
+    $('delMsg').textContent=j.message||'Record deleted.';
+    if(type==='toolbox') await loadManagerTests();
+    await loadRecordManager();
+    if(user.role==='manager') await loadDashboard();
+  }catch(e){$('delMsg').textContent=e.message}
+}
+
 </script>
 </body>
 </html>
