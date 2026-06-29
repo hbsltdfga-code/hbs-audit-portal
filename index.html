@@ -316,6 +316,7 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
   </div>
 
   <h3>2. Gas and Test Details</h3>
+  <p class="muted"><b>Note:</b> Stabilisation and test duration are calculated automatically from installation volume, room volume and test area. These fields are locked for consistency.</p>
   <div class="grid">
     <label>Gas Type<br>
       <select id="ttGasType" onchange="ttRecalculate()">
@@ -359,8 +360,8 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
     <label>MIP mbar<br><input id="ttMIP" type="number" step="0.1" value="25" oninput="ttRecalculate()"></label>
     <label>Test Pressure mbar<br><input id="ttPressure" type="number" step="0.1" value="21" oninput="ttRecalculate()"></label>
     <label>Measured Pressure Drop mbar<br><input id="ttDrop" type="number" step="0.01" value="0" oninput="ttRecalculate()"></label>
-    <label>Stabilisation Time minutes<br><input id="ttStabilisation" type="number" step="1" value="1" oninput="hbsTightnessTimeFix()"></label>
-    <label>Test Duration minutes<br><input id="ttDuration" type="number" step="1" value="2" oninput="hbsTightnessTimeFix()"></label>
+    <label>Stabilisation Time minutes<br><input id="ttStabilisation" type="number" step="1" value="1" readonly title="Calculated automatically from installation volume and test conditions"></label>
+    <label>Test Duration minutes<br><input id="ttDuration" type="number" step="1" value="2" readonly title="Calculated automatically from installation volume and test conditions"></label>
   </div>
 
   <h3>3. Pipework Sections - Visible Engineer Input</h3>
@@ -1335,141 +1336,77 @@ function ttView(id){
 }
 
 
-// --- HBS Tightness Calculator layout/time calculation fix ---
+
+// --- Automatic stabilisation and test duration calculation ---
 (function(){
   function q(id){return document.getElementById(id);}
-  function setText(id, value){const el=q(id); if(el) el.textContent=value;}
-  function num(id, fallback=0){const el=q(id); const v=Number(el?.value); return Number.isFinite(v)?v:fallback;}
+  function n(id, fallback=0){const v=Number(q(id)?.value); return Number.isFinite(v)?v:fallback;}
+  function setVal(id,val){const el=q(id); if(el) el.value=val;}
+  function setText(id,val){const el=q(id); if(el) el.textContent=val;}
 
-  window.hbsTightnessTimeFix = function(){
-    const stab = num('ttStabilisation',1);
-    const duration = num('ttDuration',2);
-    const drop = num('ttDrop',0);
-    const pressure = num('ttPressure',21);
+  window.ttCalculatedTimes = function(totalVolume){
+    totalVolume = Number(totalVolume || 0);
+    const roomVolume = n('ttRoomVolume',0);
+    const testArea = (q('ttTestArea')?.value || '').toLowerCase();
+    const procedure = (q('ttProcedure')?.value || '').toLowerCase();
 
-    setText('ttStabOut', stab + (stab===1 ? ' minute' : ' minutes'));
-    setText('ttDurationOut', duration + (duration===1 ? ' minute' : ' minutes'));
-    setText('ttDropOut', drop.toFixed(2) + ' mbar');
+    let stabilisation = 1;
+    let duration = 2;
 
-    if(typeof window.ttRecalculate === 'function' && !window.__ttFixRunning){
-      window.__ttFixRunning = true;
-      try{ window.ttRecalculate(); }catch(e){}
-      window.__ttFixRunning = false;
+    // HBS default automatic selection based on installation volume bands.
+    if(totalVolume > 0.035 && totalVolume <= 0.15){ stabilisation = 2; duration = 5; }
+    else if(totalVolume > 0.15 && totalVolume <= 1.0){ stabilisation = 5; duration = 10; }
+    else if(totalVolume > 1.0){ stabilisation = 10; duration = 30; }
+
+    // Local appliance / plant tests are generally shorter unless volume is high.
+    if(procedure.includes('local') && totalVolume <= 0.15){ stabilisation = Math.max(stabilisation,1); duration = Math.max(duration,2); }
+
+    // If room is small compared with installation volume, apply a more cautious duration.
+    if(roomVolume > 0 && totalVolume > 0 && (totalVolume / roomVolume) > 0.005){
+      duration = Math.max(duration, 5);
     }
 
-    // Some older calculator versions overwrite these values after recalculation,
-    // so set them again afterwards.
-    setText('ttStabOut', stab + (stab===1 ? ' minute' : ' minutes'));
-    setText('ttDurationOut', duration + (duration===1 ? ' minute' : ' minutes'));
-
-    return {stabilisation_time:stab,test_duration:duration,pressure,drop};
-  };
-
-  document.addEventListener('input', function(e){
-    if(['ttStabilisation','ttDuration','ttDrop','ttPressure'].includes(e.target?.id)){
-      window.hbsTightnessTimeFix();
+    // Poor ventilation / other test area increases caution.
+    if(testArea.includes('inadequate') || testArea.includes('other')){
+      stabilisation = Math.max(stabilisation,5);
+      duration = Math.max(duration,10);
     }
-  });
-  document.addEventListener('change', function(e){
-    if(['ttStabilisation','ttDuration','ttDrop','ttPressure'].includes(e.target?.id)){
-      window.hbsTightnessTimeFix();
-    }
-  });
 
-  const oldLoad = window.loadTightnessCalculator;
-  window.loadTightnessCalculator = async function(){
-    if(oldLoad) await oldLoad.apply(this, arguments);
-    setTimeout(window.hbsTightnessTimeFix, 50);
+    return {stabilisation, duration};
   };
 
   const oldRecalc = window.ttRecalculate;
-  if(oldRecalc){
-    window.ttRecalculate = function(){
-      const result = oldRecalc.apply(this, arguments);
-      const stab = num('ttStabilisation',1);
-      const duration = num('ttDuration',2);
-      setText('ttStabOut', stab + (stab===1 ? ' minute' : ' minutes'));
-      setText('ttDurationOut', duration + (duration===1 ? ' minute' : ' minutes'));
-      return result;
-    };
-  }
-})();
+  window.ttRecalculate = function(){
+    // If old function exists, run it first to calculate volumes.
+    let result = oldRecalc ? oldRecalc.apply(this, arguments) : {};
+    const total = Number(result?.total || String(q('ttTotalVolume')?.textContent || '0').replace(/[^\d.]/g,'') || 0);
+    const times = window.ttCalculatedTimes(total);
+    setVal('ttStabilisation', times.stabilisation);
+    setVal('ttDuration', times.duration);
 
+    // Recalculate leak rate after setting auto duration, using the same model as the calculator.
+    const pressure = n('ttPressure',21);
+    const drop = n('ttDrop',0);
+    const permitted = Number(String(q('ttPermittedOut')?.textContent || '0').replace(/[^\d.]/g,'') || 0);
+    const leakRate = (total>0 && pressure>0 && times.duration>0) ? ((total * drop / pressure) * (60 / times.duration)) : 0;
+    const margin = permitted>0 ? ((permitted - leakRate) / permitted) * 100 : 0;
+    const outcome = leakRate <= permitted ? 'PASS / CHECK' : 'FAIL / CHECK';
 
-// --- Senior Engineer UI restriction fix ---
-(function(){
-  function isSeniorUser(){ return window.user && user.role === 'senior_engineer'; }
+    setText('ttStabOut', times.stabilisation + (times.stabilisation===1?' minute':' minutes'));
+    setText('ttDurationOut', times.duration + (times.duration===1?' minute':' minutes'));
+    setText('ttLeakRate', leakRate.toFixed(6) + ' m³/hr');
+    setText('ttLeakMargin', margin.toFixed(2) + '%');
+    setText('ttOutcome', outcome);
+    setText('ttLeakCheck', outcome);
+    setText('ttFLR', leakRate<=permitted?'YES / CHECK':'NO / CHECK');
 
-  function seniorAllowedPage(id){
-    return ['auditForm','tightnessCalculator','knowledgeCentre','technicalLibrary','toolboxTest'].includes(id);
-  }
-
-  window.applySeniorEngineerRestrictions = function(){
-    if(!isSeniorUser()) return;
-
-    // Remove/hide training and dashboard controls for senior engineer.
-    [...document.querySelectorAll('button,a')].forEach(el=>{
-      const txt=(el.textContent||'').trim().toLowerCase();
-      if(txt.includes('training / re-audits') || txt === 'my dashboard' || txt.includes('dashboard')){
-        el.style.display='none';
-      }
-    });
-
-    // If the senior engineer is currently looking at Training/Re-audit, move them to Conduct Audit.
-    const training=document.querySelector('#trainingView');
-    if(training && !training.classList.contains('hide')){
-      training.classList.add('hide');
-      if(typeof show==='function') show('auditForm');
-    }
-
-    // Remove training/re-audit content from view if shown by default.
-    ['trainingView','dashboard','trainingManager','toolboxResults','recordManager','userAdmin'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el) el.classList.add('hide');
-    });
+    return Object.assign({}, result, {duration:times.duration, stabilisation:times.stabilisation, leakRate, outcome});
   };
 
-  // Replace old alert behaviour with silent redirection/ignore.
-  const oldShow = window.show;
-  if(oldShow && !window.__seniorShowPatched){
-    window.__seniorShowPatched = true;
-    window.show = function(id){
-      if(isSeniorUser() && !seniorAllowedPage(id)){
-        // No popup - just keep senior engineers away from restricted areas.
-        return;
-      }
-      const result = oldShow.apply(this, arguments);
-      setTimeout(window.applySeniorEngineerRestrictions, 50);
-      return result;
-    };
-  }
-
-  const oldLoadTraining = window.loadTraining;
-  if(oldLoadTraining && !window.__seniorLoadTrainingPatched){
-    window.__seniorLoadTrainingPatched = true;
-    window.loadTraining = async function(){
-      if(isSeniorUser()){
-        window.applySeniorEngineerRestrictions();
-        return;
-      }
-      return oldLoadTraining.apply(this, arguments);
-    };
-  }
-
-  const oldLoadDashboard = window.loadDashboard;
-  if(oldLoadDashboard && !window.__seniorLoadDashboardPatched){
-    window.__seniorLoadDashboardPatched = true;
-    window.loadDashboard = async function(){
-      if(isSeniorUser()){
-        if(typeof show==='function') show('auditForm');
-        window.applySeniorEngineerRestrictions();
-        return;
-      }
-      return oldLoadDashboard.apply(this, arguments);
-    };
-  }
-
-  setInterval(()=>{try{window.applySeniorEngineerRestrictions();}catch(e){}},700);
+  ['ttRoomVolume','ttTestArea','ttProcedure','ttDrop','ttPressure','ttMOP','ttMIP','ttMeterType','ttMeterManual','ttFittingsAllowance','ttFittingsManual'].forEach(id=>{
+    document.addEventListener('input', e=>{ if(e.target?.id===id) window.ttRecalculate(); });
+    document.addEventListener('change', e=>{ if(e.target?.id===id) window.ttRecalculate(); });
+  });
 })();
 
 </script>
