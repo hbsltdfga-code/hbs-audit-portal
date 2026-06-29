@@ -262,50 +262,148 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
  </div>
 
 
+ 
  <div id="tightnessCalculator" class="card hide">
   <h2>HBS Gas Tightness Test Calculator</h2>
-  <p class="muted">Commercial gas tightness test calculator for recording installation volume, test pressure, measured pressure drop and result. Saved calculations are retained in the portal for audit evidence.</p>
-
-  <h3>Test Details</h3>
-  <div class="grid noprint">
-    <label>Engineer<br><input id="ttEngineer" readonly></label>
-    <label>Site Name<br><input id="ttSite" placeholder="Site / client location"></label>
-    <label>Client<br><input id="ttClient" placeholder="Client name"></label>
-    <label>Audit Ref / Job Ref<br><input id="ttAuditRef" placeholder="Optional e.g. HBS-123 / Joblogic ref"></label>
-    <label>Test Date<br><input id="ttDate" type="date"></label>
-    <label>Pipework / Area Tested<br><input id="ttArea" placeholder="e.g. Plantroom local installation"></label>
+  <div style="border:2px solid #f0c400;background:#fff8d6;padding:10px;border-radius:8px;margin-bottom:10px">
+    <b>Engineer Use</b><br>
+    Gas test calls are engineer service records. Calculated calls are aids only. The Pipework Sections table below is hard-coded into this page and does not rely on external webpages.
   </div>
 
-  <h3>Calculation Inputs</h3>
-  <div class="grid noprint">
-    <label>Test Type<br>
-      <select id="ttType" onchange="calculateTightness()">
-        <option value="commercial">Commercial installation</option>
-        <option value="local">Local appliance/plant test</option>
-        <option value="custom">Custom permitted leak rate</option>
+  <h3>1. Site Details</h3>
+  <div class="grid">
+    <label>Site Name<br><input id="ttSite" placeholder="Site name"></label>
+    <label>Job Number<br><input id="ttAuditRef" placeholder="Job / audit ref"></label>
+    <label>Engineer<br><input id="ttEngineer" readonly></label>
+    <label>Date<br><input id="ttDate" type="date"></label>
+    <label>Client<br><input id="ttClient" placeholder="Client"></label>
+    <label>Area Tested<br><input id="ttArea" placeholder="Plantroom / pipework area"></label>
+  </div>
+
+  <h3>2. Gas and Test Details</h3>
+  <div class="grid">
+    <label>Gas Type<br>
+      <select id="ttGasType" onchange="ttRecalculate()">
+        <option value="natural">Natural Gas</option>
+        <option value="propane">LPG Propane</option>
+        <option value="custom">Custom SG</option>
       </select>
     </label>
-    <label>Installation Volume<br><input id="ttVolume" type="number" step="0.001" min="0" placeholder="m³" oninput="calculateTightness()"></label>
-    <label>Test Pressure<br><input id="ttPressure" type="number" step="0.1" min="0" placeholder="mbar" value="20" oninput="calculateTightness()"></label>
-    <label>Stabilisation Time<br><input id="ttStabilisation" type="number" step="1" min="0" placeholder="minutes" value="1"></label>
-    <label>Test Duration<br><input id="ttDuration" type="number" step="1" min="1" placeholder="minutes" value="2" oninput="calculateTightness()"></label>
-    <label>Measured Pressure Drop<br><input id="ttDrop" type="number" step="0.01" min="0" placeholder="mbar" oninput="calculateTightness()"></label>
-    <label>Permitted Leak Rate<br><input id="ttPermitted" type="number" step="0.001" min="0" placeholder="m³/hr - auto/custom" oninput="calculateTightness()"></label>
-    <label>Notes<br><input id="ttNotes" placeholder="Observations / actions / limitations"></label>
+    <label>Procedure<br>
+      <select id="ttProcedure" onchange="ttRecalculate()">
+        <option>Auto based on volume</option>
+        <option>UP/1B Local Installation</option>
+        <option>UP/1A Commercial Installation</option>
+        <option>Custom</option>
+      </select>
+    </label>
+    <label>Installation Type<br>
+      <select id="ttInstallationType">
+        <option>Existing</option>
+        <option>New</option>
+        <option>Extension / Alteration</option>
+      </select>
+    </label>
+    <label>Test Area<br>
+      <select id="ttTestArea">
+        <option>Pipework adequately ventilated</option>
+        <option>Plantroom local test</option>
+        <option>External pipework</option>
+        <option>Other</option>
+      </select>
+    </label>
+    <label>Gauge Type<br>
+      <select id="ttGaugeType">
+        <option>Electronic Gauge 2 decimal places</option>
+        <option>Electronic Gauge 1 decimal place</option>
+        <option>Water gauge</option>
+      </select>
+    </label>
+    <label>Room Volume m³<br><input id="ttRoomVolume" type="number" step="0.001" value="0" oninput="ttRecalculate()"></label>
+    <label>MOP mbar<br><input id="ttMOP" type="number" step="0.1" value="21" oninput="ttRecalculate()"></label>
+    <label>MIP mbar<br><input id="ttMIP" type="number" step="0.1" value="25" oninput="ttRecalculate()"></label>
+    <label>Test Pressure mbar<br><input id="ttPressure" type="number" step="0.1" value="21" oninput="ttRecalculate()"></label>
+    <label>Measured Pressure Drop mbar<br><input id="ttDrop" type="number" step="0.01" value="0" oninput="ttRecalculate()"></label>
+    <label>Stabilisation Time minutes<br><input id="ttStabilisation" type="number" step="1" value="1" oninput="ttRecalculate()"></label>
+    <label>Test Duration minutes<br><input id="ttDuration" type="number" step="1" value="2" oninput="ttRecalculate()"></label>
   </div>
 
-  <h3>Result</h3>
+  <h3>3. Pipework Sections - Visible Engineer Input</h3>
+  <p class="muted">Add each pipework section. The calculator uses internal diameter values to calculate section volume.</p>
+  <table>
+    <thead>
+      <tr><th>No</th><th>Material</th><th>Size</th><th>Length m</th><th>Internal Dia mm</th><th>m³/m</th><th>Section m³</th><th></th></tr>
+    </thead>
+    <tbody id="ttPipeRows"></tbody>
+  </table>
+  <p><button onclick="ttAddPipeRow()">+ Add Pipework Section</button></p>
+
+  <h3>4. Meter / Turbine Meter</h3>
   <div class="grid">
-    <div class="card"><b>Calculated Leak Rate</b><br><span id="ttLeakRate" style="font-size:24px;font-weight:bold">0.000 m³/hr</span></div>
-    <div class="card"><b>Maximum Permitted Leak Rate</b><br><span id="ttPermittedOut" style="font-size:24px;font-weight:bold">0.000 m³/hr</span></div>
-    <div class="card"><b>Outcome</b><br><span id="ttOutcome" style="font-size:24px;font-weight:bold">Awaiting input</span></div>
+    <label>Meter Type<br>
+      <select id="ttMeterType" onchange="ttRecalculate()">
+        <option value="none">None</option>
+        <option value="manual">Manual Volume</option>
+        <option value="u6">U6 / G4 Domestic</option>
+        <option value="g10">G10</option>
+        <option value="g16">G16</option>
+        <option value="g25">G25</option>
+        <option value="g40">G40</option>
+        <option value="g65">G65</option>
+        <option value="turbine">Turbine Meter</option>
+      </select>
+    </label>
+    <label>Meter Size / Standard Volume<br><input id="ttMeterStd" readonly></label>
+    <label>Manual / Manufacturer Meter Volume m³<br><input id="ttMeterManual" type="number" step="0.001" value="0" oninput="ttRecalculate()"></label>
+    <label>Turbine Flange Diameter mm<br><input id="ttTurbineDia" type="number" step="0.1" value="0" oninput="ttRecalculate()"></label>
+    <label>Turbine Meter Length mm<br><input id="ttTurbineLen" type="number" step="0.1" value="0" oninput="ttRecalculate()"></label>
+    <label>Fittings Allowance<br>
+      <select id="ttFittingsAllowance" onchange="ttRecalculate()">
+        <option value="0.15">Apply 15% of pipe volume</option>
+        <option value="0.10">Apply 10% of pipe volume</option>
+        <option value="0">No fittings allowance</option>
+        <option value="manual">Manual fittings volume</option>
+      </select>
+    </label>
+    <label>Manual Fittings Volume m³<br><input id="ttFittingsManual" type="number" step="0.001" value="0" oninput="ttRecalculate()"></label>
   </div>
 
-  <p class="muted">Note: This calculator supports HBS recording and consistency checks. Engineers remain responsible for applying the appropriate current standard/procedure, test method and safe classification on site.</p>
-  <p class="noprint">
-    <button onclick="saveTightnessCalculation()">Save Calculation</button>
-    <button onclick="resetTightnessCalculator()">Reset</button>
-    <button onclick="loadTightnessRecords()">Refresh Records</button>
+  <h3>5. Purge / Additional Report Details</h3>
+  <div class="grid">
+    <label>Purge Multiplier<br><input id="ttPurgeMultiplier" type="number" step="0.1" value="1" oninput="ttRecalculate()"></label>
+    <label>Engineer Name for Report<br><input id="ttReportEngineer" placeholder="Optional name for report"></label>
+    <label>Notes<br><input id="ttNotes" placeholder="Observations / limitations / actions"></label>
+    <label>Custom Permitted Leak Rate m³/hr<br><input id="ttCustomPermitted" type="number" step="0.001" placeholder="Optional" oninput="ttRecalculate()"></label>
+  </div>
+
+  <h3>6. Results</h3>
+  <div class="grid">
+    <div class="card"><b>Pipework Volume</b><br><span id="ttPipeVolume">0.000000 m³</span></div>
+    <div class="card"><b>Meter Volume</b><br><span id="ttMeterVolume">0.000000 m³</span></div>
+    <div class="card"><b>Fittings Volume</b><br><span id="ttFittingsVolume">0.000000 m³</span></div>
+    <div class="card"><b>Total Installation Volume</b><br><span id="ttTotalVolume">0.000000 m³</span></div>
+    <div class="card"><b>Stabilisation Period</b><br><span id="ttStabOut">1 minute</span></div>
+    <div class="card"><b>Test Time Duration</b><br><span id="ttDurationOut">2 minutes</span></div>
+    <div class="card"><b>Test Temperature</b><br><span id="ttTemperatureOut">15°C / 288.15K</span></div>
+    <div class="card"><b>Total Test Pressure Drop</b><br><span id="ttDropOut">0.00 mbar</span></div>
+    <div class="card"><b>Indicative Absolute Drop</b><br><span id="ttAbsDrop">0.0000 mbar</span></div>
+    <div class="card"><b>Pass / Fail</b><br><span id="ttOutcome" style="font-size:22px;font-weight:bold">PASS / CHECK</span></div>
+    <div class="card"><b>Maximum Permitted Leak Rate</b><br><span id="ttPermittedOut">0.000000 m³/hr</span></div>
+    <div class="card"><b>Actual Leak Rate</b><br><span id="ttLeakRate">0.000000 m³/hr</span></div>
+    <div class="card"><b>Leak Rate Margin</b><br><span id="ttLeakMargin">0.00%</span></div>
+    <div class="card"><b>Leak Rate Check</b><br><span id="ttLeakCheck">PASS / CHECK</span></div>
+    <div class="card"><b>PT Factor</b><br><span id="ttPTFactor">1.000000</span></div>
+    <div class="card"><b>FLR Pass?</b><br><span id="ttFLR">YES / CHECK</span></div>
+    <div class="card"><b>Purge Volume</b><br><span id="ttPurgeVol">0.000000 m³</span></div>
+    <div class="card"><b>Purge Volume</b><br><span id="ttPurgeFt3">0.000000 ft³</span></div>
+  </div>
+
+  <p class="muted">This calculator provides consistent HBS recording and audit evidence. Engineers remain responsible for applying the current IGEM/HBS procedure and safe classification on site.</p>
+
+  <p>
+    <button onclick="ttSave()">Save Calculation</button>
+    <button onclick="ttReset()">Reset</button>
+    <button onclick="ttLoadRecords()">Refresh Records</button>
   </p>
   <p id="ttMsg"></p>
 
@@ -314,12 +412,10 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
     <thead><tr><th>ID</th><th>Date</th><th>Engineer</th><th>Site</th><th>Volume</th><th>Drop</th><th>Leak Rate</th><th>Result</th><th>Action</th></tr></thead>
     <tbody id="ttRows"></tbody>
   </table>
-
   <h3>Selected Record</h3>
   <div id="ttRecordDetail" class="muted">Select a saved record to view details.</div>
  </div>
-
- <div id="booklet" class="card hide"><h2>Audit Booklet</h2><div id="bookletBody"></div><button class="noprint" onclick="window.print()">Print / Save PDF</button></div>
+<div id="booklet" class="card hide"><h2>Audit Booklet</h2><div id="bookletBody"></div><button class="noprint" onclick="window.print()">Print / Save PDF</button></div>
 </section>
 <script>
 
@@ -1044,111 +1140,172 @@ if(_hbsApiOriginalSeniorFilter){
 }
 
 
-function tightnessPermitted(volume, type, custom){
-  volume = Number(volume || 0);
-  custom = Number(custom || 0);
-  if(type === 'custom' && custom > 0) return custom;
-  // HBS default recording model. For commercial installations this allows a proportional
-  // maximum permitted leak rate based on volume. Manager can use custom where required.
-  if(type === 'local') return Math.max(0.001, volume * 0.005);
-  return Math.max(0.001, volume * 0.01);
+
+
+
+function ensureConductAuditButton(){
+  if(!user) return;
+  const isAllowed = user.role==='manager' || user.role==='senior_engineer';
+  const nav = document.querySelector('nav') || document.querySelector('.nav') || document.querySelector('.toolbar') || document.querySelector('.topbar') || document.body;
+  if(!isAllowed) return;
+  if(document.querySelector('#conductAuditBtn')) return;
+  const btn=document.createElement('button');
+  btn.id='conductAuditBtn';
+  btn.textContent=user.role==='senior_engineer'?'Conduct Audit':'New Audit';
+  btn.onclick=function(){
+    if(typeof show==='function') show('auditForm');
+    const auditor=document.querySelector('#auditor');
+    if(auditor) auditor.value=user.name;
+  };
+  const logout=[...document.querySelectorAll('button')].find(b=>(b.textContent||'').trim().toLowerCase()==='logout');
+  if(logout && logout.parentNode) logout.parentNode.insertBefore(btn, logout);
+  else nav.appendChild(btn);
 }
-function calculateTightness(){
-  const volume=Number(qs('ttVolume')?.value||0);
-  const duration=Number(qs('ttDuration')?.value||0);
+setInterval(function(){try{ensureConductAuditButton();}catch(e){}},1000);
+
+
+const TT_SIZES = {
+  "DN15":16.1,"DN20":21.6,"DN25":27.2,"DN32":35.9,"DN40":41.8,"DN50":53.0,
+  "DN65":68.8,"DN80":80.8,"DN100":105.3,"DN125":130.0,"DN150":155.4,"DN200":206.4
+};
+const TT_METER_VOLUMES={none:0,u6:0.008,g10:0.018,g16:0.035,g25:0.055,g40:0.090,g65:0.140};
+function ttPipeFactor(idmm){const d=Number(idmm||0)/1000;return Math.PI*Math.pow(d/2,2);}
+function ttAddPipeRow(material='Steel/Iron', size='DN15', length=0){
+  const tbody=qs('ttPipeRows'); if(!tbody) return;
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td></td><td><select onchange="ttRecalculate()"><option>Steel/Iron</option><option>Copper</option><option>PE</option><option>CSST</option></select></td>
+    <td><select onchange="ttPipeSizeChanged(this);ttRecalculate()">${Object.keys(TT_SIZES).map(s=>`<option>${s}</option>`).join('')}</select></td>
+    <td><input type="number" step="0.001" value="${length}" oninput="ttRecalculate()"></td>
+    <td class="ttDia"></td><td class="ttFactor"></td><td class="ttVol"></td>
+    <td><button class="danger" onclick="this.closest('tr').remove();ttRecalculate()">x</button></td>`;
+  tbody.appendChild(tr);
+  tr.children[1].querySelector('select').value=material;
+  tr.children[2].querySelector('select').value=size;
+  ttRecalculate();
+}
+function ttPipeSizeChanged(sel){ttRecalculate();}
+function ttPipeRows(){
+  return [...(qs('ttPipeRows')?.querySelectorAll('tr')||[])].map((tr,i)=>{
+    const material=tr.children[1].querySelector('select').value;
+    const size=tr.children[2].querySelector('select').value;
+    const length=Number(tr.children[3].querySelector('input').value||0);
+    const dia=TT_SIZES[size]||0;
+    const factor=ttPipeFactor(dia);
+    const volume=factor*length;
+    tr.children[0].textContent=i+1;
+    tr.querySelector('.ttDia').textContent=dia.toFixed(1);
+    tr.querySelector('.ttFactor').textContent=factor.toFixed(6);
+    tr.querySelector('.ttVol').textContent=volume.toFixed(6);
+    return {material,size,length,dia,factor,volume};
+  });
+}
+function ttMeterVolume(){
+  const type=qs('ttMeterType')?.value||'none';
+  let v=0;
+  if(type==='manual') v=Number(qs('ttMeterManual')?.value||0);
+  else if(type==='turbine'){
+    const d=Number(qs('ttTurbineDia')?.value||0)/1000;
+    const l=Number(qs('ttTurbineLen')?.value||0)/1000;
+    v=Math.PI*Math.pow(d/2,2)*l;
+  } else v=TT_METER_VOLUMES[type]||0;
+  if(qs('ttMeterStd')) qs('ttMeterStd').value=v?`${v.toFixed(6)} m³`:'None';
+  return v;
+}
+function ttPermittedLeakRate(totalVolume){
+  const custom=Number(qs('ttCustomPermitted')?.value||0);
+  if(custom>0) return custom;
+  // Conservative HBS recording default; can be overridden by manager/custom where required.
+  return Math.max(0.0001,totalVolume*0.01);
+}
+function ttRecalculate(){
+  const rows=ttPipeRows();
+  const pipeVol=rows.reduce((a,b)=>a+b.volume,0);
+  const meterVol=ttMeterVolume();
+  const allow=qs('ttFittingsAllowance')?.value||'0.15';
+  const fittings=allow==='manual'?Number(qs('ttFittingsManual')?.value||0):(pipeVol*Number(allow||0));
+  const total=pipeVol+meterVol+fittings;
   const drop=Number(qs('ttDrop')?.value||0);
-  const pressure=Number(qs('ttPressure')?.value||20);
-  const type=qs('ttType')?.value||'commercial';
-  const custom=Number(qs('ttPermitted')?.value||0);
-  const permitted=tightnessPermitted(volume,type,custom);
-  // Proportional estimate: leak rate rises with volume and measured pressure drop over test duration.
-  const leakRate=(volume>0 && duration>0 && pressure>0) ? ((volume * drop / pressure) * (60/duration)) : 0;
-  const outcome=(volume>0 && duration>0 && drop>=0) ? (leakRate <= permitted ? 'PASS' : 'FAIL') : 'Awaiting input';
-  if(qs('ttLeakRate')) qs('ttLeakRate').textContent=leakRate.toFixed(3)+' m³/hr';
-  if(qs('ttPermittedOut')) qs('ttPermittedOut').textContent=permitted.toFixed(3)+' m³/hr';
-  if(qs('ttOutcome')){
-    qs('ttOutcome').textContent=outcome;
-    qs('ttOutcome').className=outcome==='PASS'?'pass':outcome==='FAIL'?'fail':'';
-  }
-  return {volume,duration,drop,pressure,type,permitted,leakRate,outcome};
-}
-function resetTightnessCalculator(){
-  ['ttSite','ttClient','ttAuditRef','ttArea','ttVolume','ttDrop','ttPermitted','ttNotes'].forEach(id=>{if(qs(id))qs(id).value='';});
-  if(qs('ttPressure')) qs('ttPressure').value='20';
-  if(qs('ttDuration')) qs('ttDuration').value='2';
-  if(qs('ttStabilisation')) qs('ttStabilisation').value='1';
-  calculateTightness();
+  const duration=Number(qs('ttDuration')?.value||1);
+  const pressure=Number(qs('ttPressure')?.value||21);
+  const permitted=ttPermittedLeakRate(total);
+  const leakRate=(total>0&&duration>0&&pressure>0)?((total*drop/pressure)*(60/duration)):0;
+  const margin=permitted>0?((permitted-leakRate)/permitted)*100:0;
+  const outcome=leakRate<=permitted?'PASS / CHECK':'FAIL / CHECK';
+  const pt=pressure>0?(1013.25+pressure)/(1013.25+21):1;
+  const purgeMult=Number(qs('ttPurgeMultiplier')?.value||1);
+  const purgeVol=total*purgeMult;
+  const ft3=purgeVol*35.3147;
+  const set=(id,val)=>{if(qs(id))qs(id).textContent=val};
+  set('ttPipeVolume',pipeVol.toFixed(6)+' m³');
+  set('ttMeterVolume',meterVol.toFixed(6)+' m³');
+  set('ttFittingsVolume',fittings.toFixed(6)+' m³');
+  set('ttTotalVolume',total.toFixed(6)+' m³');
+  set('ttStabOut',(qs('ttStabilisation')?.value||'1')+' minute(s)');
+  set('ttDurationOut',duration+' minute(s)');
+  set('ttDropOut',drop.toFixed(2)+' mbar');
+  set('ttAbsDrop',drop.toFixed(4)+' mbar');
+  set('ttPermittedOut',permitted.toFixed(6)+' m³/hr');
+  set('ttLeakRate',leakRate.toFixed(6)+' m³/hr');
+  set('ttLeakMargin',margin.toFixed(2)+'%');
+  set('ttOutcome',outcome);
+  set('ttLeakCheck',outcome);
+  set('ttFLR',leakRate<=permitted?'YES / CHECK':'NO / CHECK');
+  set('ttPTFactor',pt.toFixed(6));
+  set('ttPurgeVol',purgeVol.toFixed(6)+' m³');
+  set('ttPurgeFt3',ft3.toFixed(6)+' ft³');
+  return {rows,pipeVol,meterVol,fittings,total,drop,duration,pressure,permitted,leakRate,margin,outcome,pt,purgeVol,ft3};
 }
 async function loadTightnessCalculator(){
   show('tightnessCalculator');
   if(qs('ttEngineer')) qs('ttEngineer').value=user?.name||'';
+  if(qs('ttReportEngineer')) qs('ttReportEngineer').value=user?.name||'';
   if(qs('ttDate')) qs('ttDate').value=new Date().toISOString().slice(0,10);
-  calculateTightness();
-  await loadTightnessRecords();
+  if(qs('ttPipeRows') && !qs('ttPipeRows').children.length){
+    ttAddPipeRow('Steel/Iron','DN15',0);ttAddPipeRow('Steel/Iron','DN15',0);ttAddPipeRow('Steel/Iron','DN15',0);
+  }
+  ttRecalculate();
+  await ttLoadRecords();
 }
-async function saveTightnessCalculation(){
+async function ttSave(){
+  const c=ttRecalculate();
+  const body={
+    engineer_name:user?.name||qs('ttEngineer').value,role:user?.role||'engineer',
+    site_name:qs('ttSite').value,client:qs('ttClient').value,audit_ref:qs('ttAuditRef').value,
+    test_date:qs('ttDate').value,area_tested:qs('ttArea').value,test_type:qs('ttProcedure').value,
+    installation_volume:c.total,test_pressure:c.pressure,stabilisation_time:Number(qs('ttStabilisation').value||0),
+    test_duration:c.duration,measured_drop:c.drop,permitted_leak_rate:c.permitted,
+    calculated_leak_rate:c.leakRate,outcome:c.outcome,notes:qs('ttNotes').value,
+    details_json:JSON.stringify({
+      gas_type:qs('ttGasType').value, installation_type:qs('ttInstallationType').value, test_area:qs('ttTestArea').value,
+      gauge_type:qs('ttGaugeType').value, room_volume:qs('ttRoomVolume').value, mop:qs('ttMOP').value, mip:qs('ttMIP').value,
+      pipe_rows:c.rows, pipe_volume:c.pipeVol, meter_volume:c.meterVol, fittings_volume:c.fittings, purge_volume:c.purgeVol, purge_ft3:c.ft3
+    })
+  };
   try{
-    const calc=calculateTightness();
-    if(!calc.volume || !calc.duration){qs('ttMsg').textContent='Enter installation volume and test duration.';return;}
-    const body={
-      engineer_name:user?.name||qs('ttEngineer').value,
-      role:user?.role||'engineer',
-      site_name:qs('ttSite').value,
-      client:qs('ttClient').value,
-      audit_ref:qs('ttAuditRef').value,
-      test_date:qs('ttDate').value,
-      area_tested:qs('ttArea').value,
-      test_type:calc.type,
-      installation_volume:calc.volume,
-      test_pressure:calc.pressure,
-      stabilisation_time:Number(qs('ttStabilisation').value||0),
-      test_duration:calc.duration,
-      measured_drop:calc.drop,
-      permitted_leak_rate:calc.permitted,
-      calculated_leak_rate:calc.leakRate,
-      outcome:calc.outcome,
-      notes:qs('ttNotes').value
-    };
     const j=await api('/api/tightness',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     qs('ttMsg').textContent='Saved tightness test record ID '+j.id+' - '+body.outcome;
-    await loadTightnessRecords();
+    await ttLoadRecords();
   }catch(e){qs('ttMsg').textContent=e.message;}
 }
-async function loadTightnessRecords(){
+function ttReset(){['ttSite','ttClient','ttAuditRef','ttArea','ttRoomVolume','ttDrop','ttCustomPermitted','ttNotes'].forEach(id=>{if(qs(id))qs(id).value=''});if(qs('ttPipeRows'))qs('ttPipeRows').innerHTML='';ttAddPipeRow();ttAddPipeRow();ttAddPipeRow();ttRecalculate();}
+async function ttLoadRecords(){
   try{
-    const role=user?.role||'engineer';
-    const engineer=encodeURIComponent(user?.name||'');
-    const j=await api(`/api/tightness?role=${role}&engineer=${engineer}`);
-    const rows=j.records||[];
-    qs('ttRows').innerHTML=rows.map(r=>`<tr>
-      <td>${r.id||''}</td><td>${r.test_date||''}</td><td>${r.engineer_name||''}</td><td>${r.site_name||''}</td>
-      <td>${Number(r.installation_volume||0).toFixed(3)}</td><td>${Number(r.measured_drop||0).toFixed(2)}</td>
-      <td>${Number(r.calculated_leak_rate||0).toFixed(3)}</td><td><span class="pill ${(r.outcome||'').toLowerCase()==='pass'?'pass':'fail'}">${r.outcome||''}</span></td>
-      <td><button onclick="viewTightnessRecord(${r.id})">View</button></td>
-    </tr>`).join('');
-    if(!rows.length) qs('ttRows').innerHTML='<tr><td colspan="9">No saved records found.</td></tr>';
-    window._tightnessRecords=rows;
-  }catch(e){qs('ttRows').innerHTML=`<tr><td colspan="9">${e.message}</td></tr>`;}
+    const j=await api(`/api/tightness?role=${user?.role||'engineer'}&engineer=${encodeURIComponent(user?.name||'')}`);
+    const rows=j.records||[];window._tightnessRecords=rows;
+    qs('ttRows').innerHTML=rows.length?rows.map(r=>`<tr><td>${r.id}</td><td>${r.test_date||''}</td><td>${r.engineer_name||''}</td><td>${r.site_name||''}</td><td>${Number(r.installation_volume||0).toFixed(6)}</td><td>${Number(r.measured_drop||0).toFixed(2)}</td><td>${Number(r.calculated_leak_rate||0).toFixed(6)}</td><td>${r.outcome||''}</td><td><button onclick="ttView(${r.id})">View</button></td></tr>`).join(''):'<tr><td colspan="9">No saved records found.</td></tr>';
+  }catch(e){qs('ttRows').innerHTML=`<tr><td colspan="9">${e.message}</td></tr>`}
 }
-function viewTightnessRecord(id){
+function ttView(id){
   const r=(window._tightnessRecords||[]).find(x=>Number(x.id)===Number(id));
   if(!r){qs('ttRecordDetail').textContent='Record not found.';return;}
   qs('ttRecordDetail').innerHTML=`<table>
-    <tr><th>ID</th><td>${r.id}</td></tr>
-    <tr><th>Engineer</th><td>${r.engineer_name||''}</td></tr>
-    <tr><th>Site</th><td>${r.site_name||''}</td></tr>
-    <tr><th>Client</th><td>${r.client||''}</td></tr>
-    <tr><th>Audit/Job Ref</th><td>${r.audit_ref||''}</td></tr>
-    <tr><th>Area Tested</th><td>${r.area_tested||''}</td></tr>
-    <tr><th>Volume</th><td>${Number(r.installation_volume||0).toFixed(3)} m³</td></tr>
-    <tr><th>Test Pressure</th><td>${Number(r.test_pressure||0).toFixed(1)} mbar</td></tr>
-    <tr><th>Duration</th><td>${r.test_duration||''} minutes</td></tr>
-    <tr><th>Measured Drop</th><td>${Number(r.measured_drop||0).toFixed(2)} mbar</td></tr>
-    <tr><th>Calculated Leak Rate</th><td>${Number(r.calculated_leak_rate||0).toFixed(3)} m³/hr</td></tr>
-    <tr><th>Permitted Leak Rate</th><td>${Number(r.permitted_leak_rate||0).toFixed(3)} m³/hr</td></tr>
-    <tr><th>Outcome</th><td>${r.outcome||''}</td></tr>
-    <tr><th>Notes</th><td>${r.notes||''}</td></tr>
-  </table>`;
+  <tr><th>ID</th><td>${r.id}</td></tr><tr><th>Engineer</th><td>${r.engineer_name||''}</td></tr>
+  <tr><th>Site</th><td>${r.site_name||''}</td></tr><tr><th>Client</th><td>${r.client||''}</td></tr>
+  <tr><th>Ref</th><td>${r.audit_ref||''}</td></tr><tr><th>Installation Volume</th><td>${Number(r.installation_volume||0).toFixed(6)} m³</td></tr>
+  <tr><th>Measured Drop</th><td>${Number(r.measured_drop||0).toFixed(2)} mbar</td></tr>
+  <tr><th>Actual Leak Rate</th><td>${Number(r.calculated_leak_rate||0).toFixed(6)} m³/hr</td></tr>
+  <tr><th>Maximum Permitted Leak Rate</th><td>${Number(r.permitted_leak_rate||0).toFixed(6)} m³/hr</td></tr>
+  <tr><th>Outcome</th><td>${r.outcome||''}</td></tr><tr><th>Notes</th><td>${r.notes||''}</td></tr></table>`;
 }
 
 </script>
