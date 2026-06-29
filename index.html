@@ -219,7 +219,37 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
     <tbody id="knowledgeRows"></tbody>
   </table>
 
-  <h3>Document Viewer</h3>
+  <div id="kcEditPanel" class="card hide managerOnly">
+  <h3>Edit Document Details</h3>
+  <input type="hidden" id="kcEditId">
+  <div class="grid noprint">
+    <label>Document Title<br><input id="kcEditTitle"></label>
+    <label>Category<br>
+      <select id="kcEditCategory">
+        <option>IGEM Standards</option>
+        <option>British Standards</option>
+        <option>Manufacturer Manuals</option>
+        <option>HBS Technical Bulletins</option>
+        <option>HBS Procedures</option>
+        <option>Risk Assessments</option>
+        <option>Gas Safe Guidance</option>
+        <option>Gas Installer Magazine</option>
+        <option>CP15 Guidance</option>
+        <option>Toolbox Talks</option>
+        <option>Technical Images</option>
+        <option>Training Videos</option>
+        <option>Fault Library</option>
+        <option>Other</option>
+      </select>
+    </label>
+    <label>Reference / Version<br><input id="kcEditReference"></label>
+    <label>Keywords<br><input id="kcEditKeywords"></label>
+    <label><br><button onclick="saveKnowledgeEdit()">Save Changes</button><button onclick="cancelKnowledgeEdit()">Cancel</button></label>
+  </div>
+  <p id="kcEditMsg"></p>
+</div>
+
+<h3>Document Viewer</h3>
   <div id="knowledgeViewer" class="muted">Select a document to view, stream or download.</div>
  </div>
 
@@ -795,7 +825,7 @@ async function loadKnowledgeCentre(){
     }
     qs('knowledgeRows').innerHTML=rows.map(d=>{
       const del=(user&&user.role==='manager')?`<button class="danger" onclick="deleteKnowledgeDocument(${d.id})">Delete</button>`:'';
-      return `<tr><td>${d.title||''}</td><td>${d.category||''}</td><td>${d.reference||''}</td><td>${d.keywords||''}</td><td>${formatBytes(d.file_size||0)}</td><td>${d.created_at||''}</td><td><button onclick="openKnowledgeDocument(${d.id})">Open</button> ${del}</td></tr>`;
+      return `<tr><td>${d.title||''}</td><td>${d.category||''}</td><td>${d.reference||''}</td><td>${d.keywords||''}</td><td>${formatBytes(d.file_size||0)}</td><td>${d.created_at||''}</td><td><button onclick="openKnowledgeDocument(${d.id})">Open</button> ${user&&user.role==='manager'?`<button onclick="editKnowledgeDocument(${d.id})">Edit</button>`:''} ${del}</td></tr>`;
     }).join('');
     if(!rows.length) qs('knowledgeRows').innerHTML='<tr><td colspan="7">No documents found.</td></tr>';
   }catch(e){
@@ -855,6 +885,43 @@ async function saveUser(){try{const body={id:qs('userId').value||undefined,name:
 async function booklet(id){const j=await api('/api/audit?id='+encodeURIComponent(id)); const a=j.audit, data=JSON.parse(a.audit_json||'{}'); show('booklet'); qs('bookletBody').innerHTML=`<h3>HBS-${a.id}</h3><p><b>Engineer:</b> ${a.engineer_name}<br><b>Auditor:</b> ${a.auditor||''}<br><b>Site:</b> ${a.site_name}<br><b>Client:</b> ${data.client_name||''}<br><b>Date:</b> ${a.audit_date}<br><b>Appliance Type:</b> ${data.appliance_type||''}<br><b>Manufacturer:</b> ${data.manufacturer||''}<br><b>Model:</b> ${data.model||''}<br><b>Serial Number:</b> ${data.serial_number||''}<br><b>Asset Number:</b> ${data.asset_number||''}<br><b>Score:</b> ${a.score}% - ${a.result}</p><h3>Audit Questions</h3><table><tr><th>Section</th><th>Question</th><th>Score</th><th>Notes</th></tr>${(data.questions||[]).map(q=>`<tr><td>${q.section}</td><td>${q.question}</td><td>${q.score}</td><td>${q.note||''}</td></tr>`).join('')}</table><h3>Findings / Actions</h3><p>${(data.actions_required||'').replaceAll('\n','<br>')}</p><h3>Training / Re-audit</h3><p>${(data.training_required||'').replaceAll('\n','<br>')}</p><h3>Photos</h3>${(j.photos||[]).map(p=>`<img class=photo src="${p.photo_url}">`).join('')}<h3>Signed</h3><p>${data.signature||''}</p>`}
 
 
+
+
+async function editKnowledgeDocument(id){
+  if(!user || user.role!=='manager'){alert('Manager access only');return;}
+  try{
+    const j=await api('/api/library?id='+encodeURIComponent(id));
+    const d=j.document;
+    qs('kcEditId').value=d.id;
+    qs('kcEditTitle').value=d.title||'';
+    qs('kcEditCategory').value=d.category||'Other';
+    qs('kcEditReference').value=d.reference||'';
+    qs('kcEditKeywords').value=d.keywords||'';
+    qs('kcEditMsg').textContent='';
+    qs('kcEditPanel').classList.remove('hide');
+    qs('kcEditPanel').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){alert(e.message);}
+}
+function cancelKnowledgeEdit(){
+  qs('kcEditPanel').classList.add('hide');
+  qs('kcEditMsg').textContent='';
+}
+async function saveKnowledgeEdit(){
+  if(!user || user.role!=='manager'){alert('Manager access only');return;}
+  try{
+    const body={
+      id:Number(qs('kcEditId').value),
+      title:qs('kcEditTitle').value,
+      category:qs('kcEditCategory').value,
+      reference:qs('kcEditReference').value,
+      keywords:qs('kcEditKeywords').value,
+      updated_by:user.name
+    };
+    await api('/api/library',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    qs('kcEditMsg').textContent='Document details updated.';
+    await loadKnowledgeCentre();
+  }catch(e){qs('kcEditMsg').textContent=e.message;}
+}
 
 </script>
 </body>
