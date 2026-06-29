@@ -1,3 +1,5 @@
+const HBS_NON_ENGINEERS = ['Peter Taylor','Eward Richards','Lucy Coppage','Russell Haines'];
+function isEngineer(name){return name && !HBS_NON_ENGINEERS.map(x=>x.toLowerCase()).includes(String(name).toLowerCase());}
 function normaliseAudit(row) {
   let j = {};
   try { if (row.audit_json) j = JSON.parse(row.audit_json); } catch(e) {}

@@ -1,3 +1,5 @@
+const HBS_NON_ENGINEERS = ['Peter Taylor','Eward Richards','Lucy Coppage','Russell Haines'];
+function isEngineer(name){return name && !HBS_NON_ENGINEERS.map(x=>x.toLowerCase()).includes(String(name).toLowerCase());}
 function score(a){return Number(a.score||0)}
 function nameFrom(x){return x.engineer_name||x.engineer||x.name||'Unknown'}
 export async function onRequestGet({ env }) {
@@ -16,7 +18,7 @@ export async function onRequestGet({ env }) {
     tests.forEach(t=>engineerNames.add(nameFrom(t)));
     tightness.forEach(t=>engineerNames.add(nameFrom(t)));
 
-    const engineers = [...engineerNames].filter(Boolean).sort().map(engineer=>{
+    const engineers = [...engineerNames].filter(isEngineer).sort().map(engineer=>{
       const ea = audits.filter(a=>nameFrom(a).toLowerCase()===engineer.toLowerCase());
       const et = training.filter(t=>nameFrom(t).toLowerCase()===engineer.toLowerCase());
       const ex = tests.filter(t=>nameFrom(t).toLowerCase()===engineer.toLowerCase());
