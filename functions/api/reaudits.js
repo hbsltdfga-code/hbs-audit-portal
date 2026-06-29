@@ -19,20 +19,3 @@ export async function onRequestGet({ request, env }) {
     return Response.json({ ok:false, error:e.message }, { status:500 });
   }
 }
-
-export async function onRequestPost({ request, env }) {
-  try {
-    const body = await request.json();
-    if (body.role && body.role !== 'manager') {
-      return Response.json({ ok:false, error:'Manager access only' }, { status:403 });
-    }
-    const id = Number(body.id);
-    const status = body.status || 'Completed';
-    const completionDate = new Date().toISOString().slice(0,10);
-    await env.DB.prepare('UPDATE reaudits SET status=?, completed_date=? WHERE id=?')
-      .bind(status, completionDate, id).run();
-    return Response.json({ ok:true, id, status });
-  } catch (e) {
-    return Response.json({ ok:false, error:e.message }, { status:500 });
-  }
-}
