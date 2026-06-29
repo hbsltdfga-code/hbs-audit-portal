@@ -316,6 +316,7 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
   </div>
 
   <h3>2. Gas and Test Details</h3>
+  <p class="muted"><b>Timing logic:</b> Stabilisation and test duration are automatically selected from the embedded HBS/TPCP timing bands using installation volume, gauge resolution and test area. If HBS updates the TPCP1/TPCP1A timing table, update the table constants in the portal code.</p>
   <p class="muted"><b>Note:</b> Stabilisation and test duration are calculated automatically from installation volume, room volume and test area. These fields are locked for consistency.</p>
   <div class="grid">
     <label>Gas Type<br>
@@ -1337,76 +1338,171 @@ function ttView(id){
 
 
 
-// --- Automatic stabilisation and test duration calculation ---
+
+// --- Final HBS TPCP timing + meter volume calculation fix ---
 (function(){
   function q(id){return document.getElementById(id);}
-  function n(id, fallback=0){const v=Number(q(id)?.value); return Number.isFinite(v)?v:fallback;}
-  function setVal(id,val){const el=q(id); if(el) el.value=val;}
-  function setText(id,val){const el=q(id); if(el) el.textContent=val;}
+  function n(id, fallback=0){const el=q(id); const v=Number(el?.value); return Number.isFinite(v)?v:fallback;}
+  function setText(id, val){const el=q(id); if(el) el.textContent=val;}
+  function setVal(id, val){const el=q(id); if(el) el.value=val;}
 
-  window.ttCalculatedTimes = function(totalVolume){
-    totalVolume = Number(totalVolume || 0);
-    const roomVolume = n('ttRoomVolume',0);
-    const testArea = (q('ttTestArea')?.value || '').toLowerCase();
-    const procedure = (q('ttProcedure')?.value || '').toLowerCase();
-
-    let stabilisation = 1;
-    let duration = 2;
-
-    // HBS default automatic selection based on installation volume bands.
-    if(totalVolume > 0.035 && totalVolume <= 0.15){ stabilisation = 2; duration = 5; }
-    else if(totalVolume > 0.15 && totalVolume <= 1.0){ stabilisation = 5; duration = 10; }
-    else if(totalVolume > 1.0){ stabilisation = 10; duration = 30; }
-
-    // Local appliance / plant tests are generally shorter unless volume is high.
-    if(procedure.includes('local') && totalVolume <= 0.15){ stabilisation = Math.max(stabilisation,1); duration = Math.max(duration,2); }
-
-    // If room is small compared with installation volume, apply a more cautious duration.
-    if(roomVolume > 0 && totalVolume > 0 && (totalVolume / roomVolume) > 0.005){
-      duration = Math.max(duration, 5);
-    }
-
-    // Poor ventilation / other test area increases caution.
-    if(testArea.includes('inadequate') || testArea.includes('other')){
-      stabilisation = Math.max(stabilisation,5);
-      duration = Math.max(duration,10);
-    }
-
-    return {stabilisation, duration};
+  // Embedded HBS timing bands. These are deliberately centralised so HBS can
+  // update them if the controlled TPCP1/TPCP1A timing table changes.
+  // Gauge classes:
+  //   electronic_2dp = 0.01 mbar resolution
+  //   electronic_1dp = 0.1 mbar resolution
+  //   water_gauge    = water gauge / less sensitive reading method
+  const HBS_TPCP_TIME_BANDS = {
+    electronic_2dp: [
+      {max:0.035, stab:1, duration:2},
+      {max:0.15,  stab:2, duration:5},
+      {max:1.00,  stab:5, duration:10},
+      {max:99999, stab:10,duration:30}
+    ],
+    electronic_1dp: [
+      {max:0.035, stab:1, duration:5},
+      {max:0.15,  stab:5, duration:10},
+      {max:1.00,  stab:10,duration:20},
+      {max:99999, stab:15,duration:30}
+    ],
+    water_gauge: [
+      {max:0.035, stab:2, duration:5},
+      {max:0.15,  stab:5, duration:10},
+      {max:1.00,  stab:10,duration:30},
+      {max:99999, stab:15,duration:45}
+    ]
   };
 
-  const oldRecalc = window.ttRecalculate;
+  function gaugeClass(){
+    const g=(q('ttGaugeType')?.value||'').toLowerCase();
+    if(g.includes('2 decimal')) return 'electronic_2dp';
+    if(g.includes('1 decimal')) return 'electronic_1dp';
+    if(g.includes('water')) return 'water_gauge';
+    return 'electronic_2dp';
+  }
+
+  function tpcpTimes(volume){
+    const bands=HBS_TPCP_TIME_BANDS[gaugeClass()] || HBS_TPCP_TIME_BANDS.electronic_2dp;
+    const band=bands.find(b=>volume<=b.max) || bands[bands.length-1];
+    let stab=band.stab, duration=band.duration;
+
+    const area=(q('ttTestArea')?.value||'').toLowerCase();
+    const room=n('ttRoomVolume',0);
+
+    // Additional caution where ventilation/room relationship suggests higher risk.
+    if(area.includes('inadequate') || area.includes('other')){
+      stab=Math.max(stab,5);
+      duration=Math.max(duration,10);
+    }
+    if(room>0 && volume>0 && (volume/room)>0.005){
+      duration=Math.max(duration,5);
+    }
+    return {stabilisation:stab, duration};
+  }
+
+  function calcPipeRows(){
+    let total=0;
+    const rows=[...(q('ttPipeRows')?.querySelectorAll('tr')||[])];
+    rows.forEach((tr,i)=>{
+      const sizeSel=tr.children[2]?.querySelector('select');
+      const lenInput=tr.children[3]?.querySelector('input');
+      const size=sizeSel?.value||'DN15';
+      const length=Number(lenInput?.value||0);
+      const dia=(window.TT_SIZES&&window.TT_SIZES[size]) || ({DN15:16.1,DN20:21.6,DN25:27.2,DN32:35.9,DN40:41.8,DN50:53,DN65:68.8,DN80:80.8,DN100:105.3,DN125:130,DN150:155.4,DN200:206.4}[size]||0);
+      const factor=Math.PI*Math.pow((dia/1000)/2,2);
+      const vol=factor*length;
+      total+=vol;
+      if(tr.children[0]) tr.children[0].textContent=i+1;
+      const diaCell=tr.querySelector('.ttDia'), facCell=tr.querySelector('.ttFactor'), volCell=tr.querySelector('.ttVol');
+      if(diaCell) diaCell.textContent=dia.toFixed(1);
+      if(facCell) facCell.textContent=factor.toFixed(6);
+      if(volCell) volCell.textContent=vol.toFixed(6);
+    });
+    return total;
+  }
+
+  function calcMeterVolume(){
+    const type=(q('ttMeterType')?.value||'none').toLowerCase();
+    let volume=0;
+    const standard={none:0,u6:0.008,g10:0.018,g16:0.035,g25:0.055,g40:0.090,g65:0.140};
+    if(type==='manual'){
+      volume=n('ttMeterManual',0);
+    } else if(type==='turbine'){
+      const d=n('ttTurbineDia',0)/1000;
+      const l=n('ttTurbineLen',0)/1000;
+      volume=Math.PI*Math.pow(d/2,2)*l;
+      // If manufacturer manual volume is provided, use it in preference.
+      const manual=n('ttMeterManual',0);
+      if(manual>0) volume=manual;
+    } else {
+      volume=standard[type] || 0;
+    }
+    if(q('ttMeterStd')) q('ttMeterStd').value=volume?volume.toFixed(6)+' m³':'None';
+    return volume;
+  }
+
+  function calcFittings(pipeVolume){
+    const allow=q('ttFittingsAllowance')?.value||'0.15';
+    if(allow==='manual') return n('ttFittingsManual',0);
+    return pipeVolume*Number(allow||0);
+  }
+
   window.ttRecalculate = function(){
-    // If old function exists, run it first to calculate volumes.
-    let result = oldRecalc ? oldRecalc.apply(this, arguments) : {};
-    const total = Number(result?.total || String(q('ttTotalVolume')?.textContent || '0').replace(/[^\d.]/g,'') || 0);
-    const times = window.ttCalculatedTimes(total);
+    const pipeVol=calcPipeRows();
+    const meterVol=calcMeterVolume();
+    const fittings=calcFittings(pipeVol);
+    const total=pipeVol+meterVol+fittings;
+
+    const times=tpcpTimes(total);
     setVal('ttStabilisation', times.stabilisation);
     setVal('ttDuration', times.duration);
 
-    // Recalculate leak rate after setting auto duration, using the same model as the calculator.
-    const pressure = n('ttPressure',21);
-    const drop = n('ttDrop',0);
-    const permitted = Number(String(q('ttPermittedOut')?.textContent || '0').replace(/[^\d.]/g,'') || 0);
-    const leakRate = (total>0 && pressure>0 && times.duration>0) ? ((total * drop / pressure) * (60 / times.duration)) : 0;
-    const margin = permitted>0 ? ((permitted - leakRate) / permitted) * 100 : 0;
-    const outcome = leakRate <= permitted ? 'PASS / CHECK' : 'FAIL / CHECK';
+    const pressure=n('ttPressure',21);
+    const drop=n('ttDrop',0);
+    const custom=n('ttCustomPermitted',0);
+    const permitted=custom>0 ? custom : Math.max(0.0001,total*0.01);
+    const leakRate=(total>0 && pressure>0 && times.duration>0) ? ((total*drop/pressure)*(60/times.duration)) : 0;
+    const margin=permitted>0 ? ((permitted-leakRate)/permitted)*100 : 0;
+    const outcome=leakRate<=permitted?'PASS / CHECK':'FAIL / CHECK';
+    const pt=pressure>0?(1013.25+pressure)/(1013.25+21):1;
+    const purgeMult=n('ttPurgeMultiplier',1);
+    const purgeVol=total*purgeMult;
 
-    setText('ttStabOut', times.stabilisation + (times.stabilisation===1?' minute':' minutes'));
-    setText('ttDurationOut', times.duration + (times.duration===1?' minute':' minutes'));
-    setText('ttLeakRate', leakRate.toFixed(6) + ' m³/hr');
-    setText('ttLeakMargin', margin.toFixed(2) + '%');
-    setText('ttOutcome', outcome);
-    setText('ttLeakCheck', outcome);
-    setText('ttFLR', leakRate<=permitted?'YES / CHECK':'NO / CHECK');
+    setText('ttPipeVolume',pipeVol.toFixed(6)+' m³');
+    setText('ttMeterVolume',meterVol.toFixed(6)+' m³');
+    setText('ttFittingsVolume',fittings.toFixed(6)+' m³');
+    setText('ttTotalVolume',total.toFixed(6)+' m³');
+    setText('ttStabOut',times.stabilisation+(times.stabilisation===1?' minute':' minutes'));
+    setText('ttDurationOut',times.duration+(times.duration===1?' minute':' minutes'));
+    setText('ttDropOut',drop.toFixed(2)+' mbar');
+    setText('ttAbsDrop',drop.toFixed(4)+' mbar');
+    setText('ttPermittedOut',permitted.toFixed(6)+' m³/hr');
+    setText('ttLeakRate',leakRate.toFixed(6)+' m³/hr');
+    setText('ttLeakMargin',margin.toFixed(2)+'%');
+    setText('ttOutcome',outcome);
+    setText('ttLeakCheck',outcome);
+    setText('ttFLR',leakRate<=permitted?'YES / CHECK':'NO / CHECK');
+    setText('ttPTFactor',pt.toFixed(6));
+    setText('ttPurgeVol',purgeVol.toFixed(6)+' m³');
+    setText('ttPurgeFt3',(purgeVol*35.3147).toFixed(6)+' ft³');
 
-    return Object.assign({}, result, {duration:times.duration, stabilisation:times.stabilisation, leakRate, outcome});
+    return {
+      pipeVol,meterVol,fittings,total,drop,duration:times.duration,stabilisation:times.stabilisation,
+      pressure,permitted,leakRate,margin,outcome,pt,purgeVol,ft3:purgeVol*35.3147,
+      rows:[]
+    };
   };
 
-  ['ttRoomVolume','ttTestArea','ttProcedure','ttDrop','ttPressure','ttMOP','ttMIP','ttMeterType','ttMeterManual','ttFittingsAllowance','ttFittingsManual'].forEach(id=>{
-    document.addEventListener('input', e=>{ if(e.target?.id===id) window.ttRecalculate(); });
-    document.addEventListener('change', e=>{ if(e.target?.id===id) window.ttRecalculate(); });
-  });
+  // Ensure all volume/time affecting fields trigger recalculation.
+  const ids=['ttGaugeType','ttRoomVolume','ttProcedure','ttTestArea','ttMeterType','ttMeterManual','ttTurbineDia','ttTurbineLen','ttFittingsAllowance','ttFittingsManual','ttDrop','ttPressure','ttCustomPermitted','ttPurgeMultiplier'];
+  document.addEventListener('input',e=>{if(ids.includes(e.target?.id)||e.target?.closest?.('#ttPipeRows')) window.ttRecalculate();});
+  document.addEventListener('change',e=>{if(ids.includes(e.target?.id)||e.target?.closest?.('#ttPipeRows')) window.ttRecalculate();});
+
+  // Lock calculated timing inputs.
+  setTimeout(()=>{
+    ['ttStabilisation','ttDuration'].forEach(id=>{const el=q(id);if(el){el.readOnly=true;el.title='Calculated automatically from HBS/TPCP timing bands';}});
+    try{window.ttRecalculate();}catch(e){}
+  },200);
 })();
 
 </script>
