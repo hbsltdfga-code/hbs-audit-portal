@@ -8,6 +8,41 @@
 body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top{background:linear-gradient(90deg,#123d68,#2369a7);color:#fff;padding:22px 26px}.card{background:#fff;margin:14px;padding:16px;border:1px solid #d3dfed;border-radius:12px;box-shadow:0 1px 4px #0001}input,select,textarea,button{font:inherit;padding:10px;border-radius:8px;border:1px solid #b8c8d8;box-sizing:border-box}button{background:#123f6d;color:white;border:0;font-weight:700;cursor:pointer;margin:2px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.hide{display:none}.muted{color:#52677f;font-size:13px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e3eaf2;text-align:left;padding:8px;vertical-align:top}th{background:#eef4fb}.pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#e6eef8;margin:2px}.fail{background:#ffe0e0}.pass{background:#ddf5e4}.warn{background:#fff1c9}.excellent{background:#dcecff}.photo{max-width:180px;max-height:130px;margin:4px;border-radius:8px;border:1px solid #ddd}.q{border:1px solid #e5edf5;border-radius:10px;padding:10px;margin:8px 0}.q label{display:block;font-weight:700}.scorebox{font-size:22px;font-weight:700}.section-title{background:#eef4fb;border-radius:8px;padding:8px;margin-top:12px}.danger{background:#8b1e1e}.small{font-size:12px}.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.barrow{display:grid;grid-template-columns:220px 1fr 70px;gap:8px;align-items:center;margin:8px 0}.barwrap{background:#e6eef8;border-radius:10px;overflow:hidden;height:26px}.barfill{background:#123f6d;color:#fff;height:26px;line-height:26px;text-align:right;padding-right:8px;min-width:28px;box-sizing:border-box}.barname{font-weight:700}.barvalue{text-align:right;font-weight:700}@media print{.noprint,.top button{display:none!important}.card{box-shadow:none;border:1px solid #999;margin:8px}body{background:white}.top{color:#000;background:#fff;border-bottom:2px solid #000}.photo{max-width:240px;max-height:180px}}
 </style>
 
+
+<style id="hbs-tightness-layout-fix">
+#tightnessCalculator .grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:12px 16px;
+  align-items:end;
+}
+#tightnessCalculator label{
+  display:block;
+  min-width:0;
+  font-weight:600;
+}
+#tightnessCalculator input,
+#tightnessCalculator select{
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
+}
+#tightnessCalculator table{
+  width:100%;
+  table-layout:auto;
+}
+#tightnessCalculator th,
+#tightnessCalculator td{
+  vertical-align:middle;
+}
+#tightnessCalculator .card{
+  overflow:hidden;
+}
+@media(max-width:700px){
+  #tightnessCalculator .grid{grid-template-columns:1fr;}
+}
+</style>
+
 </head>
 <body>
 
@@ -324,8 +359,8 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
     <label>MIP mbar<br><input id="ttMIP" type="number" step="0.1" value="25" oninput="ttRecalculate()"></label>
     <label>Test Pressure mbar<br><input id="ttPressure" type="number" step="0.1" value="21" oninput="ttRecalculate()"></label>
     <label>Measured Pressure Drop mbar<br><input id="ttDrop" type="number" step="0.01" value="0" oninput="ttRecalculate()"></label>
-    <label>Stabilisation Time minutes<br><input id="ttStabilisation" type="number" step="1" value="1" oninput="ttRecalculate()"></label>
-    <label>Test Duration minutes<br><input id="ttDuration" type="number" step="1" value="2" oninput="ttRecalculate()"></label>
+    <label>Stabilisation Time minutes<br><input id="ttStabilisation" type="number" step="1" value="1" oninput="hbsTightnessTimeFix()"></label>
+    <label>Test Duration minutes<br><input id="ttDuration" type="number" step="1" value="2" oninput="hbsTightnessTimeFix()"></label>
   </div>
 
   <h3>3. Pipework Sections - Visible Engineer Input</h3>
@@ -1114,16 +1149,7 @@ function newSeniorAudit(){
 }
 
 
-const _hbsShowOriginalSeniorFix = typeof show === 'function' ? show : null;
-if(_hbsShowOriginalSeniorFix){
-  show = function(id){
-    if(user && user.role==='senior_engineer' && ['dashboard','userAdmin','recordManager','trainingManager','toolboxResults'].includes(id)){
-      alert('Senior Engineer access does not include full manager dashboards or administration.');
-      return;
-    }
-    return _hbsShowOriginalSeniorFix(id);
-  }
-}
+
 
 
 const _hbsApiOriginalSeniorFilter = typeof api === 'function' ? api : null;
@@ -1307,6 +1333,144 @@ function ttView(id){
   <tr><th>Maximum Permitted Leak Rate</th><td>${Number(r.permitted_leak_rate||0).toFixed(6)} m³/hr</td></tr>
   <tr><th>Outcome</th><td>${r.outcome||''}</td></tr><tr><th>Notes</th><td>${r.notes||''}</td></tr></table>`;
 }
+
+
+// --- HBS Tightness Calculator layout/time calculation fix ---
+(function(){
+  function q(id){return document.getElementById(id);}
+  function setText(id, value){const el=q(id); if(el) el.textContent=value;}
+  function num(id, fallback=0){const el=q(id); const v=Number(el?.value); return Number.isFinite(v)?v:fallback;}
+
+  window.hbsTightnessTimeFix = function(){
+    const stab = num('ttStabilisation',1);
+    const duration = num('ttDuration',2);
+    const drop = num('ttDrop',0);
+    const pressure = num('ttPressure',21);
+
+    setText('ttStabOut', stab + (stab===1 ? ' minute' : ' minutes'));
+    setText('ttDurationOut', duration + (duration===1 ? ' minute' : ' minutes'));
+    setText('ttDropOut', drop.toFixed(2) + ' mbar');
+
+    if(typeof window.ttRecalculate === 'function' && !window.__ttFixRunning){
+      window.__ttFixRunning = true;
+      try{ window.ttRecalculate(); }catch(e){}
+      window.__ttFixRunning = false;
+    }
+
+    // Some older calculator versions overwrite these values after recalculation,
+    // so set them again afterwards.
+    setText('ttStabOut', stab + (stab===1 ? ' minute' : ' minutes'));
+    setText('ttDurationOut', duration + (duration===1 ? ' minute' : ' minutes'));
+
+    return {stabilisation_time:stab,test_duration:duration,pressure,drop};
+  };
+
+  document.addEventListener('input', function(e){
+    if(['ttStabilisation','ttDuration','ttDrop','ttPressure'].includes(e.target?.id)){
+      window.hbsTightnessTimeFix();
+    }
+  });
+  document.addEventListener('change', function(e){
+    if(['ttStabilisation','ttDuration','ttDrop','ttPressure'].includes(e.target?.id)){
+      window.hbsTightnessTimeFix();
+    }
+  });
+
+  const oldLoad = window.loadTightnessCalculator;
+  window.loadTightnessCalculator = async function(){
+    if(oldLoad) await oldLoad.apply(this, arguments);
+    setTimeout(window.hbsTightnessTimeFix, 50);
+  };
+
+  const oldRecalc = window.ttRecalculate;
+  if(oldRecalc){
+    window.ttRecalculate = function(){
+      const result = oldRecalc.apply(this, arguments);
+      const stab = num('ttStabilisation',1);
+      const duration = num('ttDuration',2);
+      setText('ttStabOut', stab + (stab===1 ? ' minute' : ' minutes'));
+      setText('ttDurationOut', duration + (duration===1 ? ' minute' : ' minutes'));
+      return result;
+    };
+  }
+})();
+
+
+// --- Senior Engineer UI restriction fix ---
+(function(){
+  function isSeniorUser(){ return window.user && user.role === 'senior_engineer'; }
+
+  function seniorAllowedPage(id){
+    return ['auditForm','tightnessCalculator','knowledgeCentre','technicalLibrary','toolboxTest'].includes(id);
+  }
+
+  window.applySeniorEngineerRestrictions = function(){
+    if(!isSeniorUser()) return;
+
+    // Remove/hide training and dashboard controls for senior engineer.
+    [...document.querySelectorAll('button,a')].forEach(el=>{
+      const txt=(el.textContent||'').trim().toLowerCase();
+      if(txt.includes('training / re-audits') || txt === 'my dashboard' || txt.includes('dashboard')){
+        el.style.display='none';
+      }
+    });
+
+    // If the senior engineer is currently looking at Training/Re-audit, move them to Conduct Audit.
+    const training=document.querySelector('#trainingView');
+    if(training && !training.classList.contains('hide')){
+      training.classList.add('hide');
+      if(typeof show==='function') show('auditForm');
+    }
+
+    // Remove training/re-audit content from view if shown by default.
+    ['trainingView','dashboard','trainingManager','toolboxResults','recordManager','userAdmin'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.classList.add('hide');
+    });
+  };
+
+  // Replace old alert behaviour with silent redirection/ignore.
+  const oldShow = window.show;
+  if(oldShow && !window.__seniorShowPatched){
+    window.__seniorShowPatched = true;
+    window.show = function(id){
+      if(isSeniorUser() && !seniorAllowedPage(id)){
+        // No popup - just keep senior engineers away from restricted areas.
+        return;
+      }
+      const result = oldShow.apply(this, arguments);
+      setTimeout(window.applySeniorEngineerRestrictions, 50);
+      return result;
+    };
+  }
+
+  const oldLoadTraining = window.loadTraining;
+  if(oldLoadTraining && !window.__seniorLoadTrainingPatched){
+    window.__seniorLoadTrainingPatched = true;
+    window.loadTraining = async function(){
+      if(isSeniorUser()){
+        window.applySeniorEngineerRestrictions();
+        return;
+      }
+      return oldLoadTraining.apply(this, arguments);
+    };
+  }
+
+  const oldLoadDashboard = window.loadDashboard;
+  if(oldLoadDashboard && !window.__seniorLoadDashboardPatched){
+    window.__seniorLoadDashboardPatched = true;
+    window.loadDashboard = async function(){
+      if(isSeniorUser()){
+        if(typeof show==='function') show('auditForm');
+        window.applySeniorEngineerRestrictions();
+        return;
+      }
+      return oldLoadDashboard.apply(this, arguments);
+    };
+  }
+
+  setInterval(()=>{try{window.applySeniorEngineerRestrictions();}catch(e){}},700);
+})();
 
 </script>
 </body>
