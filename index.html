@@ -104,7 +104,7 @@ textarea{width:100%;min-height:80px}
       <h2>Training / Re-audit Tracking</h2>
       <button onclick="loadTraining()">Refresh</button>
       <h3>Training Records</h3>
-      <table><thead><tr><th>Engineer</th><th>Training</th><th>Assigned</th><th>Status</th><th>Completion</th></tr></thead><tbody id="trainingRows"></tbody></table>
+      <table><thead><tr><th>ID</th><th>Engineer</th><th>Training</th><th>Assigned</th><th>Status</th><th>Completion</th><th>Action</th></tr></thead><tbody id="trainingRows"></tbody></table>
       <h3>Open Re-audits</h3>
       <table><thead><tr><th>Audit</th><th>Engineer</th><th>Due</th><th>Status</th></tr></thead><tbody id="reauditRows"></tbody></table>
     </section>
@@ -162,7 +162,7 @@ textarea{width:100%;min-height:80px}
 
     
     <section id="managerTestSignoff" class="card section hide">
-      <h2>Manager Test Sign-Off</h2>
+      <h2>Manager Manage Engineer Tests / Sign-Off</h2>
       <p class="muted">Managers can review engineer toolbox/competency tests, mark them complete, return for further training, or manually add a test record.</p>
       <p><button onclick="loadManagerTests()">Refresh Test Records</button></p>
 
@@ -247,7 +247,7 @@ function startApp(){
 }
 function buildNav(){
   const menus={
-    manager:[['New Audit','auditForm'],['My Dashboard','dashboard'],['Training / Re-audits','trainingView'],['Training Management','trainingManager'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Test Results','toolboxResults'],['Test Sign-Off','managerTestSignoff'],['Users','userAdmin'],['Record Management','recordManager'],['Backup','backup'],['Logout','logout']],
+    manager:[['New Audit','auditForm'],['My Dashboard','dashboard'],['Training / Re-audits','trainingView'],['Training Management','trainingManager'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Test Results','toolboxResults'],['Manage Tests','managerTestSignoff'],['Users','userAdmin'],['Record Management','recordManager'],['Backup','backup'],['Logout','logout']],
     senior_engineer:[['Conduct Audit','auditForm'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Logout','logout']],
     engineer:[['My Dashboard','trainingView'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Logout','logout']]
   };
@@ -286,9 +286,22 @@ async function saveAudit(){
 
 async function loadTraining(){
   const role=user.role, eng=encodeURIComponent(user.name||'');
-  const [t,r]=await Promise.all([api(`/api/training?role=${role}&engineer=${eng}`).catch(e=>({training:[]})), api(`/api/reaudits?role=${role}&engineer=${eng}`).catch(e=>({reaudits:[]}))]);
-  $('trainingRows').innerHTML=(t.training||[]).map(x=>`<tr><td>${x.engineer_name||''}</td><td>${x.training_type||''}</td><td>${x.assigned_date||''}</td><td>${x.status||''}</td><td>${x.completion_date||''}</td></tr>`).join('');
-  $('reauditRows').innerHTML=(r.reaudits||[]).map(x=>`<tr><td>${x.audit_ref||''}</td><td>${x.engineer_name||''}</td><td>${x.due_date||''}</td><td>${x.status||''}</td></tr>`).join('');
+  const [t,r]=await Promise.all([
+    api(`/api/training?role=${role}&engineer=${eng}`).catch(e=>({training:[]})),
+    api(`/api/reaudits?role=${role}&engineer=${eng}`).catch(e=>({reaudits:[]}))
+  ]);
+  $('trainingRows').innerHTML=(t.training||[]).map(x=>`<tr>
+    <td>${x.id||''}</td>
+    <td>${x.engineer_name||''}</td>
+    <td>${x.training_type||''}</td>
+    <td>${x.assigned_date||''}</td>
+    <td>${x.status||''}</td>
+    <td>${x.completion_date||''}</td>
+    <td>${user.role==='manager'?`<button onclick="completeTraining(${x.id})">Mark Complete</button> <button class="secondary" onclick="returnTraining(${x.id})">Return</button> <button class="danger" onclick="deleteRecord('training',${x.id})">Delete</button>`:''}</td>
+  </tr>`).join('');
+  $('reauditRows').innerHTML=(r.reaudits||[]).map(x=>`<tr>
+    <td>${x.audit_ref||''}</td><td>${x.engineer_name||''}</td><td>${x.due_date||''}</td><td>${x.status||''}</td>
+  </tr>`).join('');
 }
 async function assignTraining(){
   try{const j=await api('/api/training',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({role:user.role,engineer_name:$('tmEngineer').value,training_type:$('tmType').value,status:'Open'})}); $('tmMsg').textContent='Training assigned ID '+j.id;}
@@ -389,6 +402,22 @@ async function deleteRecord(type,id){
     await loadRecordManager();
     if(user.role==='manager') await loadDashboard();
   }catch(e){$('delMsg').textContent=e.message}
+}
+
+
+async function completeTraining(id){
+  try{
+    await api('/api/training',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed',manager_name:user.name})});
+    await loadTraining();
+    await loadDashboard();
+  }catch(e){alert(e.message)}
+}
+async function returnTraining(id){
+  try{
+    const notes=prompt('Reason / further training required:','Returned for further training.');
+    await api('/api/training',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Returned for Further Training',manager_name:user.name,manager_notes:notes||''})});
+    await loadTraining();
+  }catch(e){alert(e.message)}
 }
 
 </script>
