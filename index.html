@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HBS Compliance Manager v7.0</title>
+<title>HBS Compliance Manager v7</title>
 <style>
 :root{--blue:#123f6d;--blue2:#2369a7;--bg:#f4f7fb;--line:#d3dfed;--muted:#52677f;--danger:#8b1e1e;--ok:#ddf5e4;--warn:#fff1c9}
 *{box-sizing:border-box}
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:var(--bg);color:#071b34}
 .top{background:linear-gradient(90deg,#123d68,#2369a7);color:#fff;padding:24px 28px}
-.top h1{margin:0 0 12px;font-size:30px}
+.top h1{margin:0 0 8px;font-size:30px}
 .version{opacity:.85;font-size:13px}
 .card{background:#fff;margin:14px;padding:16px;border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 4px #0001}
 input,select,textarea,button{font:inherit;padding:10px;border-radius:8px;border:1px solid #b8c8d8;box-sizing:border-box}
@@ -17,43 +17,34 @@ button{background:var(--blue);color:#fff;border:0;font-weight:700;cursor:pointer
 button.danger{background:var(--danger)}
 button.secondary{background:#52677f}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
-.hide{display:none!important}
-.muted{color:var(--muted);font-size:13px}
-table{width:100%;border-collapse:collapse;margin-top:8px}
-th,td{border-bottom:1px solid #e3eaf2;text-align:left;padding:8px;vertical-align:top}
-th{background:#eef4fb}
-.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
-.stat{background:#fff;border:1px solid #cfe0f2;border-radius:10px;padding:14px;box-shadow:0 1px 3px #0001}
-.stat b:last-child{font-size:20px}
-.pass{background:var(--ok)} .warn{background:var(--warn)} .fail{background:#ffe0e0}
-.pill{display:inline-block;border-radius:99px;padding:5px 9px;background:#e6eef8;margin:2px}
-.notice{background:#fff8dc;border:2px solid #e0b000}
-iframe{width:100%;height:1450px;border:1px solid #cfd8dc;border-radius:10px;background:white}
-textarea{width:100%;min-height:80px}
-@media(max-width:760px){.top h1{font-size:22px} .toolbar button{width:100%} iframe{height:1600px}}
-@media print{.noprint,.toolbar,button{display:none!important} .card{box-shadow:none} body{background:#fff}}
+.hide{display:none!important}.muted{color:var(--muted);font-size:13px}
+table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border-bottom:1px solid #e3eaf2;text-align:left;padding:8px;vertical-align:top}th{background:#eef4fb}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.stat{background:#fff;border:1px solid #cfe0f2;border-radius:10px;padding:14px;box-shadow:0 1px 3px #0001}.stat b:last-child{font-size:20px}
+.notice{background:#fff8dc;border:2px solid #e0b000}.pill{display:inline-block;border-radius:99px;padding:5px 9px;background:#e6eef8;margin:2px}
+textarea{width:100%;min-height:80px} iframe{width:100%;height:1450px;border:1px solid #cfd8dc;border-radius:10px;background:white}
+@media(max-width:760px){.top h1{font-size:22px}.toolbar button{width:100%}iframe{height:1600px}}
 </style>
 </head>
 <body>
 <header class="top">
   <h1>HBS Compliance Manager</h1>
   <div>Commercial Gas Compliance Management System</div>
-  <div class="version">Version 3.0 Clean Stable Release</div>
+  <div class="version">v7 Clean Frontend Release</div>
 </header>
 
 <section id="loginCard" class="card">
   <h2>Portal Login</h2>
   <div class="grid">
-    <label>Email / Username<br><input id="loginEmail" autocomplete="username"></label>
-    <label>4 digit PIN<br><input id="loginPin" type="password" inputmode="numeric" autocomplete="current-password"></label>
+    <label>Email / Name<br><input id="loginEmail" value="peter@hbs.local"></label>
+    <label>PIN<br><input id="loginPin" type="password" inputmode="numeric" value=""></label>
   </div>
-  <p><button onclick="login()">Login</button></p>
-  <p id="loginMsg" class="muted"></p><p class="muted">Manager login example: Peter Taylor / peter@hbs.local / PIN 3110</p>
+  <p><button onclick="login()">Login</button> <button class="secondary" onclick="testLoginApi()">Test Login API</button></p>
+  <p id="loginMsg" class="muted">Use peter@hbs.local and PIN 3110.</p>
 </section>
 
 <section id="app" class="hide">
-  <div class="card noprint">
+  <div class="card">
     <div class="toolbar">
       <b id="loginStatus">Logged in</b>
       <span id="navButtons"></span>
@@ -61,37 +52,8 @@ textarea{width:100%;min-height:80px}
   </div>
 
   <main>
-    
-    <section id="complianceKpis" class="card section hide">
-      <h2>Commercial Gas Compliance KPI Dashboard</h2>
-      <p class="muted">Manager view of company-wide audit, training, re-audit and tightness test compliance.</p>
-      <p><button onclick="loadComplianceKpis()">Refresh KPIs</button></p>
-      <div class="statgrid">
-        <div class="stat"><b>Overall Compliance Score</b><br><b id="kpiOverall">0%</b></div>
-        <div class="stat"><b>Open Training</b><br><b id="kpiOpenTraining">0</b></div>
-        <div class="stat"><b>Open Re-audits</b><br><b id="kpiOpenReaudits">0</b></div>
-        <div class="stat"><b>Failed Audits</b><br><b id="kpiFails">0</b></div>
-        <div class="stat"><b>Tightness Tests</b><br><b id="kpiTightness">0</b></div>
-        <div class="stat"><b>Knowledge Documents</b><br><b id="kpiDocs">0</b></div>
-      </div>
-      <h3>Manager Notifications</h3>
-      <table><thead><tr><th>Priority</th><th>Notification</th><th>Action Required</th></tr></thead><tbody id="notificationRows"></tbody></table>
-    </section>
-
-    <section id="competencyCentre" class="card section hide">
-      <h2>Engineer Competency Centre</h2>
-      <p class="muted">Permanent engineer competency record based on audits, training, tests and tightness records.</p>
-      <p><button onclick="loadCompetencyCentre()">Refresh Competency Records</button></p>
-      <table>
-        <thead><tr><th>Engineer</th><th>Audits</th><th>Average</th><th>Fails</th><th>Open Training</th><th>Tests</th><th>Tightness Tests</th><th>Competency Status</th><th>Action</th></tr></thead>
-        <tbody id="competencyRows"></tbody>
-      </table>
-      <h3>Selected Engineer Detail</h3>
-      <div id="competencyDetail" class="muted">Select an engineer to view their competency record.</div>
-    </section>
-
-    <section id="dashboard" class="card section">
-      <h2>Manager Dashboard / Audit Register</h2>
+    <section id="dashboard" class="card section hide">
+      <h2>Dashboard</h2>
       <p><button onclick="loadDashboard()">Refresh</button></p>
       <div class="statgrid">
         <div class="stat"><b>Total Audits</b><br><b id="stTotal">0</b></div>
@@ -105,19 +67,14 @@ textarea{width:100%;min-height:80px}
       </div>
       <h3>Engineer League Table</h3>
       <table><thead><tr><th>Rank</th><th>Engineer</th><th>Audits</th><th>Avg Score</th><th>Excellent</th><th>Improvement</th><th>Fails</th></tr></thead><tbody id="leagueRows"></tbody></table>
-      <h3>Monthly Audit Trend</h3>
-      <table><thead><tr><th>Month</th><th>Audits</th><th>Average Score</th><th>Improvement</th><th>Fails</th></tr></thead><tbody id="trendRows"></tbody></table>
       <h3>Audit Register</h3>
-      <table><thead><tr><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Manufacturer</th><th>Model</th><th>Score</th><th>Result</th><th>Booklet</th></tr></thead><tbody id="auditRows"></tbody></table>
+      <table><thead><tr><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Manufacturer</th><th>Model</th><th>Score</th><th>Result</th><th>Action</th></tr></thead><tbody id="auditRows"></tbody></table>
       <p id="dashboardMsg" class="muted"></p>
     </section>
 
-    
     <section id="auditForm" class="card section hide">
-      <h2>New Technical Audit</h2>
-      <p class="muted">Complete all relevant sections. The audit score and result are calculated from the question responses.</p>
-
-      <h3>1. Audit Header</h3>
+      <h2>Conduct Audit</h2>
+      <h3>Audit Header</h3>
       <div class="grid">
         <label>Engineer<br><select id="aEngineer"></select></label>
         <label>Site Name<br><input id="aSite"></label>
@@ -128,16 +85,10 @@ textarea{width:100%;min-height:80px}
         <label>Manufacturer<br><input id="aManufacturer"></label>
         <label>Model<br><input id="aModel"></label>
         <label>Asset / Plant Ref<br><input id="aAsset"></label>
-        <label>Gas Type<br><select id="aGasType"><option>Natural Gas</option><option>LPG</option><option>Oil</option><option>Other</option></select></label>
       </div>
-
-      <h3>2. Compliance Questions</h3>
-      <table>
-        <thead><tr><th>No</th><th>Question</th><th>Response</th><th>Finding / Evidence</th></tr></thead>
-        <tbody id="auditQuestionRows"></tbody>
-      </table>
-
-      <h3>3. Combustion / Safety Readings</h3>
+      <h3>Technical Audit Questions</h3>
+      <table><thead><tr><th>No</th><th>Question</th><th>Response</th><th>Finding / Evidence</th></tr></thead><tbody id="auditQuestionRows"></tbody></table>
+      <h3>Combustion / Safety Readings</h3>
       <div class="grid">
         <label>CO ppm<br><input id="aCO" type="number" step="0.1"></label>
         <label>CO2 %<br><input id="aCO2" type="number" step="0.01"></label>
@@ -146,120 +97,53 @@ textarea{width:100%;min-height:80px}
         <label>Efficiency %<br><input id="aEfficiency" type="number" step="0.1"></label>
         <label>Ratio<br><input id="aRatio" type="number" step="0.0001"></label>
         <label>Inlet Working Pressure mbar<br><input id="aInletPressure" type="number" step="0.1"></label>
-        <label>Burner Pressure mbar<br><input id="aBurnerPressure" type="number" step="0.1"></label>
       </div>
-
-      <h3>4. Classification / Findings</h3>
+      <h3>Findings</h3>
       <div class="grid">
         <label>Safety Classification<br><select id="aClassification"><option>No Defect</option><option>NCS</option><option>AR</option><option>ID</option></select></label>
         <label>Training Required<br><select id="aTrainingRequired"><option>No</option><option>Yes - Level 1 Refresher</option><option>Yes - Level 2 Practical Assessment</option><option>Manufacturer Training</option><option>Manager Review</option></select></label>
       </div>
       <label>Findings / Corrective Actions<br><textarea id="aFindings"></textarea></label>
       <label>Positive Observations<br><textarea id="aPositive"></textarea></label>
-
-      <h3>5. Photos</h3>
-      <input id="aPhotos" type="file" accept="image/*" multiple>
-      <p class="muted">Photos are retained with the audit where supported by the active API.</p>
-
-      <h3>6. Result</h3>
       <div class="statgrid">
         <div class="stat"><b>Calculated Score</b><br><b id="aScoreOut">0%</b></div>
         <div class="stat"><b>Audit Result</b><br><b id="aResultOut">Awaiting completion</b></div>
         <div class="stat"><b>Required Action</b><br><b id="aActionOut">Complete audit questions</b></div>
       </div>
-
-      <p>
-        <button onclick="calculateAuditScore()">Calculate Score</button>
-        <button onclick="saveAudit()">Save Audit</button>
-        <button onclick="resetAuditForm()">Reset</button>
-      </p>
+      <p><button onclick="calculateAuditScore()">Calculate Score</button><button onclick="saveAudit()">Save Audit</button><button onclick="resetAuditForm()">Reset</button></p>
       <p id="auditMsg" class="muted"></p>
     </section>
 
-
-    
     <section id="auditHistory" class="card section hide">
-      <h2>Past Audit History / Audit Results</h2>
-      <p class="muted">Review previous audit results, findings, scores and actions.</p>
-      <p><button onclick="loadAuditHistory()">Refresh Audit History</button></p>
-      <table>
-        <thead><tr><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Manufacturer</th><th>Model</th><th>Score</th><th>Result</th><th>Action</th></tr></thead>
-        <tbody id="auditHistoryRows"></tbody>
-      </table>
-      <h3>Selected Audit Detail</h3>
-      <div id="auditDetail" class="muted">Select an audit to review full results.</div>
+      <h2>Audit History</h2>
+      <p><button onclick="loadAuditHistory()">Refresh</button></p>
+      <table><thead><tr><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Manufacturer</th><th>Model</th><th>Score</th><th>Result</th><th>Action</th></tr></thead><tbody id="auditHistoryRows"></tbody></table>
+      <h3>Selected Audit Detail</h3><div id="auditDetail" class="muted">Select an audit to review full results.</div>
     </section>
 
     <section id="trainingView" class="card section hide">
-      <h2>Training / Re-audit Tracking</h2>
-      <button onclick="loadTraining()">Refresh</button>
+      <h2>Training Centre</h2>
+      <p><button onclick="loadTraining()">Refresh</button></p>
       <h3>Training Records</h3>
       <table><thead><tr><th>ID</th><th>Engineer</th><th>Training</th><th>Assigned</th><th>Status</th><th>Completion</th><th>Action</th></tr></thead><tbody id="trainingRows"></tbody></table>
       <h3>Open Re-audits</h3>
       <table><thead><tr><th>Audit</th><th>Engineer</th><th>Due</th><th>Status</th></tr></thead><tbody id="reauditRows"></tbody></table>
     </section>
 
-    <section id="trainingManager" class="card section hide">
-      <h2>Training Management</h2>
-      <p class="muted">Manager area for assigning and reviewing training records.</p>
-      <div class="grid"><label>Engineer<br><select id="tmEngineer"></select></label><label>Training Type<br><input id="tmType"></label></div>
-      <button onclick="assignTraining()">Assign Training</button>
-      <p id="tmMsg" class="muted"></p>
+    <section id="competencyCentre" class="card section hide">
+      <h2>Competency Centre</h2>
+      <p><button onclick="loadCompetencyCentre()">Refresh</button></p>
+      <table><thead><tr><th>Engineer</th><th>Audits</th><th>Average</th><th>Fails</th><th>Open Training</th><th>Tests</th><th>Tightness Tests</th><th>Status</th><th>Action</th></tr></thead><tbody id="competencyRows"></tbody></table>
+      <h3>Selected Engineer Detail</h3><div id="competencyDetail" class="muted">Select an engineer to view their competency record.</div>
     </section>
 
-    <section id="toolboxTest" class="card section hide">
-      <h2>Toolbox Test</h2>
-      <p class="muted">Toolbox tests are stored through the existing toolbox-test API. Use Test Results for manager review.</p>
-      <button onclick="alert('Toolbox test module is available in the existing API. Full interactive test can be expanded from here.')">Start Toolbox Test</button>
-    </section>
-
-    <section id="toolboxResults" class="card section hide">
-      <h2>Toolbox Test Results</h2>
-      <button onclick="loadToolboxResults()">Refresh</button>
-      <table><thead><tr><th>ID</th><th>Engineer</th><th>Score</th><th>Result</th><th>Date</th></tr></thead><tbody id="toolboxRows"></tbody></table>
-    </section>
-
-    <section id="knowledgeCentre" class="card section hide">
-      <h2>Knowledge Centre</h2>
-      <p class="muted">Controlled HBS technical reference area for IGEM standards, manufacturer manuals and HBS bulletins.</p>
-      <div id="kcUpload" class="card">
-        <h3>Upload Document to R2</h3>
-        <div class="grid">
-          <label>Document Title<br><input id="kcTitle" placeholder="Optional"></label>
-          <label>Category<br><select id="kcCategory"><option>IGEM Standards</option><option>Manufacturer Manuals</option><option>HBS Bulletins</option><option>Gas Safe Guidance</option><option>Technical Images</option><option>Training Videos</option><option>Fault Library</option><option>Other</option></select></label>
-          <label>Reference / Version<br><input id="kcReference"></label>
-          <label>Keywords<br><input id="kcKeywords"></label>
-          <label>Files<br><input id="kcFiles" type="file" multiple></label>
-        </div>
-        <button onclick="uploadKnowledge()">Upload</button>
-        <p id="kcMsg" class="muted"></p>
-      </div>
-      <h3>Search Library</h3>
-      <div class="grid"><label>Search<br><input id="kcSearch"></label><label>Category<br><select id="kcFilter"><option value="">All Categories</option><option>IGEM Standards</option><option>Manufacturer Manuals</option><option>HBS Bulletins</option><option>Gas Safe Guidance</option><option>Technical Images</option><option>Training Videos</option><option>Fault Library</option><option>Other</option></select></label></div>
-      <button onclick="loadKnowledgeCentre()">Search</button>
-      <table><thead><tr><th>Title</th><th>Category</th><th>Reference</th><th>Keywords</th><th>Size</th><th>Uploaded</th><th>Action</th></tr></thead><tbody id="kcRows"></tbody></table>
-    </section>
-
-    <section id="tightnessCalculator" class="card section hide">
-      <h2>HBS Gas Tightness Test Calculator</h2>
-      <p class="muted">Runs the working HBS calculator in an isolated frame and saves each calculation to the portal.</p>
-      <p><button onclick="loadTightnessCalculator()">Reload Calculator</button><button onclick="saveTightness()">Save Current Calculation</button><button onclick="loadTightnessRecords()">Refresh Records</button></p>
-      <p id="ttMsg" class="muted"></p>
-      <iframe id="ttFrame"></iframe>
-      <h3>Saved Tightness Test Records</h3>
-      <table><thead><tr><th>ID</th><th>Date</th><th>Engineer</th><th>Site</th><th>Volume</th><th>Drop</th><th>Result</th></tr></thead><tbody id="ttRows"></tbody></table>
-    </section>
-
-    
     <section id="managerTestSignoff" class="card section hide">
-      <h2>Manager Manage Engineer Tests / Sign-Off</h2>
-      <p class="muted">Managers can review engineer toolbox/competency tests, mark them complete, return for further training, or manually add a test record.</p>
+      <h2>Toolbox Tests / Manager Sign-Off</h2>
       <p><button onclick="loadManagerTests()">Refresh Test Records</button></p>
-
       <h3>Manually Add Test Record</h3>
       <div class="grid">
         <label>Engineer<br><select id="mtEngineer"></select></label>
-        <label>Assessment / Test Type<br><input id="mtType" placeholder="Level 1 / Level 2 / Toolbox / Bespoke"></label>
+        <label>Assessment / Test Type<br><input id="mtType" placeholder="Level 1 / Toolbox"></label>
         <label>Score %<br><input id="mtScore" type="number" min="0" max="100"></label>
         <label>Result<br><select id="mtResult"><option>Pass</option><option>Fail</option><option>Improvement Required</option><option>Complete</option></select></label>
         <label>Status<br><select id="mtStatus"><option>Pending Manager Review</option><option>Completed</option><option>Returned for Further Training</option></select></label>
@@ -267,507 +151,68 @@ textarea{width:100%;min-height:80px}
       <label>Manager Notes<br><textarea id="mtNotes"></textarea></label>
       <p><button onclick="manualAddTestRecord()">Add Test Record</button></p>
       <p id="mtMsg" class="muted"></p>
-
       <h3>Engineer Test Records</h3>
-      <table>
-        <thead><tr><th>ID</th><th>Engineer</th><th>Test</th><th>Score</th><th>Result</th><th>Status</th><th>Submitted</th><th>Manager</th><th>Action</th></tr></thead>
-        <tbody id="managerTestRows"></tbody>
-      </table>
+      <table><thead><tr><th>ID</th><th>Engineer</th><th>Test</th><th>Score</th><th>Result</th><th>Status</th><th>Submitted</th><th>Action</th></tr></thead><tbody id="managerTestRows"></tbody></table>
     </section>
 
-    <section id="recordManager" class="card section hide">
-      <h2>Record Management</h2>
-      <p class="notice card"><b>Manager only:</b> Use this area to remove old or test records. Deletion cannot be undone unless you have a backup.</p>
-      <div class="grid">
-        <label>Record Type<br>
-          <select id="delType">
-            <option value="audit">Audit</option>
-            <option value="training">Training Record</option>
-            <option value="reaudit">Re-audit</option>
-            <option value="toolbox">Toolbox/Test Result</option>
-            <option value="tightness">Tightness Test</option>
-          </select>
-        </label>
-        <label>Record ID<br><input id="delId" placeholder="Example: 10"></label>
-      </div>
-      <p>
-        <button class="danger" onclick="deleteRecordById()">Delete Selected Record</button>
-        <button onclick="loadRecordManager()">Refresh Records</button>
-      </p>
-      <p id="delMsg" class="muted"></p>
-
-      <h3>Audit Records</h3>
-      <table><thead><tr><th>ID</th><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Score</th><th>Result</th><th>Delete</th></tr></thead><tbody id="rmAuditRows"></tbody></table>
-      <h3>Toolbox/Test Records</h3>
-      <table><thead><tr><th>ID</th><th>Engineer</th><th>Test</th><th>Score</th><th>Status</th><th>Delete</th></tr></thead><tbody id="rmTestRows"></tbody></table>
+    <section id="tightnessCalculator" class="card section hide">
+      <h2>Tightness Test Centre</h2>
+      <p class="muted">Calculator module placeholder. Existing API records remain accessible.</p>
+      <p><button onclick="loadTightnessRecords()">Refresh Records</button></p>
+      <table><thead><tr><th>ID</th><th>Date</th><th>Engineer</th><th>Site</th><th>Volume</th><th>Drop</th><th>Result</th></tr></thead><tbody id="ttRows"></tbody></table>
     </section>
 
-    <section id="userAdmin" class="card section hide">
-      <h2>Users</h2>
-      <button onclick="loadUsers()">Refresh</button>
-      <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Title</th><th>PIN</th></tr></thead><tbody id="userRows"></tbody></table>
+    <section id="knowledgeCentre" class="card section hide">
+      <h2>Knowledge Centre</h2>
+      <p><button onclick="loadKnowledgeCentre()">Refresh</button></p>
+      <div class="grid"><label>Search<br><input id="kcSearch"></label><label>Category<br><select id="kcFilter"><option value="">All Categories</option><option>IGEM Standards</option><option>Manufacturer Manuals</option><option>HBS Bulletins</option><option>Gas Safe Guidance</option></select></label></div>
+      <table><thead><tr><th>Title</th><th>Category</th><th>Reference</th><th>Keywords</th><th>Uploaded</th><th>Action</th></tr></thead><tbody id="kcRows"></tbody></table>
     </section>
 
-    
-    <section id="backup" class="card section hide"><h2>Backup</h2><button onclick="downloadBackup()">Download Backup</button></section>
-  
-    <section id="settingsCentre" class="card section hide">
-      <h2>Settings</h2>
-      <p class="muted">Manager-only system settings for HBS Compliance Manager.</p>
-      <div class="grid">
-        <label>System Name<br><input value="HBS Compliance Manager" readonly></label>
-        <label>Primary Function<br><input value="Commercial Gas Compliance Management System" readonly></label>
-      </div>
-      <h3>Role Structure</h3>
-      <table>
-        <thead><tr><th>Role</th><th>Users</th><th>Access</th></tr></thead>
-        <tbody>
-          <tr><td>Manager</td><td>Peter Taylor, Eward Richards, Lucy Coppage</td><td>Full management access</td></tr>
-          <tr><td>Senior Engineer</td><td>Mark Fuller</td><td>Restricted audit and technical access</td></tr>
-          <tr><td>Engineer</td><td>Engineering staff only</td><td>Own records and Knowledge Centre</td></tr>
-        </tbody>
-      </table>
-      <p class="muted">Lucy Coppage is a management user only and is excluded from engineer audit lists, competency records and league tables.</p>
-    </section>
-
+    <section id="userAdmin" class="card section hide"><h2>Users</h2><button onclick="loadUsers()">Refresh</button><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Title</th><th>PIN</th></tr></thead><tbody id="userRows"></tbody></table></section>
+    <section id="recordManager" class="card section hide"><h2>Record Management</h2><p class="notice card"><b>Manager only:</b> Delete old/test records. Take a backup first.</p><div class="grid"><label>Record Type<br><select id="delType"><option value="audit">Audit</option><option value="training">Training</option><option value="reaudit">Re-audit</option><option value="toolbox">Toolbox/Test Result</option><option value="tightness">Tightness Test</option></select></label><label>Record ID<br><input id="delId"></label></div><p><button class="danger" onclick="deleteRecordById()">Delete Selected Record</button></p><p id="delMsg" class="muted"></p></section>
   </main>
 </section>
 
 <script>
-const CALC_B64 = "PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9ImVuIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9InV0Zi04Ij4KPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xIj4KPHRpdGxlPkhCUyBHYXMgVGlnaHRuZXNzIFRlc3QgQ2FsY3VsYXRvciB2MC42LjE8L3RpdGxlPgo8bGluayByZWw9Im1hbmlmZXN0IiBocmVmPSJtYW5pZmVzdC53ZWJtYW5pZmVzdCI+CjxzdHlsZT4KOnJvb3R7LS1oYnM6IzEyM2M0YTstLWdyZWVuOiNlNmY2ZTY7LS1ibHVlOiNlYWYzZmY7LS1saW5lOiNjZmQ4ZGM7LS1yZWQ6I2ZmZjBmMH0KKntib3gtc2l6aW5nOmJvcmRlci1ib3h9Ym9keXtmb250LWZhbWlseTpBcmlhbCxIZWx2ZXRpY2Esc2Fucy1zZXJpZjttYXJnaW46MDtiYWNrZ3JvdW5kOiNmNGY2Zjg7Y29sb3I6IzFkMWQxZjtmb250LXNpemU6MTZweH0udG9we2JhY2tncm91bmQ6dmFyKC0taGJzKTtjb2xvcjp3aGl0ZTtwYWRkaW5nOjE4cHh9LnRvcCBoMXttYXJnaW46NHB4IDA7Zm9udC1zaXplOjI0cHh9LndyYXB7bWF4LXdpZHRoOjEwODBweDttYXJnaW46MCBhdXRvO3BhZGRpbmc6MTJweH0uY2FyZHtiYWNrZ3JvdW5kOndoaXRlO2JvcmRlcjoxcHggc29saWQgdmFyKC0tbGluZSk7Ym9yZGVyLXJhZGl1czoxMnB4O3BhZGRpbmc6MTRweDttYXJnaW46MTJweCAwO2JveC1zaGFkb3c6MCAxcHggM3B4IHJnYmEoMCwwLDAsLjA2KX1oMnttYXJnaW46MCAwIDEwcHg7Y29sb3I6dmFyKC0taGJzKTtmb250LXNpemU6MjFweH0uZ3JpZHtkaXNwbGF5OmdyaWQ7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCgyLG1pbm1heCgwLDFmcikpO2dhcDoxMHB4fWxhYmVse2ZvbnQtd2VpZ2h0OjcwMDtmb250LXNpemU6MTRweH0uaW5wdXQsc2VsZWN0e3dpZHRoOjEwMCU7bWluLWhlaWdodDo0NHB4O2ZvbnQtc2l6ZToxN3B4O3BhZGRpbmc6OXB4O2JvcmRlcjoycHggc29saWQgIzliYjBiODtib3JkZXItcmFkaXVzOjhweDtiYWNrZ3JvdW5kOnZhcigtLWdyZWVuKTttYXJnaW4tdG9wOjRweH0uY2FsY3tiYWNrZ3JvdW5kOnZhcigtLWJsdWUpfXRhYmxle3dpZHRoOjEwMCU7Ym9yZGVyLWNvbGxhcHNlOmNvbGxhcHNlO2ZvbnQtc2l6ZToxNHB4fXRoLHRke2JvcmRlcjoxcHggc29saWQgdmFyKC0tbGluZSk7cGFkZGluZzo2cHg7dmVydGljYWwtYWxpZ246bWlkZGxlfXRoe2JhY2tncm91bmQ6I2VlZjRmNjtjb2xvcjojMTIzYzRhfXRkIGlucHV0LHRkIHNlbGVjdHttaW4taGVpZ2h0OjQwcHg7Zm9udC1zaXplOjE1cHh9LmJ0bntiYWNrZ3JvdW5kOiMxMjNjNGE7Y29sb3I6I2ZmZjtib3JkZXI6bm9uZTtib3JkZXItcmFkaXVzOjhweDtwYWRkaW5nOjEycHggMTZweDtmb250LXNpemU6MTZweDtmb250LXdlaWdodDo3MDA7bWFyZ2luOjhweCA0cHggOHB4IDB9LmJ0bi5kYW5nZXJ7YmFja2dyb3VuZDojOGIxZTFlfS5yZXN1bHQtZ3JpZHtkaXNwbGF5OmdyaWQ7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCgzLG1pbm1heCgwLDFmcikpO2dhcDoxMHB4fS5yZXN1bHR7YmFja2dyb3VuZDp2YXIoLS1ibHVlKTtib3JkZXI6MXB4IHNvbGlkICNiOWQ0ZjM7Ym9yZGVyLXJhZGl1czo5cHg7cGFkZGluZzoxMHB4fS5yZXN1bHQgc3BhbntkaXNwbGF5OmJsb2NrO2ZvbnQtc2l6ZToxM3B4fS5yZXN1bHQgc3Ryb25ne2ZvbnQtc2l6ZToxOHB4fS53YXJuaW5ne2JhY2tncm91bmQ6I2ZmZjhkYztib3JkZXI6MnB4IHNvbGlkICNlMGIwMDB9LnBpcGUtc2VjdGlvbi10aXRsZXtmb250LXNpemU6MjRweDtiYWNrZ3JvdW5kOiMxNjNmNGQ7Y29sb3I6I2ZmZjtwYWRkaW5nOjEycHg7Ym9yZGVyLXJhZGl1czo4cHg7bWFyZ2luLWJvdHRvbToxMHB4fS52aXNpYmxlLWJhbm5lcntiYWNrZ3JvdW5kOiNlNmY2ZTY7Ym9yZGVyOjJweCBzb2xpZCAjMWY3YTFmO3BhZGRpbmc6MTBweDtib3JkZXItcmFkaXVzOjhweDtmb250LXdlaWdodDo3MDB9LnRhYmxlLXdyYXB7b3ZlcmZsb3cteDphdXRvfS5zbWFsbHtmb250LXNpemU6MTJweDtjb2xvcjojNTU1fXByZXt3aGl0ZS1zcGFjZTpwcmUtd3JhcDtiYWNrZ3JvdW5kOiNmOGZhZmI7Ym9yZGVyOjFweCBzb2xpZCB2YXIoLS1saW5lKTtwYWRkaW5nOjEwcHg7Ym9yZGVyLXJhZGl1czo4cHh9QG1lZGlhKG1heC13aWR0aDo3NjBweCl7LmdyaWQsLnJlc3VsdC1ncmlke2dyaWQtdGVtcGxhdGUtY29sdW1uczoxZnJ9dGFibGV7Zm9udC1zaXplOjEzcHh9LnRvcCBoMXtmb250LXNpemU6MjBweH19CkBtZWRpYSBwcmludHsuYnRue2Rpc3BsYXk6bm9uZX0uY2FyZHtib3gtc2hhZG93Om5vbmU7YnJlYWstaW5zaWRlOmF2b2lkfWJvZHl7YmFja2dyb3VuZDojZmZmfS5pbnB1dCxzZWxlY3R7Ym9yZGVyOjFweCBzb2xpZCAjOTk5O2JhY2tncm91bmQ6I2ZmZn19Cjwvc3R5bGU+CjwvaGVhZD4KPGJvZHk+CjxoZWFkZXIgY2xhc3M9InRvcCI+PGRpdj5Ib2NrbGV5IEJ1aWxkaW5nIFNlcnZpY2VzIEx0ZDwvZGl2PjxoMT5Db21tZXJjaWFsIEdhcyBUaWdodG5lc3MgVGVzdCBDYWxjdWxhdG9yIHYwLjYuMS4xPC9oMT48ZGl2PlRQQ1AxIC8gVFBDUDFBIMK3IFBpcGV3b3JrIFNlY3Rpb25zIHZpc2libGUgwrcgR2FzIHR5cGUgdmlzaWJsZSDCtyBQcmVzc3VyZSBsb3NzIGNvcnJlY3RlZDwvZGl2PjwvaGVhZGVyPgo8ZGl2IGNsYXNzPSJ3cmFwIj4KPHNlY3Rpb24gY2xhc3M9ImNhcmQgd2FybmluZyI+PGgyPkVuZ2luZWVyIFVzZTwvaDI+PHA+PGI+R3JlZW4gY2VsbHMgYXJlIGVuZ2luZWVyIGVudHJpZXMuPC9iPiBDYWxjdWxhdGVkIGNlbGxzIGFyZSBibHVlLiBUaGUgUGlwZXdvcmsgU2VjdGlvbnMgdGFibGUgYmVsb3cgaXMgaGFyZC1jb2RlZCBpbnRvIHRoaXMgcGFnZSBhbmQgZG9lcyBub3QgcmVseSBvbiBoaWRkZW4gbmF2aWdhdGlvbi48L3A+PC9zZWN0aW9uPgo8c2VjdGlvbiBjbGFzcz0iY2FyZCI+PGgyPjEuIFNpdGUgRGV0YWlsczwvaDI+PGRpdiBjbGFzcz0iZ3JpZCI+CjxsYWJlbD5TaXRlIE5hbWU8aW5wdXQgY2xhc3M9ImlucHV0IiBpZD0ic2l0ZU5hbWUiPjwvbGFiZWw+PGxhYmVsPkpvYiBOdW1iZXI8aW5wdXQgY2xhc3M9ImlucHV0IiBpZD0iam9iTnVtYmVyIj48L2xhYmVsPgo8bGFiZWw+RW5naW5lZXI8aW5wdXQgY2xhc3M9ImlucHV0IiBpZD0iZW5naW5lZXIiPjwvbGFiZWw+PGxhYmVsPkRhdGU8aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJkYXRlIiBpZD0idGVzdERhdGUiPjwvbGFiZWw+CjwvZGl2Pjwvc2VjdGlvbj4KPHNlY3Rpb24gY2xhc3M9ImNhcmQiPjxoMj4yLiBHYXMgYW5kIFRlc3QgRGV0YWlsczwvaDI+PGRpdiBjbGFzcz0iZ3JpZCI+CjxsYWJlbD5HYXMgVHlwZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0iZ2FzVHlwZSI+PG9wdGlvbj5OYXR1cmFsIEdhczwvb3B0aW9uPjxvcHRpb24+UHJvcGFuZTwvb3B0aW9uPjxvcHRpb24+QnV0YW5lPC9vcHRpb24+PC9zZWxlY3Q+PC9sYWJlbD4KPGxhYmVsPlByb2NlZHVyZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0icHJvY2VkdXJlIj48b3B0aW9uIHZhbHVlPSJhdXRvIj5BdXRvIGJhc2VkIG9uIHZvbHVtZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IlRQQ1AxQSI+VFBDUDFBIHVwIHRvIDFtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJUUENQMSI+VFBDUDEgYWJvdmUgMW3Cszwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5JbnN0YWxsYXRpb24gVHlwZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0iaW5zdGFsbGF0aW9uVHlwZSI+PG9wdGlvbj5FeGlzdGluZzwvb3B0aW9uPjxvcHRpb24+TmV3PC9vcHRpb24+PC9zZWxlY3Q+PC9sYWJlbD4KPGxhYmVsPlRlc3QgQXJlYTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0idGVzdEFyZWEiPjxvcHRpb24gdmFsdWU9IkEiPlR5cGUgQSAtIE5ldyAmIGluYWRlcXVhdGVseSB2ZW50aWxhdGVkPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iQiI+VHlwZSBCIC0gRXhpc3Rpbmcgcm9vbXMgdW5kZXIgNjBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJDIj5UeXBlIEMgLSBSb29tIHZvbHVtZSBvdmVyIDYwbcKzICsgcGlwZSB2b2x1bWU8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJEIj5UeXBlIEQgLSBVbmRlcmdyb3VuZDwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5HYXVnZSBUeXBlPHNlbGVjdCBjbGFzcz0iaW5wdXQiIGlkPSJnYXVnZVR5cGUiPjxvcHRpb24gdmFsdWU9IjAuMDEiPkVsZWN0cm9uaWMgR2F1Z2UgMiBkZWNpbWFsIHBsYWNlPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC4xIj5FbGVjdHJvbmljIEdhdWdlIDEgZGVjaW1hbCBwbGFjZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjEiPkVsZWN0cm9uaWMgR2F1Z2UgMCBkZWNpbWFsIHBsYWNlPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC41Ij5XYXRlciBHYXVnZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjAuMSI+SGlnaCBTLkcgR2F1Z2U8L29wdGlvbj48L3NlbGVjdD48L2xhYmVsPgo8bGFiZWw+Um9vbSBWb2x1bWUgbcKzPGlucHV0IGNsYXNzPSJpbnB1dCIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjAwMSIgaWQ9InJvb21Wb2x1bWUiIHZhbHVlPSIwIj48L2xhYmVsPgo8bGFiZWw+TU9QIG1iYXI8aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJudW1iZXIiIHN0ZXA9IjAuMSIgaWQ9Im1vcCIgdmFsdWU9IjIxIj48L2xhYmVsPgo8bGFiZWw+TUlQIG1iYXI8aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJudW1iZXIiIHN0ZXA9IjAuMSIgaWQ9Im1pcCIgdmFsdWU9Ijc1Ij48L2xhYmVsPgo8bGFiZWw+VGVzdCBQcmVzc3VyZSBtYmFyPGlucHV0IGNsYXNzPSJpbnB1dCIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjEiIGlkPSJ0ZXN0UHJlc3N1cmUiIHZhbHVlPSIyMSI+PC9sYWJlbD4KPGxhYmVsPk1lYXN1cmVkIFByZXNzdXJlIERyb3AgbWJhcjxpbnB1dCBjbGFzcz0iaW5wdXQiIHR5cGU9Im51bWJlciIgc3RlcD0iMC4wMDEiIGlkPSJtZWFzdXJlZERyb3AiIHZhbHVlPSIwIj48L2xhYmVsPgo8L2Rpdj48L3NlY3Rpb24+CjxzZWN0aW9uIGNsYXNzPSJjYXJkIiBpZD0icGlwZXdvcmtTZWN0aW9ucyI+CjxkaXYgY2xhc3M9InBpcGUtc2VjdGlvbi10aXRsZSI+My4gUElQRVdPUksgU0VDVElPTlMgLSBWSVNJQkxFIEVOR0lORUVSIElOUFVUPC9kaXY+CjxwIGNsYXNzPSJ2aXNpYmxlLWJhbm5lciI+VGhpcyBzZWN0aW9uIGlzIHZpc2libGUgYnkgZGVmYXVsdC4gQWRkIGV2ZXJ5IHBpcGUgc2VjdGlvbiBiZWxvdy48L3A+CjxkaXYgY2xhc3M9InRhYmxlLXdyYXAiPjx0YWJsZSBpZD0icGlwZVRhYmxlIj48dGhlYWQ+PHRyPjx0aD5Oby48L3RoPjx0aD5NYXRlcmlhbDwvdGg+PHRoPlNpemU8L3RoPjx0aD5MZW5ndGggbTwvdGg+PHRoPkludGVybmFsIERpYSBtbTwvdGg+PHRoPm3Csy9tPC90aD48dGg+Vm9sdW1lIG3CszwvdGg+PHRoPlJlbW92ZTwvdGg+PC90cj48L3RoZWFkPjx0Ym9keSBpZD0icGlwZUJvZHkiPgo8dHI+PHRkPjE8L3RkPjx0ZD48c2VsZWN0IGNsYXNzPSJpbnB1dCBtYXQiPjwvc2VsZWN0PjwvdGQ+PHRkPjxzZWxlY3QgY2xhc3M9ImlucHV0IHNpemUiPjwvc2VsZWN0PjwvdGQ+PHRkPjxpbnB1dCBjbGFzcz0iaW5wdXQgbGVuIiB0eXBlPSJudW1iZXIiIHN0ZXA9IjAuMDEiIHZhbHVlPSIwIj48L3RkPjx0ZCBjbGFzcz0iY2FsYyBpZG1tIj4wPC90ZD48dGQgY2xhc3M9ImNhbGMgcGVyTSI+MC4wMDAwMDA8L3RkPjx0ZCBjbGFzcz0iY2FsYyB2b2wiPjAuMDAwMDAwPC90ZD48dGQ+PGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJidG4gZGFuZ2VyIHJlbW92ZSI+WDwvYnV0dG9uPjwvdGQ+PC90cj4KPHRyPjx0ZD4yPC90ZD48dGQ+PHNlbGVjdCBjbGFzcz0iaW5wdXQgbWF0Ij48L3NlbGVjdD48L3RkPjx0ZD48c2VsZWN0IGNsYXNzPSJpbnB1dCBzaXplIj48L3NlbGVjdD48L3RkPjx0ZD48aW5wdXQgY2xhc3M9ImlucHV0IGxlbiIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjAxIiB2YWx1ZT0iMCI+PC90ZD48dGQgY2xhc3M9ImNhbGMgaWRtbSI+MDwvdGQ+PHRkIGNsYXNzPSJjYWxjIHBlck0iPjAuMDAwMDAwPC90ZD48dGQgY2xhc3M9ImNhbGMgdm9sIj4wLjAwMDAwMDwvdGQ+PHRkPjxidXR0b24gdHlwZT0iYnV0dG9uIiBjbGFzcz0iYnRuIGRhbmdlciByZW1vdmUiPlg8L2J1dHRvbj48L3RkPjwvdHI+Cjx0cj48dGQ+MzwvdGQ+PHRkPjxzZWxlY3QgY2xhc3M9ImlucHV0IG1hdCI+PC9zZWxlY3Q+PC90ZD48dGQ+PHNlbGVjdCBjbGFzcz0iaW5wdXQgc2l6ZSI+PC9zZWxlY3Q+PC90ZD48dGQ+PGlucHV0IGNsYXNzPSJpbnB1dCBsZW4iIHR5cGU9Im51bWJlciIgc3RlcD0iMC4wMSIgdmFsdWU9IjAiPjwvdGQ+PHRkIGNsYXNzPSJjYWxjIGlkbW0iPjA8L3RkPjx0ZCBjbGFzcz0iY2FsYyBwZXJNIj4wLjAwMDAwMDwvdGQ+PHRkIGNsYXNzPSJjYWxjIHZvbCI+MC4wMDAwMDA8L3RkPjx0ZD48YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9ImJ0biBkYW5nZXIgcmVtb3ZlIj5YPC9idXR0b24+PC90ZD48L3RyPgo8L3Rib2R5PjwvdGFibGU+PC9kaXY+PGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJidG4iIGlkPSJhZGRQaXBlIj4rIEFkZCBQaXBld29yayBTZWN0aW9uPC9idXR0b24+PC9zZWN0aW9uPgo8c2VjdGlvbiBjbGFzcz0iY2FyZCI+PGgyPjQuIE1ldGVyIC8gVHVyYmluZSBNZXRlcjwvaDI+PGRpdiBjbGFzcz0iZ3JpZCI+CjxsYWJlbD5NZXRlciBUeXBlPHNlbGVjdCBjbGFzcz0iaW5wdXQiIGlkPSJtZXRlclR5cGUiPjxvcHRpb24gdmFsdWU9Ik5vbmUiPk5vbmU8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJEaWFwaHJhZ20iPkRpYXBocmFnbTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IlJvdGFyeSI+Um90YXJ5PC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iVHVyYmluZSI+VHVyYmluZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9Ik90aGVyIj5PdGhlciAvIE1hbnVhbDwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5NZXRlciBTaXplIC8gU3RhbmRhcmQgVm9sdW1lPHNlbGVjdCBjbGFzcz0iaW5wdXQiIGlkPSJtZXRlclN0ZCI+PG9wdGlvbiB2YWx1ZT0iMCI+Tm9uZS9tYW51YWw8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjAwNiI+VTYgMC4wMDZtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjAxNiI+VTE2IDAuMDE2bcKzPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC4wMjUiPlUyNSAwLjAyNW3Cszwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjAuMDQwIj5VNDAgMC4wNDBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjA2NSI+VTY1IDAuMDY1bcKzPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC4xMDAiPlUxMDAgMC4xMDBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjE2MCI+RzE2MCAwLjE2MG3Cszwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjAuMjUwIj5HMjUwIDAuMjUwbcKzPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC40MDAiPkc0MDAgMC40MDBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjY1MCI+RzY1MCAwLjY1MG3Cszwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5NYW51YWwgLyBNYW51ZmFjdHVyZXIgTWV0ZXIgVm9sdW1lIG3CszxpbnB1dCBjbGFzcz0iaW5wdXQiIHR5cGU9Im51bWJlciIgc3RlcD0iMC4wMDEiIGlkPSJtZXRlck1hbnVhbCIgdmFsdWU9IjAiPjwvbGFiZWw+CjxsYWJlbD5Sb3RhcnkgLyBUdXJiaW5lIEZsYW5nZSBEaWFtZXRlciBtbTxpbnB1dCBjbGFzcz0iaW5wdXQiIHR5cGU9Im51bWJlciIgc3RlcD0iMSIgaWQ9InR1cmJpbmVEaWEiIHZhbHVlPSIwIj48L2xhYmVsPgo8bGFiZWw+Um90YXJ5IC8gVHVyYmluZSBNZXRlciBMZW5ndGggbW08aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJudW1iZXIiIHN0ZXA9IjEiIGlkPSJ0dXJiaW5lTGVuIiB2YWx1ZT0iMCI+PC9sYWJlbD4KPGxhYmVsPkZpdHRpbmdzIEFsbG93YW5jZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0iZml0dGluZ3NNb2RlIj48b3B0aW9uIHZhbHVlPSIxMCI+QXBwbHkgMTAlIG9mIHBpcGUgdm9sdW1lPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0ibWFudWFsIj5NYW51YWwgZml0dGluZ3Mgdm9sdW1lPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMCI+Tm8gZml0dGluZ3MgYWxsb3dhbmNlPC9vcHRpb24+PC9zZWxlY3Q+PC9sYWJlbD4KPGxhYmVsPk1hbnVhbCBGaXR0aW5ncyBWb2x1bWUgbcKzPGlucHV0IGNsYXNzPSJpbnB1dCIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjAwMSIgaWQ9Im1hbnVhbEZpdHRpbmdzIiB2YWx1ZT0iMCI+PC9sYWJlbD4KPC9kaXY+PC9zZWN0aW9uPgo8c2VjdGlvbiBjbGFzcz0iY2FyZCI+PGgyPjUuIFJlc3VsdHM8L2gyPjxkaXYgY2xhc3M9InJlc3VsdC1ncmlkIj4KPGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5QaXBld29yayBWb2x1bWU8L3NwYW4+PHN0cm9uZyBpZD0icGlwZVZvbCI+MC4wMDAwMDAgbcKzPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5NZXRlciBWb2x1bWU8L3NwYW4+PHN0cm9uZyBpZD0ibWV0ZXJWb2wiPjAuMDAwMDAwIG3Cszwvc3Ryb25nPjwvZGl2PjxkaXYgY2xhc3M9InJlc3VsdCI+PHNwYW4+Rml0dGluZ3MgVm9sdW1lPC9zcGFuPjxzdHJvbmcgaWQ9ImZpdFZvbCI+MC4wMDAwMDAgbcKzPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5Ub3RhbCBJbnN0YWxsYXRpb24gVm9sdW1lPC9zcGFuPjxzdHJvbmcgaWQ9InRvdGFsVm9sIj4wLjAwMDAwMCBtwrM8L3N0cm9uZz48L2Rpdj48ZGl2IGNsYXNzPSJyZXN1bHQiPjxzcGFuPlNlbGVjdGVkIFN0YW5kYXJkPC9zcGFuPjxzdHJvbmcgaWQ9InN0ZE91dCI+VFBDUDFBPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5TdGFiaWxpc2F0aW9uIFBlcmlvZDwvc3Bhbj48c3Ryb25nIGlkPSJzdGFiT3V0Ij42IG1pbnV0ZXM8L3N0cm9uZz48L2Rpdj48ZGl2IGNsYXNzPSJyZXN1bHQiPjxzcGFuPlRlc3QgVGltZSBEdXJhdGlvbjwvc3Bhbj48c3Ryb25nIGlkPSJ0dGRPdXQiPjIgbWludXRlczwvc3Ryb25nPjwvZGl2PjxkaXYgY2xhc3M9InJlc3VsdCI+PHNwYW4+VG90YWwgVGltZTwvc3Bhbj48c3Ryb25nIGlkPSJ0b3RhbFRpbWVPdXQiPjggbWludXRlczwvc3Ryb25nPjwvZGl2PjxkaXYgY2xhc3M9InJlc3VsdCI+PHNwYW4+SW5kaWNhdGl2ZSBBbGxvd2FibGUgRHJvcDwvc3Bhbj48c3Ryb25nIGlkPSJkcm9wT3V0Ij4wLjAwMCBtYmFyPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5QYXNzIC8gRmFpbDwvc3Bhbj48c3Ryb25nIGlkPSJyZXN1bHRPdXQiPkNIRUNLPC9zdHJvbmc+PC9kaXY+CjwvZGl2PjxwIGNsYXNzPSJzbWFsbCI+Rm9yIHN1cHBvcnQgb25seS4gRmluYWwgd29yayBtdXN0IGJlIGNvbXBsZXRlZCBieSBjb21wZXRlbnQgZW5naW5lZXJzIGluIGFjY29yZGFuY2Ugd2l0aCBjb250cm9sbGVkIElHRS9VUC8xIGFuZCBJR0UvVVAvMUEgZG9jdW1lbnRzLjwvcD48L3NlY3Rpb24+CjxzZWN0aW9uIGNsYXNzPSJjYXJkIj48aDI+Ni4gUERGIC8gSm9ibG9naWMgUmVwb3J0PC9oMj48YnV0dG9uIGNsYXNzPSJidG4iIG9uY2xpY2s9IndpbmRvdy5wcmludCgpIj5QcmludCAvIFNhdmUgYXMgUERGPC9idXR0b24+PHByZSBpZD0icmVwb3J0Ij48L3ByZT48L3NlY3Rpb24+CjwvZGl2Pgo8c2NyaXB0Pgpjb25zdCBwaXBlRGF0YT17CidTdGVlbC9Jcm9uJzp7J0ROMTUnOjE2LjEsJ0ROMjAnOjIxLjYsJ0ROMjUnOjI3LjIsJ0ROMzInOjM1LjksJ0RONDAnOjQxLjgsJ0RONTAnOjUzLjAsJ0RONjUnOjY4LjgsJ0ROODAnOjgwLjgsJ0ROMTAwJzoxMDUuMywnRE4xMjUnOjEzMC44LCdETjE1MCc6MTU1LjR9LAonQ29wcGVyJzp7J0ROMTUnOjEzLjYsJ0ROMjInOjIwLjIsJ0ROMjgnOjI2LjIsJ0ROMzUnOjMyLjYsJ0RONDInOjM5LjYsJ0RONTQnOjUxLjYsJ0RONjcnOjY0LjYsJ0RONzYnOjczLjYsJ0ROMTA4JzoxMDUuNn0sCidQRSBTRFIxMSc6eydETjIwJzoxNi40LCdETjI1JzoyMC40LCdETjMyJzoyNi4yLCdETjQwJzozMi42LCdETjYzJzo1MS40LCdETjkwJzo3My42LCdETjEyNSc6MTAyLjIsJ0ROMTgwJzoxNDcuMn0sCidQRSBTRFIxNyc6eydETjYzJzo1NS40LCdETjkwJzo3OS4yLCdETjEyNSc6MTEwLjIsJ0ROMTgwJzoxNTguNiwnRE4yNTAnOjIyMC40fQp9OwpmdW5jdGlvbiBwZXJNKGlkbW0pe2xldCBkPWlkbW0vMTAwMDtyZXR1cm4gTWF0aC5QSSpkKmQvNH0KZnVuY3Rpb24gbihpZCl7cmV0dXJuIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKGlkKX0KZnVuY3Rpb24gZmlsbFJvdyh0cil7bGV0IG1hdD10ci5xdWVyeVNlbGVjdG9yKCcubWF0JyksIHNpemU9dHIucXVlcnlTZWxlY3RvcignLnNpemUnKTsgaWYoIW1hdC5vcHRpb25zLmxlbmd0aCl7T2JqZWN0LmtleXMocGlwZURhdGEpLmZvckVhY2gobT0+bWF0LmFkZChuZXcgT3B0aW9uKG0sbSkpKX07IGxldCBjdXI9c2l6ZS52YWx1ZTsgc2l6ZS5pbm5lckhUTUw9Jyc7IE9iamVjdC5rZXlzKHBpcGVEYXRhW21hdC52YWx1ZV0pLmZvckVhY2gocz0+c2l6ZS5hZGQobmV3IE9wdGlvbihzLHMpKSk7IGlmKHBpcGVEYXRhW21hdC52YWx1ZV1bY3VyXSkgc2l6ZS52YWx1ZT1jdXI7IGNhbGMoKX0KZnVuY3Rpb24gcmVudW1iZXIoKXtbLi4uZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnI3BpcGVCb2R5IHRyJyldLmZvckVhY2goKHRyLGkpPT50ci5jZWxsc1swXS50ZXh0Q29udGVudD1pKzEpfQpmdW5jdGlvbiBhZGRSb3coKXtsZXQgdHI9ZG9jdW1lbnQucXVlcnlTZWxlY3RvcignI3BpcGVCb2R5IHRyJykuY2xvbmVOb2RlKHRydWUpOyB0ci5xdWVyeVNlbGVjdG9yKCcubGVuJykudmFsdWU9JzAnOyBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncGlwZUJvZHknKS5hcHBlbmRDaGlsZCh0cik7IGJpbmRSb3codHIpOyBmaWxsUm93KHRyKTsgcmVudW1iZXIoKTt9CmZ1bmN0aW9uIGJpbmRSb3codHIpe3RyLnF1ZXJ5U2VsZWN0b3IoJy5tYXQnKS5vbmNoYW5nZT0oKT0+ZmlsbFJvdyh0cik7IHRyLnF1ZXJ5U2VsZWN0b3IoJy5zaXplJykub25jaGFuZ2U9Y2FsYzsgdHIucXVlcnlTZWxlY3RvcignLmxlbicpLm9uaW5wdXQ9Y2FsYzsgdHIucXVlcnlTZWxlY3RvcignLnJlbW92ZScpLm9uY2xpY2s9KCk9PntpZihkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcjcGlwZUJvZHkgdHInKS5sZW5ndGg+MSl7dHIucmVtb3ZlKCk7cmVudW1iZXIoKTtjYWxjKCk7fX19CmZ1bmN0aW9uIGNhbGMoKXtsZXQgcGlwZT0wOyBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcjcGlwZUJvZHkgdHInKS5mb3JFYWNoKHRyPT57bGV0IG1hdD10ci5xdWVyeVNlbGVjdG9yKCcubWF0JykudmFsdWUsIHNpemU9dHIucXVlcnlTZWxlY3RvcignLnNpemUnKS52YWx1ZSwgbGVuPXBhcnNlRmxvYXQodHIucXVlcnlTZWxlY3RvcignLmxlbicpLnZhbHVlKXx8MDsgbGV0IGlkPShwaXBlRGF0YVttYXRdfHx7fSlbc2l6ZV18fDA7IGxldCBwbT1wZXJNKGlkKTsgbGV0IHY9cG0qbGVuOyBwaXBlKz12OyB0ci5xdWVyeVNlbGVjdG9yKCcuaWRtbScpLnRleHRDb250ZW50PWlkLnRvRml4ZWQoMSk7IHRyLnF1ZXJ5U2VsZWN0b3IoJy5wZXJNJykudGV4dENvbnRlbnQ9cG0udG9GaXhlZCg2KTsgdHIucXVlcnlTZWxlY3RvcignLnZvbCcpLnRleHRDb250ZW50PXYudG9GaXhlZCg2KTt9KTsKbGV0IG10PW4oJ21ldGVyVHlwZScpLnZhbHVlLCBtZXRlcj1wYXJzZUZsb2F0KG4oJ21ldGVyTWFudWFsJykudmFsdWUpfHwwOyBpZighbWV0ZXIpIG1ldGVyPXBhcnNlRmxvYXQobignbWV0ZXJTdGQnKS52YWx1ZSl8fDA7IGlmKChtdD09PSdUdXJiaW5lJ3x8bXQ9PT0nUm90YXJ5JykgJiYgIW1ldGVyKXtsZXQgZD0ocGFyc2VGbG9hdChuKCd0dXJiaW5lRGlhJykudmFsdWUpfHwwKS8xMDAwLCBsPShwYXJzZUZsb2F0KG4oJ3R1cmJpbmVMZW4nKS52YWx1ZSl8fDApLzEwMDA7IG1ldGVyPTAuNzAqZCpkKmx9CmxldCBmaXQ9MCwgZm09bignZml0dGluZ3NNb2RlJykudmFsdWU7IGlmKGZtPT09JzEwJykgZml0PXBpcGUqMC4xMDsgZWxzZSBpZihmbT09PSdtYW51YWwnKSBmaXQ9cGFyc2VGbG9hdChuKCdtYW51YWxGaXR0aW5ncycpLnZhbHVlKXx8MDsgbGV0IHRvdGFsPXBpcGUrbWV0ZXIrZml0OyBsZXQgcHJvYz1uKCdwcm9jZWR1cmUnKS52YWx1ZTsgbGV0IHN0ZD1wcm9jPT09J2F1dG8nPyh0b3RhbDw9MT8nVFBDUDFBJzonVFBDUDEnKTpwcm9jOwoKbGV0IGdhcz1uKCdnYXNUeXBlJykudmFsdWU7CmxldCBpbnN0PW4oJ2luc3RhbGxhdGlvblR5cGUnKS52YWx1ZTsKbGV0IGFyZWE9bigndGVzdEFyZWEnKS52YWx1ZTsKbGV0IGdybT1wYXJzZUZsb2F0KG4oJ2dhdWdlVHlwZScpLnZhbHVlKXx8MC4wMTsKbGV0IHJvb21Wb2w9cGFyc2VGbG9hdChuKCdyb29tVm9sdW1lJykudmFsdWUpfHwwOwpsZXQgcnYgPSByb29tVm9sPjAgPyByb29tVm9sIDogNjA7CgovLyBGMSB2YWx1ZXMgZm9yIHRlc3QgdXNpbmcgZnVlbCBnYXMgYXQgT1AsIGZyb20gSUdFL1VQLzEgVGFibGUgMTAuCmxldCBmMU1hcD17J05hdHVyYWwgR2FzJzo0MiwnUHJvcGFuZSc6MTAyLCdCdXRhbmUnOjEyOH07CmxldCBmMT1mMU1hcFtnYXNdfHw0MjsKCi8vIFRURCBmb3JtdWxhIGZvbGxvd3MgSUdFL1VQLzEgVGFibGUgOToKLy8gTmV3IGFuZCBBcmVhIEE6IEdSTSB4IElWIHggRjEKLy8gRXhpc3RpbmcgQXJlYSBCOiAyLjggeCBHUk0geCBJViB4IFJWXi0xIHggRjEKLy8gRXhpc3RpbmcgQXJlYSBDL0Q6IDAuMDQ3IHggR1JNIHggSVYgeCBGMQpsZXQgdHRkUmF3PTA7CmlmKGluc3Q9PT0nTmV3JyB8fCBhcmVhPT09J0EnKXsKICB0dGRSYXcgPSBncm0gKiB0b3RhbCAqIGYxOwp9ZWxzZSBpZihhcmVhPT09J0InKXsKICB0dGRSYXcgPSAyLjggKiBncm0gKiB0b3RhbCAqICgxL3J2KSAqIGYxOwp9ZWxzZXsKICB0dGRSYXcgPSAwLjA0NyAqIGdybSAqIHRvdGFsICogZjE7Cn0KbGV0IHR0ZD1NYXRoLm1heCgyLE1hdGguY2VpbCh0dGRSYXcpKTsKbGV0IHN0YWI9c3RkPT09J1RQQ1AxQSc/TWF0aC5tYXgodHRkLDYpOk1hdGgubWF4KHR0ZCwxNSk7CgovLyBNUExSIHZhbHVlcyBtwrMvaCBhdCBPUCBmcm9tIElHRS9VUC8xIFRhYmxlcyA3IGFuZCA4IC8gQXBwZW5kaXggNCBUYWJsZSAxNS4KbGV0IG1wbHJOZXc9eydOYXR1cmFsIEdhcyc6MC4wMDE0LCdQcm9wYW5lJzowLjAwMDU3LCdCdXRhbmUnOjAuMDAwNDR9OwpsZXQgbXBsckJwZXJNMz17J05hdHVyYWwgR2FzJzowLjAwMDUsJ1Byb3BhbmUnOjAuMDAwMiwnQnV0YW5lJzowLjAwMDE2fTsKbGV0IG1wbHJDRD17J05hdHVyYWwgR2FzJzowLjAzLCdQcm9wYW5lJzowLjAxMjMsJ0J1dGFuZSc6MC4wMDk4fTsKCmxldCBtcGxyPTA7CmlmKGluc3Q9PT0nTmV3JyB8fCBhcmVhPT09J0EnKXsKICBtcGxyPW1wbHJOZXdbZ2FzXXx8MC4wMDE0Owp9ZWxzZSBpZihhcmVhPT09J0InKXsKICBtcGxyPShtcGxyQnBlck0zW2dhc118fDAuMDAwNSkgKiBydjsKfWVsc2V7CiAgbXBscj1tcGxyQ0RbZ2FzXXx8MC4wMzsKfQoKLy8gRjMgZm9yIHRlc3QgdXNpbmcgZnVlbCBnYXMgYXQgT1AgaXMgMC4wNTkgZnJvbSBJR0UvVVAvMSBUYWJsZSAxMS4KLy8gUmUtYXJyYW5nZWQgZnJvbSBMUiA9IEYzIHggR00geCBJViAvIHQ6Ci8vIFBlcm1pc3NpYmxlIHByZXNzdXJlIGxvc3MgR00gPSBNUExSIHggdCAvIChGMyB4IElWKS4KbGV0IGYzPTAuMDU5OwpsZXQgZHJvcCA9IHRvdGFsPjAgPyAobXBsciAqIHR0ZCkgLyAoZjMgKiB0b3RhbCkgOiAwOwpsZXQgdGVzdFByZXNzdXJlPXBhcnNlRmxvYXQobigndGVzdFByZXNzdXJlJykudmFsdWUpfHwyMTsKaWYoZHJvcD50ZXN0UHJlc3N1cmUpeyBkcm9wPXRlc3RQcmVzc3VyZTsgfQpsZXQgbWVhcz1wYXJzZUZsb2F0KG4oJ21lYXN1cmVkRHJvcCcpLnZhbHVlKXx8MDsKbigncGlwZVZvbCcpLnRleHRDb250ZW50PXBpcGUudG9GaXhlZCg2KSsnIG3Csyc7IG4oJ21ldGVyVm9sJykudGV4dENvbnRlbnQ9bWV0ZXIudG9GaXhlZCg2KSsnIG3Csyc7IG4oJ2ZpdFZvbCcpLnRleHRDb250ZW50PWZpdC50b0ZpeGVkKDYpKycgbcKzJzsgbigndG90YWxWb2wnKS50ZXh0Q29udGVudD10b3RhbC50b0ZpeGVkKDYpKycgbcKzJzsgbignc3RkT3V0JykudGV4dENvbnRlbnQ9c3RkOyBuKCdzdGFiT3V0JykudGV4dENvbnRlbnQ9c3RhYisnIG1pbnV0ZXMnOyBuKCd0dGRPdXQnKS50ZXh0Q29udGVudD10dGQrJyBtaW51dGVzJzsgbigndG90YWxUaW1lT3V0JykudGV4dENvbnRlbnQ9KHN0YWIrdHRkKSsnIG1pbnV0ZXMnOyBuKCdkcm9wT3V0JykudGV4dENvbnRlbnQ9ZHJvcC50b0ZpeGVkKDMpKycgbWJhcic7IG4oJ3Jlc3VsdE91dCcpLnRleHRDb250ZW50PW1lYXM8PWRyb3A/J1BBU1MgLyBDSEVDSyc6J0ZBSUwgLyBJTlZFU1RJR0FURSc7Cm4oJ3JlcG9ydCcpLnRleHRDb250ZW50PWBIQlMgQ29tbWVyY2lhbCBHYXMgVGlnaHRuZXNzIFRlc3QgQ2FsY3VsYXRvclxuU2l0ZTogJHtuKCdzaXRlTmFtZScpLnZhbHVlfVxuSm9iOiAke24oJ2pvYk51bWJlcicpLnZhbHVlfVxuRW5naW5lZXI6ICR7bignZW5naW5lZXInKS52YWx1ZX1cbkRhdGU6ICR7bigndGVzdERhdGUnKS52YWx1ZX1cbkdhcyBUeXBlOiAke2dhc31cbkluc3RhbGxhdGlvbiBUeXBlOiAke2luc3R9XG5TdGFuZGFyZDogJHtzdGR9XG5QaXBld29yayBWb2x1bWU6ICR7cGlwZS50b0ZpeGVkKDYpfSBtwrNcbk1ldGVyIFZvbHVtZTogJHttZXRlci50b0ZpeGVkKDYpfSBtwrNcbkZpdHRpbmdzIFZvbHVtZTogJHtmaXQudG9GaXhlZCg2KX0gbcKzXG5Ub3RhbCBJbnN0YWxsYXRpb24gVm9sdW1lOiAke3RvdGFsLnRvRml4ZWQoNil9IG3Cs1xuU3RhYmlsaXNhdGlvbjogJHtzdGFifSBtaW51dGVzXG5UVEQ6ICR7dHRkfSBtaW51dGVzXG5Ub3RhbCBUaW1lOiAke3N0YWIrdHRkfSBtaW51dGVzXG5JbmRpY2F0aXZlIEFsbG93YWJsZSBEcm9wOiAke2Ryb3AudG9GaXhlZCgzKX0gbWJhclxuTWVhc3VyZWQgRHJvcDogJHttZWFzLnRvRml4ZWQoMyl9IG1iYXJcblJlc3VsdDogJHtuKCdyZXN1bHRPdXQnKS50ZXh0Q29udGVudH1gO30KZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnI3BpcGVCb2R5IHRyJykuZm9yRWFjaCh0cj0+e2JpbmRSb3codHIpO2ZpbGxSb3codHIpfSk7IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdhZGRQaXBlJykub25jbGljaz1hZGRSb3c7IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGwoJ2lucHV0LHNlbGVjdCcpLmZvckVhY2goZWw9PmVsLmFkZEV2ZW50TGlzdGVuZXIoJ2lucHV0JyxjYWxjKSk7IGNhbGMoKTsKCmZ1bmN0aW9uIGhic1BvcnRhbENvbGxlY3RTdGF0ZSgpewogIGNhbGMoKTsKICBjb25zdCB0eHQ9aWQ9Pm4oaWQpP24oaWQpLnRleHRDb250ZW50OicnOwogIGNvbnN0IHZhbD1pZD0+bihpZCk/bihpZCkudmFsdWU6Jyc7CiAgZnVuY3Rpb24gbnVtVGV4dChpZCl7cmV0dXJuIE51bWJlcihTdHJpbmcodHh0KGlkKSkucmVwbGFjZSgvW15cZC4tXS9nLCcnKSl8fDA7fQogIHJldHVybiB7CiAgICBzaXRlX25hbWU6IHZhbCgnc2l0ZU5hbWUnKSwgYXVkaXRfcmVmOiB2YWwoJ2pvYk51bWJlcicpLCBlbmdpbmVlcl9uYW1lOiB2YWwoJ2VuZ2luZWVyJyksIHRlc3RfZGF0ZTogdmFsKCd0ZXN0RGF0ZScpLAogICAgZ2FzX3R5cGU6IHZhbCgnZ2FzVHlwZScpLCBwcm9jZWR1cmU6IHZhbCgncHJvY2VkdXJlJyksIGluc3RhbGxhdGlvbl90eXBlOiB2YWwoJ2luc3RhbGxhdGlvblR5cGUnKSwgdGVzdF9hcmVhOiB2YWwoJ3Rlc3RBcmVhJyksCiAgICBnYXVnZV90eXBlOiB2YWwoJ2dhdWdlVHlwZScpLCByb29tX3ZvbHVtZTogTnVtYmVyKHZhbCgncm9vbVZvbHVtZScpfHwwKSwgdGVzdF9wcmVzc3VyZTogTnVtYmVyKHZhbCgndGVzdFByZXNzdXJlJyl8fDApLAogICAgbWVhc3VyZWRfZHJvcDogTnVtYmVyKHZhbCgnbWVhc3VyZWREcm9wJyl8fDApLCBpbnN0YWxsYXRpb25fdm9sdW1lOiBudW1UZXh0KCd0b3RhbFZvbCcpLAogICAgc3RhYmlsaXNhdGlvbl90aW1lOiBudW1UZXh0KCdzdGFiT3V0JyksIHRlc3RfZHVyYXRpb246IG51bVRleHQoJ3R0ZE91dCcpLCBvdXRjb21lOiB0eHQoJ3Jlc3VsdE91dCcpLCByZXBvcnQ6IHR4dCgncmVwb3J0JykKICB9Owp9Cgo8L3NjcmlwdD4KPC9ib2R5PjwvaHRtbD4K";
-let user = null;
-
+let user=null;
+const NON_ENGINEERS=['Peter Taylor','Eward Richards','Lucy Coppage','Russell Haines'];
+const AUDIT_QUESTIONS=[
+'Correct job/site risk assessment completed before work started','Gas Safe registration and engineer competency appropriate for work','Manufacturer instructions available and followed','Correct isolation, safe access and working area controls applied','Ventilation requirements checked and confirmed','Flue route, termination and integrity checked','Combustion analysis completed and recorded correctly','CO/CO2 ratio and combustion readings within acceptable limits','Inlet working pressure checked and recorded','Burner pressure checked where applicable or limitation recorded','Gas tightness / local tightness test completed where required','Safety devices and interlocks checked','Condensate, discharge and controls checked','Defects classified correctly as NCS / AR / ID where applicable','Warning notices / labels applied where required','Customer / site contact informed of findings','Photographic evidence captured where required','Service sheet / CP15 / Joblogic record completed accurately','Engineer demonstrated safe working and technical understanding','Overall workmanship and professionalism acceptable'];
 function $(id){return document.getElementById(id)}
-function show(id){document.querySelectorAll('.section').forEach(s=>s.classList.add('hide')); $(id)?.classList.remove('hide')}
-async function api(url, opts){const r=await fetch(url, opts||{cache:'no-store'}); const t=await r.text(); let j; try{j=JSON.parse(t)}catch(e){throw new Error(t.slice(0,250))} if(!r.ok||j.ok===false) throw new Error(j.error||('HTTP '+r.status)); return j}
+function isEngineerName(n){return n&&!NON_ENGINEERS.map(x=>x.toLowerCase()).includes(String(n).toLowerCase())}
 function roleLabel(r){return r==='manager'?'Manager':r==='senior_engineer'?'Senior Engineer':'Engineer'}
-function outcome(score){score=Number(score||0); if(score>=95)return'Excellent'; if(score>=85)return'Pass'; if(score>=75)return'Improvement Required'; return'Fail'}
-
-
-async function login(){
-  const emailEl = $('loginEmail');
-  const pinEl = $('loginPin');
-  const msgEl = $('loginMsg');
-  const loginValue = String(emailEl?.value || '').trim();
-  const pinValue = String(pinEl?.value || '').trim();
-
-  if(msgEl) msgEl.textContent = 'Checking login...';
-
-  if(!loginValue || !pinValue){
-    if(msgEl) msgEl.textContent = 'Enter your email/name and PIN.';
-    return;
-  }
-
-  try{
-    const res = await fetch('/api/login', {
-      method:'POST',
-      headers:{'content-type':'application/json'},
-      body:JSON.stringify({ email:loginValue, username:loginValue, pin:pinValue, password:pinValue })
-    });
-
-    const text = await res.text();
-    let data;
-    try { data = JSON.parse(text); }
-    catch(e) { throw new Error('Login API did not return JSON: ' + text.slice(0,200)); }
-
-    if(!res.ok || data.ok === false){
-      throw new Error(data.error || 'Login failed.');
-    }
-
-    user = data.user;
-    localStorage.setItem('hbs_user', JSON.stringify(user));
-    if(msgEl) msgEl.textContent = 'Login successful.';
-    startApp();
-  }catch(e){
-    if(msgEl) msgEl.textContent = e.message;
-    console.error('Login failed:', e);
-  }
-}
-
-function logout(){localStorage.removeItem('hbs_user'); location.reload()}
-function startApp(){
-  $('loginCard').classList.add('hide'); $('app').classList.remove('hide');
-  $('loginStatus').textContent=`Logged in: ${user.name} (${roleLabel(user.role)})`;
-  buildNav(); populateEngineerSelects(); renderAuditQuestions(); calculateAuditScore(); if(user.role==='manager'){show('dashboard'); loadDashboard();} else {show('toolboxTest')}
-}
-function buildNav(){
-  const menus={
-    manager:[['Dashboard','dashboard'],['Conduct Audit','auditForm'],['Audit History','auditHistory'],['Training Centre','trainingView'],['Competency Centre','competencyCentre'],['Toolbox Tests','managerTestSignoff'],['Tightness Test Centre','tightnessCalculator'],['Knowledge Centre','knowledgeCentre'],['Users','userAdmin'],['Record Management','recordManager'],['Settings','settingsCentre'],['Logout','logout']],['My Dashboard','dashboard'],['Audit History','auditHistory'],['Compliance KPIs','complianceKpis'],['Engineer Competency','competencyCentre'],['Training / Re-audits','trainingView'],['Training Management','trainingManager'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Test Results','toolboxResults'],['Manage Tests','managerTestSignoff'],['Users','userAdmin'],['Record Management','recordManager'],['Backup','backup'],['Logout','logout']],
-    senior_engineer:[['My Records','trainingView'],['Toolbox Tests','toolboxTest'],['Tightness Test Centre','tightnessCalculator'],['Knowledge Centre','knowledgeCentre'],['Logout','logout']],['Audit History','auditHistory'],['Toolbox Tests','toolboxTest'],['Tightness Test Centre','tightnessCalculator'],['Knowledge Centre','knowledgeCentre'],['Logout','logout']],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Logout','logout']],
-    engineer:[['My Dashboard','trainingView'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Logout','logout']]
-  };
-  $('navButtons').innerHTML='';
-  (menus[user.role]||menus.engineer).forEach(([label,id])=>{const b=document.createElement('button'); b.textContent=label; b.onclick=()=>{if(id==='logout') logout(); else {show(id); if(id==='dashboard')loadDashboard(); if(id==='auditHistory')loadAuditHistory(); if(id==='trainingView')loadTraining(); if(id==='knowledgeCentre')loadKnowledgeCentre(); if(id==='tightnessCalculator')loadTightnessCalculator(); if(id==='userAdmin')loadUsers(); if(id==='managerTestSignoff')loadManagerTests(); if(id==='recordManager')loadRecordManager(); if(id==='settingsCentre')loadSettingsCentre && loadSettingsCentre(); if(id==='complianceKpis')loadComplianceKpis(); if(id==='competencyCentre')loadCompetencyCentre(); if(id==='toolboxResults')loadToolboxResults();}}; $('navButtons').appendChild(b);});
-}
-
-async function populateEngineerSelects(){
-  try{const j=await api('/api/users'); const users=j.users||[]; ['aEngineer','tmEngineer','mtEngineer'].forEach(id=>{const s=$(id); if(s) s.innerHTML=users.map(u=>`<option>${u.name}</option>`).join('')});}
-  catch(e){console.warn(e)}
-  $('aDate').value=new Date().toISOString().slice(0,10); $('aAuditor').value=user?.name||'';
-}
-
-async function loadDashboard(){
-  if(user.role!=='manager') return;
-  try{
-    const j=await api('/api/dashboard');
-    const s=j.summary||{};
-    $('stTotal').textContent=s.total_audits||0; $('stAvg').textContent=(s.average_score||0)+'%'; $('stPassRate').textContent=(s.pass_rate||0)+'%';
-    $('stExcellent').textContent=s.excellent||0; $('stPass').textContent=s.pass||0; $('stImprovement').textContent=s.improvement||0; $('stFail').textContent=s.fail||0; $('stOpen').textContent=(s.open_training||0)+' / '+(s.open_reaudits||0);
-    $('leagueRows').innerHTML=(j.league||[]).map((r,i)=>`<tr><td>${i+1}</td><td>${r.engineer}</td><td>${r.audits}</td><td>${r.avg_score}%</td><td>${r.excellent}</td><td>${r.improvement}</td><td>${r.fails}</td></tr>`).join('');
-    $('trendRows').innerHTML=(j.trends||[]).map(r=>`<tr><td>${r.month}</td><td>${r.audits}</td><td>${r.avg_score}%</td><td>${r.improvement}</td><td>${r.fails}</td></tr>`).join('');
-    $('auditRows').innerHTML=(j.audits||[]).map(a=>`<tr><td>${a.ref}</td><td>${a.date}</td><td>${a.engineer}</td><td>${a.site}</td><td>${a.manufacturer}</td><td>${a.model}</td><td>${a.score}</td><td>${a.result}</td><td><button onclick="alert('Booklet ref: ${a.ref}')">View</button></td></tr>`).join('');
-    $('dashboardMsg').textContent=(j.audits||[]).length?'':'No audit records returned by /api/dashboard.';
-  }catch(e){$('dashboardMsg').textContent=e.message}
-}
-
-async function saveAudit(){
-  try{
-    const body=collectAuditData();
-    if(!body.engineer_name || !body.site_name){$('auditMsg').textContent='Engineer and site name are required.';return;}
-    const j=await api('/api/audits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    $('auditMsg').textContent='Saved audit '+(j.ref||('HBS-'+j.id));
-    if(user.role==='manager') loadDashboard();
-  }catch(e){$('auditMsg').textContent=e.message}
-}
-
-async function loadTraining(){
-  const role=user.role, eng=encodeURIComponent(user.name||'');
-  const [t,r]=await Promise.all([
-    api(`/api/training?role=${role}&engineer=${eng}`).catch(e=>({training:[]})),
-    api(`/api/reaudits?role=${role}&engineer=${eng}`).catch(e=>({reaudits:[]}))
-  ]);
-  $('trainingRows').innerHTML=(t.training||[]).map(x=>`<tr>
-    <td>${x.id||''}</td>
-    <td>${x.engineer_name||''}</td>
-    <td>${x.training_type||''}</td>
-    <td>${x.assigned_date||''}</td>
-    <td>${x.status||''}</td>
-    <td>${x.completion_date||''}</td>
-    <td>${user.role==='manager'?`<button onclick="completeTraining(${x.id})">Mark Complete</button> <button class="secondary" onclick="returnTraining(${x.id})">Return</button> <button class="danger" onclick="deleteRecord('training',${x.id})">Delete</button>`:''}</td>
-  </tr>`).join('');
-  $('reauditRows').innerHTML=(r.reaudits||[]).map(x=>`<tr>
-    <td>${x.audit_ref||''}</td><td>${x.engineer_name||''}</td><td>${x.due_date||''}</td><td>${x.status||''}</td>
-  </tr>`).join('');
-}
-async function assignTraining(){
-  try{const j=await api('/api/training',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({role:user.role,engineer_name:$('tmEngineer').value,training_type:$('tmType').value,status:'Open'})}); $('tmMsg').textContent='Training assigned ID '+j.id;}
-  catch(e){$('tmMsg').textContent=e.message}
-}
-
-async function loadUsers(){const j=await api('/api/users'); $('userRows').innerHTML=(j.users||[]).map(u=>`<tr><td>${u.name}</td><td>${u.email}</td><td>${roleLabel(u.role)}</td><td>${u.title||''}</td><td>${u.pin||''}</td></tr>`).join('')}
-async function loadToolboxResults(){try{const j=await api('/api/toolbox-test?role=manager'); $('toolboxRows').innerHTML=(j.results||j.records||[]).map(r=>`<tr><td>${r.id}</td><td>${r.engineer_name||r.engineer||''}</td><td>${r.score||''}</td><td>${r.result||r.outcome||''}</td><td>${r.created_at||r.test_date||''}</td></tr>`).join('')}catch(e){$('toolboxRows').innerHTML='<tr><td colspan="5">'+e.message+'</td></tr>'}}
-
-function prettyName(file){return file.name.replace(/\.[^.]+$/,'').replace(/[._-]+/g,' ').replace(/\bUP\s*(\d+)/i,'UP/$1')}
-async function uploadKnowledge(){
-  const files=[...$('kcFiles').files]; if(!files.length){$('kcMsg').textContent='Choose a file first.'; return}
-  let ok=0;
-  for(const file of files){
-    const data=await new Promise((resolve,reject)=>{const fr=new FileReader(); fr.onload=()=>resolve(fr.result); fr.onerror=reject; fr.readAsDataURL(file)});
-    await api('/api/library-upload',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:$('kcTitle').value||prettyName(file),category:$('kcCategory').value,reference:$('kcReference').value,keywords:$('kcKeywords').value,file_name:file.name,mime_type:file.type,file_data:data,uploaded_by:user.name})});
-    ok++;
-  }
-  $('kcMsg').textContent='Uploaded '+ok+' document(s).'; loadKnowledgeCentre();
-}
-async function loadKnowledgeCentre(){
-  const q=encodeURIComponent($('kcSearch')?.value||''), cat=encodeURIComponent($('kcFilter')?.value||'');
-  try{const j=await api(`/api/library?q=${q}&category=${cat}`); $('kcRows').innerHTML=(j.documents||[]).map(d=>`<tr><td>${d.title||''}</td><td>${d.category||''}</td><td>${d.reference||''}</td><td>${d.keywords||''}</td><td>${d.file_size||''}</td><td>${d.created_at||''}</td><td><button onclick="openDoc(${d.id})">Open</button></td></tr>`).join('')}
-  catch(e){$('kcRows').innerHTML='<tr><td colspan="7">'+e.message+'</td></tr>'}
-}
-async function openDoc(id){const j=await api('/api/library?id='+id+'&open_by='+encodeURIComponent(user.name)); if(j.document?.file_url) window.open(j.document.file_url,'_blank')}
-
-function decodeCalc(){try{const bin=atob(CALC_B64); const bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i); return new TextDecoder().decode(bytes)}catch(e){return '<h1>Tightness calculator source missing</h1>'}}
-async function loadTightnessCalculator(){
-  const f=$('ttFrame'); f.srcdoc=decodeCalc();
-  setTimeout(()=>{try{const d=f.contentDocument; if(d.getElementById('engineer'))d.getElementById('engineer').value=user.name; if(d.getElementById('testDate'))d.getElementById('testDate').value=new Date().toISOString().slice(0,10); if(f.contentWindow.calc)f.contentWindow.calc();}catch(e){}},400);
-  loadTightnessRecords();
-}
-function getTightnessState(){const w=$('ttFrame').contentWindow; if(w?.hbsPortalCollectState)return w.hbsPortalCollectState(); throw new Error('Calculator not loaded yet.')}
-async function saveTightness(){
-  try{const s=getTightnessState(); const body={engineer_name:user.name,role:user.role,site_name:s.site_name,audit_ref:s.audit_ref,test_date:s.test_date,area_tested:s.test_area,test_type:s.selected_standard||s.procedure,installation_volume:s.installation_volume,test_pressure:s.test_pressure,stabilisation_time:s.stabilisation_time,test_duration:s.test_duration,measured_drop:s.measured_drop,outcome:s.outcome,notes:s.report,details_json:JSON.stringify(s)}; const j=await api('/api/tightness',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); $('ttMsg').textContent='Saved tightness record ID '+j.id; loadTightnessRecords();}
-  catch(e){$('ttMsg').textContent=e.message}
-}
-async function loadTightnessRecords(){const j=await api(`/api/tightness?role=${user.role}&engineer=${encodeURIComponent(user.name)}`); $('ttRows').innerHTML=(j.records||[]).map(r=>`<tr><td>${r.id}</td><td>${r.test_date||''}</td><td>${r.engineer_name||''}</td><td>${r.site_name||''}</td><td>${Number(r.installation_volume||0).toFixed(6)}</td><td>${Number(r.measured_drop||0).toFixed(3)}</td><td>${r.outcome||''}</td></tr>`).join('')}
-
-function downloadBackup(){window.open('/api/backup','_blank')}
-
-try{const saved=localStorage.getItem('hbs_user'); if(saved){user=JSON.parse(saved); startApp();}}catch(e){}
-
-async function loadManagerTests(){
-  if(user.role!=='manager') return;
-  try{
-    const j=await api('/api/toolbox-test?role=manager');
-    const rows=j.results||j.records||j.tests||[];
-    $('managerTestRows').innerHTML=rows.map(r=>`<tr>
-      <td>${r.id||''}</td><td>${r.engineer_name||r.engineer||''}</td><td>${r.test_type||r.assessment_type||r.level||'Toolbox Test'}</td>
-      <td>${r.score??''}</td><td>${r.result||r.outcome||''}</td><td>${r.status||'Pending Manager Review'}</td>
-      <td>${r.created_at||r.submitted_at||r.test_date||''}</td><td>${r.manager_name||r.signed_off_by||''}</td>
-      <td>
-        <button onclick="signoffTest(${r.id},'Completed')">Complete</button>
-        <button class="secondary" onclick="signoffTest(${r.id},'Returned for Further Training')">Return</button>
-        <button class="danger" onclick="deleteRecord('toolbox',${r.id})">Delete</button>
-      </td>
-    </tr>`).join('');
-    if(!rows.length) $('managerTestRows').innerHTML='<tr><td colspan="9">No test records found.</td></tr>';
-  }catch(e){$('managerTestRows').innerHTML='<tr><td colspan="9">'+e.message+'</td></tr>'}
-}
-async function signoffTest(id,status){
-  try{
-    const notes=prompt('Manager notes / comments:', status==='Completed'?'Completed and signed off.':'Returned for further training.');
-    const j=await api('/api/toolbox-test',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({id,status,manager_name:user.name,manager_notes:notes||''})});
-    await loadManagerTests();
-  }catch(e){alert(e.message)}
-}
-async function manualAddTestRecord(){
-  try{
-    const body={role:user.role,engineer_name:$('mtEngineer').value,test_type:$('mtType').value||'Manual Test Record',score:Number($('mtScore').value||0),result:$('mtResult').value,status:$('mtStatus').value,manager_name:user.name,manager_notes:$('mtNotes').value};
-    const j=await api('/api/toolbox-test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    $('mtMsg').textContent='Manual test record added ID '+j.id;
-    await loadManagerTests();
-  }catch(e){$('mtMsg').textContent=e.message}
-}
-async function loadRecordManager(){
-  if(user.role!=='manager') return;
-  try{
-    const d=await api('/api/dashboard');
-    $('rmAuditRows').innerHTML=(d.audits||[]).map(a=>`<tr><td>${a.id||String(a.ref||'').replace('HBS-','')}</td><td>${a.ref}</td><td>${a.date}</td><td>${a.engineer}</td><td>${a.site}</td><td>${a.score}</td><td>${a.result}</td><td><button class="danger" onclick="deleteRecord('audit','${a.id||String(a.ref||'').replace('HBS-','')}')">Delete</button></td></tr>`).join('');
-  }catch(e){$('rmAuditRows').innerHTML='<tr><td colspan="8">'+e.message+'</td></tr>'}
-  try{
-    const t=await api('/api/toolbox-test?role=manager');
-    const rows=t.results||t.records||t.tests||[];
-    $('rmTestRows').innerHTML=rows.map(r=>`<tr><td>${r.id}</td><td>${r.engineer_name||r.engineer||''}</td><td>${r.test_type||r.assessment_type||'Toolbox Test'}</td><td>${r.score||''}</td><td>${r.status||''}</td><td><button class="danger" onclick="deleteRecord('toolbox',${r.id})">Delete</button></td></tr>`).join('');
-  }catch(e){$('rmTestRows').innerHTML='<tr><td colspan="6">'+e.message+'</td></tr>'}
-}
-async function deleteRecordById(){ await deleteRecord($('delType').value,$('delId').value); }
-async function deleteRecord(type,id){
-  if(!id){alert('Enter a record ID');return;}
-  if(!confirm('Delete '+type+' record ID '+id+'? This cannot be undone unless you have a backup.')) return;
-  try{
-    const j=await api('/api/admin-delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({role:user.role,type,id,manager:user.name})});
-    $('delMsg').textContent=j.message||'Record deleted.';
-    if(type==='toolbox') await loadManagerTests();
-    await loadRecordManager();
-    if(user.role==='manager') await loadDashboard();
-  }catch(e){$('delMsg').textContent=e.message}
-}
-
-
-async function completeTraining(id){
-  try{
-    await api('/api/training',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed',manager_name:user.name})});
-    await loadTraining();
-    await loadDashboard();
-  }catch(e){alert(e.message)}
-}
-async function returnTraining(id){
-  try{
-    const notes=prompt('Reason / further training required:','Returned for further training.');
-    await api('/api/training',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Returned for Further Training',manager_name:user.name,manager_notes:notes||''})});
-    await loadTraining();
-  }catch(e){alert(e.message)}
-}
-
-
-async function loadComplianceKpis(){
-  if(user.role!=='manager') return;
-  try{
-    const j=await api('/api/enterprise');
-    const s=j.summary||{};
-    $('kpiOverall').textContent=(s.overall_compliance||0)+'%';
-    $('kpiOpenTraining').textContent=s.open_training||0;
-    $('kpiOpenReaudits').textContent=s.open_reaudits||0;
-    $('kpiFails').textContent=s.failed_audits||0;
-    $('kpiTightness').textContent=s.tightness_tests||0;
-    $('kpiDocs').textContent=s.documents||0;
-    $('notificationRows').innerHTML=(j.notifications||[]).map(n=>`<tr><td>${n.priority}</td><td>${n.message}</td><td>${n.action}</td></tr>`).join('');
-  }catch(e){$('notificationRows').innerHTML='<tr><td colspan="3">'+e.message+'</td></tr>'}
-}
-async function loadCompetencyCentre(){
-  if(user.role!=='manager') return;
-  try{
-    const j=await api('/api/competency');
-    $('competencyRows').innerHTML=(j.engineers||[]).map(e=>`<tr>
-      <td>${e.engineer}</td><td>${e.audits}</td><td>${e.average_score}%</td><td>${e.fails}</td><td>${e.open_training}</td>
-      <td>${e.tests}</td><td>${e.tightness_tests}</td><td>${e.status}</td>
-      <td><button onclick="showCompetencyDetail('${String(e.engineer).replace(/'/g,"\\'")}')">View</button></td>
-    </tr>`).join('');
-    window._competency=j.engineers||[];
-  }catch(e){$('competencyRows').innerHTML='<tr><td colspan="9">'+e.message+'</td></tr>'}
-}
-function showCompetencyDetail(engineer){
-  const e=(window._competency||[]).find(x=>x.engineer===engineer);
-  if(!e){$('competencyDetail').textContent='Record not found.';return;}
-  $('competencyDetail').innerHTML=`<table>
-    <tr><th>Engineer</th><td>${e.engineer}</td></tr>
-    <tr><th>Audits</th><td>${e.audits}</td></tr>
-    <tr><th>Average Score</th><td>${e.average_score}%</td></tr>
-    <tr><th>Failed Audits</th><td>${e.fails}</td></tr>
-    <tr><th>Open Training</th><td>${e.open_training}</td></tr>
-    <tr><th>Completed Training</th><td>${e.completed_training}</td></tr>
-    <tr><th>Toolbox / Competency Tests</th><td>${e.tests}</td></tr>
-    <tr><th>Tightness Tests</th><td>${e.tightness_tests}</td></tr>
-    <tr><th>Status</th><td>${e.status}</td></tr>
-    <tr><th>Recommended Action</th><td>${e.recommended_action}</td></tr>
-  </table>`;
-}
-
-
-
-const AUDIT_QUESTIONS = [
-  'Correct job/site risk assessment completed before work started',
-  'Gas Safe registration and engineer competency appropriate for work',
-  'Manufacturer instructions available and followed',
-  'Correct isolation, safe access and working area controls applied',
-  'Ventilation requirements checked and confirmed',
-  'Flue route, termination and integrity checked',
-  'Combustion analysis completed and recorded correctly',
-  'CO/CO2 ratio and combustion readings within acceptable limits',
-  'Inlet working pressure checked and recorded',
-  'Burner pressure checked where applicable or limitation recorded',
-  'Gas tightness / local tightness test completed where required',
-  'Safety devices and interlocks checked',
-  'Condensate, discharge and controls checked',
-  'Defects classified correctly as NCS / AR / ID where applicable',
-  'Warning notices / labels applied where required',
-  'Customer / site contact informed of findings',
-  'Photographic evidence captured where required',
-  'Service sheet / CP15 / Joblogic record completed accurately',
-  'Engineer demonstrated safe working and technical understanding',
-  'Overall workmanship and professionalism acceptable'
-];
-
-function renderAuditQuestions(){
-  const body=$('auditQuestionRows');
-  if(!body) return;
-  body.innerHTML=AUDIT_QUESTIONS.map((q,i)=>`<tr>
-    <td>${i+1}</td>
-    <td>${q}</td>
-    <td><select class="auditResp" onchange="calculateAuditScore()"><option value="">Select</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="na">N/A</option></select></td>
-    <td><input class="auditFinding" placeholder="Evidence / finding"></td>
-  </tr>`).join('');
-}
-function calculateAuditScore(){
-  const responses=[...document.querySelectorAll('.auditResp')];
-  const applicable=responses.filter(r=>r.value && r.value!=='na');
-  const passes=applicable.filter(r=>r.value==='pass').length;
-  const fails=applicable.filter(r=>r.value==='fail').length;
-  const score=applicable.length?Math.round((passes/applicable.length)*100):0;
-  let result='Awaiting completion', action='Complete audit questions';
-  if(applicable.length){
-    if(score>=95){result='Excellent'; action='No action required'}
-    else if(score>=85){result='Pass'; action='Monitor through normal audit cycle'}
-    else if(score>=75){result='Improvement Required'; action='Assign refresher training and re-audit'}
-    else {result='Fail'; action='Manager review, training and re-audit required'}
-  }
-  if($('aClassification') && ['AR','ID'].includes($('aClassification').value)){
-    result='Fail';
-    action='Unsafe situation identified - manager review required';
-  }
-  $('aScoreOut').textContent=score+'%';
-  $('aResultOut').textContent=result;
-  $('aActionOut').textContent=action;
-  return {score,result,action,fails};
-}
-function resetAuditForm(){
-  ['aSite','aClient','aManufacturer','aModel','aAsset','aCO','aCO2','aO2','aFlueTemp','aEfficiency','aRatio','aInletPressure','aBurnerPressure','aFindings','aPositive'].forEach(id=>{if($(id))$(id).value=''});
-  renderAuditQuestions();
-  calculateAuditScore();
-}
-function collectAuditData(){
-  const calc=calculateAuditScore();
-  const questions=[...document.querySelectorAll('#auditQuestionRows tr')].map((tr,i)=>({
-    no:i+1,
-    question:AUDIT_QUESTIONS[i],
-    response:tr.querySelector('.auditResp')?.value||'',
-    finding:tr.querySelector('.auditFinding')?.value||''
-  }));
-  return {
-    role:user.role,
-    engineer_name:$('aEngineer').value,
-    site_name:$('aSite').value,
-    client:$('aClient').value,
-    audit_date:$('aDate').value,
-    auditor:$('aAuditor').value,
-    audit_type:$('aAuditType').value,
-    manufacturer:$('aManufacturer').value,
-    model:$('aModel').value,
-    asset_number:$('aAsset').value,
-    gas_type:$('aGasType').value,
-    classification:$('aClassification').value,
-    training_required:$('aTrainingRequired').value,
-    findings:$('aFindings').value,
-    positive_observations:$('aPositive').value,
-    combustion:{co:$('aCO').value,co2:$('aCO2').value,o2:$('aO2').value,flue_temp:$('aFlueTemp').value,efficiency:$('aEfficiency').value,ratio:$('aRatio').value,inlet_pressure:$('aInletPressure').value,burner_pressure:$('aBurnerPressure').value},
-    questions,
-    score:calc.score,
-    result:calc.result,
-    required_action:calc.action
-  };
-}
-async function loadAuditHistory(){
-  const role=user.role, engineer=encodeURIComponent(user.name||'');
-  try{
-    const j=await api(`/api/audits?role=${role}&engineer=${engineer}`);
-    const rows=j.audits||[];
-    window._auditHistory=rows;
-    $('auditHistoryRows').innerHTML=rows.map(a=>`<tr>
-      <td>${a.ref||('HBS-'+a.id)}</td><td>${a.audit_date||a.created_at||''}</td><td>${a.engineer_name||''}</td><td>${a.site_name||''}</td>
-      <td>${a.manufacturer||''}</td><td>${a.model||''}</td><td>${a.score||0}</td><td>${a.result||''}</td>
-      <td><button onclick="viewAuditDetail(${a.id})">Review</button></td>
-    </tr>`).join('');
-    if(!rows.length) $('auditHistoryRows').innerHTML='<tr><td colspan="9">No audits found.</td></tr>';
-  }catch(e){$('auditHistoryRows').innerHTML='<tr><td colspan="9">'+e.message+'</td></tr>'}
-}
-function viewAuditDetail(id){
-  const a=(window._auditHistory||[]).find(x=>Number(x.id)===Number(id));
-  if(!a){$('auditDetail').textContent='Audit not found.';return;}
-  let data={};
-  try{data=JSON.parse(a.audit_json||'{}')}catch(e){}
-  const qs=data.questions||[];
-  $('auditDetail').innerHTML=`<table>
-    <tr><th>Reference</th><td>${a.ref||('HBS-'+a.id)}</td></tr>
-    <tr><th>Engineer</th><td>${a.engineer_name||''}</td></tr>
-    <tr><th>Site</th><td>${a.site_name||''}</td></tr>
-    <tr><th>Date</th><td>${a.audit_date||''}</td></tr>
-    <tr><th>Auditor</th><td>${a.auditor||''}</td></tr>
-    <tr><th>Manufacturer / Model</th><td>${a.manufacturer||''} ${a.model||''}</td></tr>
-    <tr><th>Score / Result</th><td>${a.score||0}% - ${a.result||''}</td></tr>
-    <tr><th>Classification</th><td>${data.classification||''}</td></tr>
-    <tr><th>Training Required</th><td>${a.training_required||data.training_required||''}</td></tr>
-    <tr><th>Findings</th><td>${a.findings||data.findings||''}</td></tr>
-  </table>
-  <h4>Question Results</h4>
-  <table><thead><tr><th>No</th><th>Question</th><th>Response</th><th>Finding</th></tr></thead><tbody>
-  ${qs.map(q=>`<tr><td>${q.no}</td><td>${q.question}</td><td>${q.response}</td><td>${q.finding||''}</td></tr>`).join('')}
-  </tbody></table>`;
-}
-
-
-// --- HBS Compliance Manager v7 Role & Engineer Filtering ---
-const HBS_MANAGERS = ['Peter Taylor','Eward Richards','Lucy Coppage'];
-const HBS_NON_ENGINEER_USERS = ['Peter Taylor','Eward Richards','Lucy Coppage',''];
-function hbsIsEngineerName(name){
-  return !!name && !HBS_NON_ENGINEER_USERS.map(x=>x.toLowerCase()).includes(String(name).toLowerCase());
-}
-function hbsRoleLabel(role){
-  return role==='manager'?'Manager':role==='senior_engineer'?'Senior Engineer':'Engineer';
-}
-const _hbsOldPopulateEngineerSelects = typeof populateEngineerSelects === 'function' ? populateEngineerSelects : null;
-if(_hbsOldPopulateEngineerSelects){
-  populateEngineerSelects = async function(){
-    try{
-      const j=await api('/api/users');
-      const users=(j.users||[]).filter(u=>hbsIsEngineerName(u.name));
-      ['aEngineer','tmEngineer','mtEngineer'].forEach(id=>{
-        const s=$(id);
-        if(s) s.innerHTML=users.map(u=>`<option>${u.name}</option>`).join('');
-      });
-    }catch(e){console.warn(e)}
-    if($('aDate')) $('aDate').value=new Date().toISOString().slice(0,10);
-    if($('aAuditor')) $('aAuditor').value=user?.name||'';
-  }
-}
-function loadSettingsCentre(){}
-
+async function api(url,opts){const r=await fetch(url,opts||{cache:'no-store'});const t=await r.text();let j;try{j=JSON.parse(t)}catch(e){throw new Error(t.slice(0,300))}if(!r.ok||j.ok===false)throw new Error(j.error||('HTTP '+r.status));return j}
+function show(id){document.querySelectorAll('.section').forEach(s=>s.classList.add('hide'));$(id)?.classList.remove('hide')}
+async function testLoginApi(){try{const j=await api('/api/login?user=peter@hbs.local&pin=3110');$('loginMsg').textContent='API OK: '+j.user.name+' / '+j.user.role}catch(e){$('loginMsg').textContent=e.message}}
+async function login(){try{const login=$('loginEmail').value.trim(),pin=$('loginPin').value.trim();const j=await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:login,username:login,pin,password:pin})});user=j.user;localStorage.setItem('hbs_user',JSON.stringify(user));startApp()}catch(e){$('loginMsg').textContent=e.message}}
+function logout(){localStorage.removeItem('hbs_user');location.reload()}
+function startApp(){$('loginCard').classList.add('hide');$('app').classList.remove('hide');$('loginStatus').textContent=`Logged in: ${user.name} (${roleLabel(user.role)})`;buildNav();populateEngineerSelects();renderAuditQuestions();$('aDate').value=new Date().toISOString().slice(0,10);$('aAuditor').value=user.name;if(user.role==='manager'){show('dashboard');loadDashboard()}else{show('auditHistory');loadAuditHistory()}}
+function buildNav(){const menus={manager:[['Dashboard','dashboard'],['Conduct Audit','auditForm'],['Audit History','auditHistory'],['Training Centre','trainingView'],['Competency Centre','competencyCentre'],['Toolbox Tests','managerTestSignoff'],['Tightness Test Centre','tightnessCalculator'],['Knowledge Centre','knowledgeCentre'],['Users','userAdmin'],['Record Management','recordManager'],['Logout','logout']],senior_engineer:[['Conduct Audit','auditForm'],['Audit History','auditHistory'],['Toolbox Tests','managerTestSignoff'],['Tightness Test Centre','tightnessCalculator'],['Knowledge Centre','knowledgeCentre'],['Logout','logout']],engineer:[['My Records','auditHistory'],['Training','trainingView'],['Toolbox Tests','managerTestSignoff'],['Tightness Test Centre','tightnessCalculator'],['Knowledge Centre','knowledgeCentre'],['Logout','logout']]};$('navButtons').innerHTML='';(menus[user.role]||menus.engineer).forEach(([label,id])=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>{if(id==='logout')logout();else{show(id);if(id==='dashboard')loadDashboard();if(id==='auditHistory')loadAuditHistory();if(id==='trainingView')loadTraining();if(id==='competencyCentre')loadCompetencyCentre();if(id==='managerTestSignoff')loadManagerTests();if(id==='tightnessCalculator')loadTightnessRecords();if(id==='knowledgeCentre')loadKnowledgeCentre();if(id==='userAdmin')loadUsers();}};$('navButtons').appendChild(b)})}
+async function populateEngineerSelects(){try{const j=await api('/api/users');const eng=(j.users||[]).filter(u=>isEngineerName(u.name));['aEngineer','mtEngineer'].forEach(id=>{if($(id))$(id).innerHTML=eng.map(u=>`<option>${u.name}</option>`).join('')})}catch(e){console.warn(e)}}
+function renderAuditQuestions(){if(!$('auditQuestionRows'))return;$('auditQuestionRows').innerHTML=AUDIT_QUESTIONS.map((q,i)=>`<tr><td>${i+1}</td><td>${q}</td><td><select class="auditResp" onchange="calculateAuditScore()"><option value="">Select</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="na">N/A</option></select></td><td><input class="auditFinding"></td></tr>`).join('')}
+function calculateAuditScore(){const r=[...document.querySelectorAll('.auditResp')],app=r.filter(x=>x.value&&x.value!=='na'),pass=app.filter(x=>x.value==='pass').length;const score=app.length?Math.round(pass/app.length*100):0;let result='Awaiting completion',action='Complete audit questions';if(app.length){if(score>=95){result='Excellent';action='No action required'}else if(score>=85){result='Pass';action='Monitor'}else if(score>=75){result='Improvement Required';action='Assign training and re-audit'}else{result='Fail';action='Manager review, training and re-audit required'}}if($('aClassification')&&['AR','ID'].includes($('aClassification').value)){result='Fail';action='Unsafe situation identified'}$('aScoreOut').textContent=score+'%';$('aResultOut').textContent=result;$('aActionOut').textContent=action;return{score,result,action}}
+function collectAuditData(){const c=calculateAuditScore();return{role:user.role,engineer_name:$('aEngineer').value,site_name:$('aSite').value,client:$('aClient').value,audit_date:$('aDate').value,auditor:$('aAuditor').value,audit_type:$('aAuditType').value,manufacturer:$('aManufacturer').value,model:$('aModel').value,asset_number:$('aAsset').value,classification:$('aClassification').value,training_required:$('aTrainingRequired').value,findings:$('aFindings').value,positive_observations:$('aPositive').value,score:c.score,result:c.result,required_action:c.action,combustion:{co:$('aCO').value,co2:$('aCO2').value,o2:$('aO2').value,flue_temp:$('aFlueTemp').value,efficiency:$('aEfficiency').value,ratio:$('aRatio').value,inlet_pressure:$('aInletPressure').value},questions:[...document.querySelectorAll('#auditQuestionRows tr')].map((tr,i)=>({no:i+1,question:AUDIT_QUESTIONS[i],response:tr.querySelector('.auditResp').value,finding:tr.querySelector('.auditFinding').value}))}}
+async function saveAudit(){try{const b=collectAuditData();if(!b.engineer_name||!b.site_name){$('auditMsg').textContent='Engineer and site name are required.';return}const j=await api('/api/audits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});$('auditMsg').textContent='Saved '+(j.ref||('HBS-'+j.id));loadDashboard()}catch(e){$('auditMsg').textContent=e.message}}
+function resetAuditForm(){renderAuditQuestions();calculateAuditScore()}
+async function loadDashboard(){try{const j=await api('/api/dashboard');const s=j.summary||{};$('stTotal').textContent=s.total_audits||0;$('stAvg').textContent=(s.average_score||0)+'%';$('stPassRate').textContent=(s.pass_rate||0)+'%';$('stExcellent').textContent=s.excellent||0;$('stPass').textContent=s.pass||0;$('stImprovement').textContent=s.improvement||0;$('stFail').textContent=s.fail||0;$('stOpen').textContent=(s.open_training||0)+' / '+(s.open_reaudits||0);$('leagueRows').innerHTML=(j.league||[]).map((r,i)=>`<tr><td>${i+1}</td><td>${r.engineer}</td><td>${r.audits}</td><td>${r.avg_score}%</td><td>${r.excellent}</td><td>${r.improvement}</td><td>${r.fails}</td></tr>`).join('');$('auditRows').innerHTML=(j.audits||[]).map(a=>`<tr><td>${a.ref}</td><td>${a.date}</td><td>${a.engineer}</td><td>${a.site}</td><td>${a.manufacturer}</td><td>${a.model}</td><td>${a.score}</td><td>${a.result}</td><td><button onclick="viewAuditDetailByRef('${a.ref}')">Review</button></td></tr>`).join('')}catch(e){$('dashboardMsg').textContent=e.message}}
+async function loadAuditHistory(){const role=user.role,eng=encodeURIComponent(user.name);try{const j=await api(`/api/audits?role=${role}&engineer=${eng}`);window._auditHistory=j.audits||[];$('auditHistoryRows').innerHTML=window._auditHistory.map(a=>`<tr><td>${a.ref||'HBS-'+a.id}</td><td>${a.audit_date||a.created_at||''}</td><td>${a.engineer_name||''}</td><td>${a.site_name||''}</td><td>${a.manufacturer||''}</td><td>${a.model||''}</td><td>${a.score||0}</td><td>${a.result||''}</td><td><button onclick="viewAuditDetail(${a.id})">Review</button></td></tr>`).join('')}catch(e){$('auditHistoryRows').innerHTML='<tr><td colspan=9>'+e.message+'</td></tr>'}}
+function viewAuditDetailByRef(ref){show('auditHistory');loadAuditHistory().then(()=>{const a=(window._auditHistory||[]).find(x=>(x.ref||'HBS-'+x.id)===ref);if(a)viewAuditDetail(a.id)})}
+function viewAuditDetail(id){const a=(window._auditHistory||[]).find(x=>Number(x.id)===Number(id));if(!a)return;let d={};try{d=JSON.parse(a.audit_json||'{}')}catch(e){};$('auditDetail').innerHTML=`<table><tr><th>Ref</th><td>${a.ref||'HBS-'+a.id}</td></tr><tr><th>Engineer</th><td>${a.engineer_name}</td></tr><tr><th>Site</th><td>${a.site_name}</td></tr><tr><th>Score / Result</th><td>${a.score}% - ${a.result}</td></tr><tr><th>Findings</th><td>${a.findings||''}</td></tr></table><h4>Question Results</h4><table><thead><tr><th>No</th><th>Question</th><th>Response</th><th>Finding</th></tr></thead><tbody>${(d.questions||[]).map(q=>`<tr><td>${q.no}</td><td>${q.question}</td><td>${q.response}</td><td>${q.finding||''}</td></tr>`).join('')}</tbody></table>`}
+async function loadTraining(){const role=user.role,eng=encodeURIComponent(user.name);const [t,r]=await Promise.all([api(`/api/training?role=${role}&engineer=${eng}`).catch(e=>({training:[]})),api(`/api/reaudits?role=${role}&engineer=${eng}`).catch(e=>({reaudits:[]}))]);$('trainingRows').innerHTML=(t.training||[]).map(x=>`<tr><td>${x.id||''}</td><td>${x.engineer_name||''}</td><td>${x.training_type||''}</td><td>${x.assigned_date||''}</td><td>${x.status||''}</td><td>${x.completion_date||''}</td><td>${user.role==='manager'?`<button onclick="completeTraining(${x.id})">Complete</button><button class=danger onclick="deleteRecord('training',${x.id})">Delete</button>`:''}</td></tr>`).join('');$('reauditRows').innerHTML=(r.reaudits||[]).map(x=>`<tr><td>${x.audit_ref||''}</td><td>${x.engineer_name||''}</td><td>${x.due_date||''}</td><td>${x.status||''}</td></tr>`).join('')}
+async function completeTraining(id){await api('/api/training',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed',manager_name:user.name})});loadTraining();loadDashboard()}
+async function loadCompetencyCentre(){try{const j=await api('/api/competency');window._competency=j.engineers||[];$('competencyRows').innerHTML=window._competency.map(e=>`<tr><td>${e.engineer}</td><td>${e.audits}</td><td>${e.average_score}%</td><td>${e.fails}</td><td>${e.open_training}</td><td>${e.tests}</td><td>${e.tightness_tests}</td><td>${e.status}</td><td><button onclick="showCompetencyDetail('${String(e.engineer).replace(/'/g,"\\'")}')">View</button></td></tr>`).join('')}catch(e){$('competencyRows').innerHTML='<tr><td colspan=9>'+e.message+'</td></tr>'}}
+function showCompetencyDetail(name){const e=(window._competency||[]).find(x=>x.engineer===name);$('competencyDetail').innerHTML=e?`<table><tr><th>Engineer</th><td>${e.engineer}</td></tr><tr><th>Status</th><td>${e.status}</td></tr><tr><th>Recommended Action</th><td>${e.recommended_action}</td></tr></table>`:'Not found'}
+async function loadManagerTests(){try{const j=await api(`/api/toolbox-test?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);const rows=j.results||[];$('managerTestRows').innerHTML=rows.map(r=>`<tr><td>${r.id}</td><td>${r.engineer_name||''}</td><td>${r.test_type||'Toolbox Test'}</td><td>${r.score||''}</td><td>${r.result||''}</td><td>${r.status||''}</td><td>${r.created_at||''}</td><td>${user.role==='manager'?`<button onclick="signoffTest(${r.id},'Completed')">Complete</button><button class=danger onclick="deleteRecord('toolbox',${r.id})">Delete</button>`:''}</td></tr>`).join('')}catch(e){$('managerTestRows').innerHTML='<tr><td colspan=8>'+e.message+'</td></tr>'}}
+async function signoffTest(id,status){await api('/api/toolbox-test',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({id,status,manager_name:user.name})});loadManagerTests()}
+async function manualAddTestRecord(){try{const body={role:user.role,engineer_name:$('mtEngineer').value,test_type:$('mtType').value,score:Number($('mtScore').value||0),result:$('mtResult').value,status:$('mtStatus').value,manager_name:user.name,manager_notes:$('mtNotes').value};const j=await api('/api/toolbox-test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});$('mtMsg').textContent='Added ID '+j.id;loadManagerTests()}catch(e){$('mtMsg').textContent=e.message}}
+async function loadTightnessRecords(){const j=await api(`/api/tightness?role=${user.role}&engineer=${encodeURIComponent(user.name)}`);$('ttRows').innerHTML=(j.records||[]).map(r=>`<tr><td>${r.id}</td><td>${r.test_date||''}</td><td>${r.engineer_name||''}</td><td>${r.site_name||''}</td><td>${Number(r.installation_volume||0).toFixed(6)}</td><td>${Number(r.measured_drop||0).toFixed(3)}</td><td>${r.outcome||''}</td></tr>`).join('')}
+async function loadKnowledgeCentre(){try{const q=encodeURIComponent($('kcSearch')?.value||''),cat=encodeURIComponent($('kcFilter')?.value||'');const j=await api(`/api/library?q=${q}&category=${cat}`);$('kcRows').innerHTML=(j.documents||[]).map(d=>`<tr><td>${d.title}</td><td>${d.category}</td><td>${d.reference||''}</td><td>${d.keywords||''}</td><td>${d.created_at||''}</td><td><button onclick="openDoc(${d.id})">Open</button></td></tr>`).join('')}catch(e){$('kcRows').innerHTML='<tr><td colspan=6>'+e.message+'</td></tr>'}}
+async function openDoc(id){const j=await api('/api/library?id='+id+'&open_by='+encodeURIComponent(user.name));if(j.document?.file_url)window.open(j.document.file_url,'_blank')}
+async function loadUsers(){const j=await api('/api/users');$('userRows').innerHTML=(j.users||[]).map(u=>`<tr><td>${u.name}</td><td>${u.email}</td><td>${roleLabel(u.role)}</td><td>${u.title||''}</td><td>${u.pin||''}</td></tr>`).join('')}
+async function deleteRecordById(){await deleteRecord($('delType').value,$('delId').value)}
+async function deleteRecord(type,id){if(!confirm('Delete '+type+' '+id+'?'))return;const j=await api('/api/admin-delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({role:user.role,type,id,manager:user.name})});$('delMsg').textContent=j.message||'Deleted';loadDashboard()}
+try{const s=localStorage.getItem('hbs_user');if(s){user=JSON.parse(s);startApp()}}catch(e){}
 </script>
 </body>
 </html>
