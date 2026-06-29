@@ -6,8 +6,31 @@ function outcome(score){
   return 'Fail';
 }
 
+async function ensureAudits(env){
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS audits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    engineer_name TEXT,
+    site_name TEXT,
+    client TEXT,
+    audit_date TEXT,
+    auditor TEXT,
+    appliance_type TEXT,
+    manufacturer TEXT,
+    model TEXT,
+    serial_number TEXT,
+    asset_number TEXT,
+    score REAL,
+    result TEXT,
+    findings TEXT,
+    training_required TEXT,
+    audit_json TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`).run();
+}
+
 export async function onRequestGet({ request, env }) {
   try {
+    await ensureAudits(env);
     const url = new URL(request.url);
     const role = url.searchParams.get('role') || 'engineer';
     const engineer = url.searchParams.get('engineer') || '';
@@ -32,6 +55,7 @@ export async function onRequestGet({ request, env }) {
 
 export async function onRequestPost({ request, env }) {
   try {
+    await ensureAudits(env);
     const body = await request.json();
     const role = body.role || 'engineer';
 
@@ -39,17 +63,17 @@ export async function onRequestPost({ request, env }) {
       return Response.json({ ok:false, error:'Only managers or senior engineers can create audits' }, { status:403 });
     }
 
-    const score = Number(body.score || 0);
-    const result = body.result || outcome(score);
+    const score = Number(body.score || body.calculated_score || 0);
+    const result = body.result || body.outcome || outcome(score);
 
     const ins = await env.DB.prepare(`INSERT INTO audits
       (engineer_name, site_name, client, audit_date, auditor, appliance_type, manufacturer, model, serial_number, asset_number, score, result, findings, training_required, audit_json)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
       .bind(
-        body.engineer_name || '',
-        body.site_name || '',
+        body.engineer_name || body.engineer || '',
+        body.site_name || body.site || '',
         body.client || '',
-        body.audit_date || new Date().toISOString().slice(0,10),
+        body.audit_date || body.date || new Date().toISOString().slice(0,10),
         body.auditor || body.created_by || '',
         body.appliance_type || '',
         body.manufacturer || '',
