@@ -2,6 +2,7 @@ async function columnExists(env, table, column) {
   const info = await env.DB.prepare(`PRAGMA table_info(${table})`).all();
   return (info.results || []).some(c => c.name === column);
 }
+
 async function ensureTable(env) {
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS tightness_records (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,32 +26,49 @@ async function ensureTable(env) {
     details_json TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`).run();
+
   if (!(await columnExists(env,'tightness_records','details_json'))) {
     await env.DB.prepare(`ALTER TABLE tightness_records ADD COLUMN details_json TEXT`).run();
   }
 }
+
 export async function onRequestGet({ request, env }) {
   try {
     await ensureTable(env);
+
     const url = new URL(request.url);
     const role = url.searchParams.get('role') || 'engineer';
     const engineer = url.searchParams.get('engineer') || '';
+
     let rows;
+
     if (role === 'manager') {
-      rows = await env.DB.prepare('SELECT * FROM tightness_records ORDER BY id DESC LIMIT 500').all();
+      rows = await env.DB.prepare(`
+        SELECT * FROM tightness_records
+        ORDER BY id DESC
+        LIMIT 500
+      `).all();
     } else {
-      rows = await env.DB.prepare('SELECT * FROM tightness_records WHERE lower(engineer_name)=lower(?) ORDER BY id DESC LIMIT 200')
-        .bind(engineer).all();
+      // Privacy rule: engineers and senior engineers can only view their own tightness test records.
+      rows = await env.DB.prepare(`
+        SELECT * FROM tightness_records
+        WHERE lower(engineer_name)=lower(?)
+        ORDER BY id DESC
+        LIMIT 200
+      `).bind(engineer).all();
     }
+
     return Response.json({ ok:true, records: rows.results || [] });
   } catch (e) {
     return Response.json({ ok:false, error:e.message }, { status:500 });
   }
 }
+
 export async function onRequestPost({ request, env }) {
   try {
     await ensureTable(env);
     const b = await request.json();
+
     const ins = await env.DB.prepare(`INSERT INTO tightness_records (
       engineer_name, role, site_name, client, audit_ref, test_date, area_tested, test_type,
       installation_volume, test_pressure, stabilisation_time, test_duration, measured_drop,
@@ -76,6 +94,7 @@ export async function onRequestPost({ request, env }) {
         b.notes || '',
         b.details_json || ''
       ).run();
+
     return Response.json({ ok:true, id: ins.meta?.last_row_id });
   } catch (e) {
     return Response.json({ ok:false, error:e.message }, { status:500 });
