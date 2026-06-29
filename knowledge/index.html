@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HBS Knowledge Centre</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f7fb;color:#071b34}
+header{background:#123f6d;color:white;padding:20px}
+.card{background:white;margin:14px;padding:16px;border:1px solid #d3dfed;border-radius:10px;box-shadow:0 1px 4px #0001}
+button{background:#123f6d;color:white;border:0;border-radius:8px;padding:9px 12px;font-weight:700;margin:3px;cursor:pointer}
+button.secondary{background:#52677f}
+input,select{font:inherit;padding:9px;border:1px solid #b8c8d8;border-radius:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.toolbar{display:flex;gap:5px;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border-bottom:1px solid #e3eaf2;text-align:left;padding:8px;vertical-align:top}
+th{background:#eef4fb}
+.muted{color:#52677f;font-size:13px}
+.small{font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>HBS Knowledge Centre</h1>
+  <div>Technical reference area for IGEM Standards, Gas Safe guidance, manufacturer manuals and HBS documents.</div>
+</header>
+
+<section class="card">
+  <p>
+    <button onclick="location.href='/'">Back to Portal</button>
+    <button onclick="load()">Refresh</button>
+  </p>
+
+  <div class="toolbar">
+    <button onclick="setCat('')">All Documents</button>
+    <button onclick="setCat('IGEM Standards')">IGEM Standards</button>
+    <button onclick="setCat('Manufacturer Manuals')">Manufacturer Manuals</button>
+    <button onclick="setCat('HBS Bulletins')">HBS Bulletins</button>
+    <button onclick="setCat('Gas Safe Guidance')">Gas Safe Guidance</button>
+    <button onclick="setCat('Gas Installer Magazine')">Gas Installer Magazine</button>
+  </div>
+
+  <h3>Manufacturers</h3>
+  <div id="manufacturerButtons" class="toolbar"></div>
+
+  <div class="grid">
+    <label>Search<br><input id="q" placeholder="Search title, category, reference, keyword"></label>
+    <label>Category<br>
+      <select id="category">
+        <option value="">All Categories</option>
+        <option>IGEM Standards</option>
+        <option>Manufacturer Manuals</option>
+        <option>HBS Bulletins</option>
+        <option>Gas Safe Guidance</option>
+        <option>Gas Installer Magazine</option>
+        <option>Technical Images</option>
+        <option>Training Videos</option>
+        <option>Fault Library</option>
+      </select>
+    </label>
+  </div>
+
+  <p><button onclick="load()">Search</button></p>
+  <p id="msg" class="muted"></p>
+
+  <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Reference</th>
+          <th>Keywords</th>
+          <th>Uploaded</th>
+          <th>File</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+const manufacturers=['ACV','Adveco','Andrews','AO Smith','Atag','Baxi','Buderus','Carrier','De Dietrich','Elco','Ferroli','Hamworthy','Hoval','Ideal','Intergas','Keston','Lochinvar','MHS','Nu-Way','Potterton','Powrmatic','Remeha','Riello','Robur','Stokvis','Strebel','Vaillant','Viessmann','Worcester Bosch','Wolf'];
+
+function safe(v){return v==null?'':String(v)}
+function setCat(cat){document.getElementById('category').value=cat;load()}
+function setManufacturer(m){document.getElementById('q').value=m;document.getElementById('category').value='Manufacturer Manuals';load()}
+
+async function api(url){
+  const r=await fetch(url,{cache:'no-store'});
+  const t=await r.text();
+  let j;
+  try{j=JSON.parse(t)}catch(e){throw new Error(t)}
+  if(!r.ok||j.ok===false)throw new Error(j.error||'API error');
+  return j;
+}
+
+async function load(){
+  try{
+    const q=encodeURIComponent(document.getElementById('q').value||'');
+    const cat=encodeURIComponent(document.getElementById('category').value||'');
+    const j=await api('/api/library?q='+q+'&category='+cat);
+    const docs=j.documents||[];
+    document.getElementById('msg').textContent=docs.length+' document(s) found.';
+    document.getElementById('rows').innerHTML=docs.map(d=>'<tr>'+
+      '<td>'+safe(d.title)+'</td>'+
+      '<td>'+safe(d.category)+'</td>'+
+      '<td>'+safe(d.reference)+'</td>'+
+      '<td>'+safe(d.keywords)+'</td>'+
+      '<td>'+safe(d.created_at)+'</td>'+
+      '<td>'+safe(d.file_name)+'</td>'+
+      '<td><button onclick="openDoc('+d.id+')">Open</button></td>'+
+      '</tr>').join('');
+  }catch(e){
+    document.getElementById('msg').textContent=e.message;
+  }
+}
+
+async function openDoc(id){
+  const j=await api('/api/library?id='+id+'&open_by=Knowledge Centre');
+  if(j.document && j.document.file_url) window.open(j.document.file_url,'_blank');
+}
+
+document.getElementById('manufacturerButtons').innerHTML=manufacturers.map(m=>'<button class="secondary" onclick="setManufacturer(\''+m.replace(/'/g,"\\'")+'\')">'+m+'</button>').join('');
+load();
+</script>
+</body>
+</html>
