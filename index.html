@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HBS Gas Audit Portal v3.0</title>
+<title>HBS Compliance Manager v7.0</title>
 <style>
 :root{--blue:#123f6d;--blue2:#2369a7;--bg:#f4f7fb;--line:#d3dfed;--muted:#52677f;--danger:#8b1e1e;--ok:#ddf5e4;--warn:#fff1c9}
 *{box-sizing:border-box}
@@ -37,8 +37,8 @@ textarea{width:100%;min-height:80px}
 </head>
 <body>
 <header class="top">
-  <h1>HBS Gas Audit Portal</h1>
-  <div>PDA/iPad audit capture, central saving, manager dashboard, engineer competency, Knowledge Centre and Tightness Calculator.</div>
+  <h1>HBS Compliance Manager</h1>
+  <div>Commercial Gas Compliance Management System</div>
   <div class="version">Version 3.0 Clean Stable Release</div>
 </header>
 
@@ -90,29 +90,6 @@ textarea{width:100%;min-height:80px}
       <div id="competencyDetail" class="muted">Select an engineer to view their competency record.</div>
     </section>
 
-    <section id="reportsCentre" class="card section hide">
-      <h2>Reports Centre</h2>
-      <p class="muted">Export audit, training, competency and tightness test data for management records.</p>
-      <div class="grid">
-        <label>Report Type<br>
-          <select id="reportType">
-            <option value="audit">Audit Register</option>
-            <option value="training">Training Records</option>
-            <option value="competency">Engineer Competency</option>
-            <option value="tightness">Tightness Tests</option>
-            <option value="kpi">Compliance KPI Summary</option>
-          </select>
-        </label>
-        <label>Engineer Filter<br><input id="reportEngineer" placeholder="Optional"></label>
-      </div>
-      <p>
-        <button onclick="downloadReport('csv')">Download CSV</button>
-        <button onclick="downloadReport('json')">Download JSON</button>
-        <button onclick="loadReportsCentre()">Preview</button>
-      </p>
-      <pre id="reportPreview" style="white-space:pre-wrap;background:#f8fafb;border:1px solid #cfd8dc;padding:10px;border-radius:8px"></pre>
-    </section>
-
     <section id="dashboard" class="card section">
       <h2>Manager Dashboard / Audit Register</h2>
       <p><button onclick="loadDashboard()">Refresh</button></p>
@@ -135,21 +112,82 @@ textarea{width:100%;min-height:80px}
       <p id="dashboardMsg" class="muted"></p>
     </section>
 
+    
     <section id="auditForm" class="card section hide">
       <h2>New Technical Audit</h2>
+      <p class="muted">Complete all relevant sections. The audit score and result are calculated from the question responses.</p>
+
+      <h3>1. Audit Header</h3>
       <div class="grid">
         <label>Engineer<br><select id="aEngineer"></select></label>
         <label>Site Name<br><input id="aSite"></label>
         <label>Client<br><input id="aClient"></label>
         <label>Audit Date<br><input id="aDate" type="date"></label>
         <label>Auditor<br><input id="aAuditor"></label>
+        <label>Audit Type<br><select id="aAuditType"><option>Routine Technical Audit</option><option>Post-Fail Re-audit</option><option>Competency Review</option><option>Incident Investigation</option></select></label>
         <label>Manufacturer<br><input id="aManufacturer"></label>
         <label>Model<br><input id="aModel"></label>
-        <label>Score %<br><input id="aScore" type="number" min="0" max="100" value="100"></label>
+        <label>Asset / Plant Ref<br><input id="aAsset"></label>
+        <label>Gas Type<br><select id="aGasType"><option>Natural Gas</option><option>LPG</option><option>Oil</option><option>Other</option></select></label>
+      </div>
+
+      <h3>2. Compliance Questions</h3>
+      <table>
+        <thead><tr><th>No</th><th>Question</th><th>Response</th><th>Finding / Evidence</th></tr></thead>
+        <tbody id="auditQuestionRows"></tbody>
+      </table>
+
+      <h3>3. Combustion / Safety Readings</h3>
+      <div class="grid">
+        <label>CO ppm<br><input id="aCO" type="number" step="0.1"></label>
+        <label>CO2 %<br><input id="aCO2" type="number" step="0.01"></label>
+        <label>O2 %<br><input id="aO2" type="number" step="0.01"></label>
+        <label>Flue Temp °C<br><input id="aFlueTemp" type="number" step="0.1"></label>
+        <label>Efficiency %<br><input id="aEfficiency" type="number" step="0.1"></label>
+        <label>Ratio<br><input id="aRatio" type="number" step="0.0001"></label>
+        <label>Inlet Working Pressure mbar<br><input id="aInletPressure" type="number" step="0.1"></label>
+        <label>Burner Pressure mbar<br><input id="aBurnerPressure" type="number" step="0.1"></label>
+      </div>
+
+      <h3>4. Classification / Findings</h3>
+      <div class="grid">
+        <label>Safety Classification<br><select id="aClassification"><option>No Defect</option><option>NCS</option><option>AR</option><option>ID</option></select></label>
+        <label>Training Required<br><select id="aTrainingRequired"><option>No</option><option>Yes - Level 1 Refresher</option><option>Yes - Level 2 Practical Assessment</option><option>Manufacturer Training</option><option>Manager Review</option></select></label>
       </div>
       <label>Findings / Corrective Actions<br><textarea id="aFindings"></textarea></label>
-      <p><button onclick="saveAudit()">Save Audit</button></p>
+      <label>Positive Observations<br><textarea id="aPositive"></textarea></label>
+
+      <h3>5. Photos</h3>
+      <input id="aPhotos" type="file" accept="image/*" multiple>
+      <p class="muted">Photos are retained with the audit where supported by the active API.</p>
+
+      <h3>6. Result</h3>
+      <div class="statgrid">
+        <div class="stat"><b>Calculated Score</b><br><b id="aScoreOut">0%</b></div>
+        <div class="stat"><b>Audit Result</b><br><b id="aResultOut">Awaiting completion</b></div>
+        <div class="stat"><b>Required Action</b><br><b id="aActionOut">Complete audit questions</b></div>
+      </div>
+
+      <p>
+        <button onclick="calculateAuditScore()">Calculate Score</button>
+        <button onclick="saveAudit()">Save Audit</button>
+        <button onclick="resetAuditForm()">Reset</button>
+      </p>
       <p id="auditMsg" class="muted"></p>
+    </section>
+
+
+    
+    <section id="auditHistory" class="card section hide">
+      <h2>Past Audit History / Audit Results</h2>
+      <p class="muted">Review previous audit results, findings, scores and actions.</p>
+      <p><button onclick="loadAuditHistory()">Refresh Audit History</button></p>
+      <table>
+        <thead><tr><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Manufacturer</th><th>Model</th><th>Score</th><th>Result</th><th>Action</th></tr></thead>
+        <tbody id="auditHistoryRows"></tbody>
+      </table>
+      <h3>Selected Audit Detail</h3>
+      <div id="auditDetail" class="muted">Select an audit to review full results.</div>
     </section>
 
     <section id="trainingView" class="card section hide">
@@ -272,6 +310,26 @@ textarea{width:100%;min-height:80px}
 
     
     <section id="backup" class="card section hide"><h2>Backup</h2><button onclick="downloadBackup()">Download Backup</button></section>
+  
+    <section id="settingsCentre" class="card section hide">
+      <h2>Settings</h2>
+      <p class="muted">Manager-only system settings for HBS Compliance Manager.</p>
+      <div class="grid">
+        <label>System Name<br><input value="HBS Compliance Manager" readonly></label>
+        <label>Primary Function<br><input value="Commercial Gas Compliance Management System" readonly></label>
+      </div>
+      <h3>Role Structure</h3>
+      <table>
+        <thead><tr><th>Role</th><th>Users</th><th>Access</th></tr></thead>
+        <tbody>
+          <tr><td>Manager</td><td>Peter Taylor, Eward Richards, Lucy Coppage</td><td>Full management access</td></tr>
+          <tr><td>Senior Engineer</td><td>Mark Fuller</td><td>Restricted audit and technical access</td></tr>
+          <tr><td>Engineer</td><td>Engineering staff only</td><td>Own records and Knowledge Centre</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Lucy Coppage is a management user only and is excluded from engineer audit lists, competency records and league tables.</p>
+    </section>
+
   </main>
 </section>
 
@@ -295,16 +353,16 @@ function logout(){localStorage.removeItem('hbs_user'); location.reload()}
 function startApp(){
   $('loginCard').classList.add('hide'); $('app').classList.remove('hide');
   $('loginStatus').textContent=`Logged in: ${user.name} (${roleLabel(user.role)})`;
-  buildNav(); populateEngineerSelects(); if(user.role==='manager'){show('dashboard'); loadDashboard();} else {show('toolboxTest')}
+  buildNav(); populateEngineerSelects(); renderAuditQuestions(); calculateAuditScore(); if(user.role==='manager'){show('dashboard'); loadDashboard();} else {show('toolboxTest')}
 }
 function buildNav(){
   const menus={
-    manager:[['New Audit','auditForm'],['My Dashboard','dashboard'],['Compliance KPIs','complianceKpis'],['Engineer Competency','competencyCentre'],['Training / Re-audits','trainingView'],['Training Management','trainingManager'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Test Results','toolboxResults'],['Manage Tests','managerTestSignoff'],['Users','userAdmin'],['Record Management','recordManager'],['Reports','reportsCentre'],['Backup','backup'],['Logout','logout']],
-    senior_engineer:[['Conduct Audit','auditForm'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Logout','logout']],
+    manager:[['Dashboard','dashboard'],['Conduct Audit','auditForm'],['Audit History','auditHistory'],['Training Centre','trainingView'],['Competency Centre','competencyCentre'],['Toolbox Tests','managerTestSignoff'],['Tightness Test Centre','tightnessCalculator'],['Knowledge Centre','knowledgeCentre'],['Users','userAdmin'],['Record Management','recordManager'],['Settings','settingsCentre'],['Logout','logout']],['My Dashboard','dashboard'],['Audit History','auditHistory'],['Compliance KPIs','complianceKpis'],['Engineer Competency','competencyCentre'],['Training / Re-audits','trainingView'],['Training Management','trainingManager'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Test Results','toolboxResults'],['Manage Tests','managerTestSignoff'],['Users','userAdmin'],['Record Management','recordManager'],['Backup','backup'],['Logout','logout']],
+    senior_engineer:[['My Records','trainingView'],['Toolbox Tests','toolboxTest'],['Tightness Test Centre','tightnessCalculator'],['Knowledge Centre','knowledgeCentre'],['Logout','logout']],['Audit History','auditHistory'],['Toolbox Tests','toolboxTest'],['Tightness Test Centre','tightnessCalculator'],['Knowledge Centre','knowledgeCentre'],['Logout','logout']],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Logout','logout']],
     engineer:[['My Dashboard','trainingView'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Logout','logout']]
   };
   $('navButtons').innerHTML='';
-  (menus[user.role]||menus.engineer).forEach(([label,id])=>{const b=document.createElement('button'); b.textContent=label; b.onclick=()=>{if(id==='logout') logout(); else {show(id); if(id==='dashboard')loadDashboard(); if(id==='trainingView')loadTraining(); if(id==='knowledgeCentre')loadKnowledgeCentre(); if(id==='tightnessCalculator')loadTightnessCalculator(); if(id==='userAdmin')loadUsers(); if(id==='managerTestSignoff')loadManagerTests(); if(id==='recordManager')loadRecordManager(); if(id==='complianceKpis')loadComplianceKpis(); if(id==='competencyCentre')loadCompetencyCentre(); if(id==='reportsCentre')loadReportsCentre(); if(id==='toolboxResults')loadToolboxResults();}}; $('navButtons').appendChild(b);});
+  (menus[user.role]||menus.engineer).forEach(([label,id])=>{const b=document.createElement('button'); b.textContent=label; b.onclick=()=>{if(id==='logout') logout(); else {show(id); if(id==='dashboard')loadDashboard(); if(id==='auditHistory')loadAuditHistory(); if(id==='trainingView')loadTraining(); if(id==='knowledgeCentre')loadKnowledgeCentre(); if(id==='tightnessCalculator')loadTightnessCalculator(); if(id==='userAdmin')loadUsers(); if(id==='managerTestSignoff')loadManagerTests(); if(id==='recordManager')loadRecordManager(); if(id==='settingsCentre')loadSettingsCentre && loadSettingsCentre(); if(id==='complianceKpis')loadComplianceKpis(); if(id==='competencyCentre')loadCompetencyCentre(); if(id==='toolboxResults')loadToolboxResults();}}; $('navButtons').appendChild(b);});
 }
 
 async function populateEngineerSelects(){
@@ -329,10 +387,11 @@ async function loadDashboard(){
 
 async function saveAudit(){
   try{
-    const score=Number($('aScore').value||0);
-    const body={role:user.role,engineer_name:$('aEngineer').value,site_name:$('aSite').value,client:$('aClient').value,audit_date:$('aDate').value,auditor:$('aAuditor').value,manufacturer:$('aManufacturer').value,model:$('aModel').value,score,result:outcome(score),findings:$('aFindings').value};
+    const body=collectAuditData();
+    if(!body.engineer_name || !body.site_name){$('auditMsg').textContent='Engineer and site name are required.';return;}
     const j=await api('/api/audits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    $('auditMsg').textContent='Saved audit '+(j.ref||('HBS-'+j.id)); if(user.role==='manager') loadDashboard();
+    $('auditMsg').textContent='Saved audit '+(j.ref||('HBS-'+j.id));
+    if(user.role==='manager') loadDashboard();
   }catch(e){$('auditMsg').textContent=e.message}
 }
 
@@ -515,18 +574,164 @@ function showCompetencyDetail(engineer){
     <tr><th>Recommended Action</th><td>${e.recommended_action}</td></tr>
   </table>`;
 }
-async function loadReportsCentre(){
-  if(user.role!=='manager') return;
-  const type=$('reportType').value, engineer=encodeURIComponent($('reportEngineer').value||'');
+
+
+
+const AUDIT_QUESTIONS = [
+  'Correct job/site risk assessment completed before work started',
+  'Gas Safe registration and engineer competency appropriate for work',
+  'Manufacturer instructions available and followed',
+  'Correct isolation, safe access and working area controls applied',
+  'Ventilation requirements checked and confirmed',
+  'Flue route, termination and integrity checked',
+  'Combustion analysis completed and recorded correctly',
+  'CO/CO2 ratio and combustion readings within acceptable limits',
+  'Inlet working pressure checked and recorded',
+  'Burner pressure checked where applicable or limitation recorded',
+  'Gas tightness / local tightness test completed where required',
+  'Safety devices and interlocks checked',
+  'Condensate, discharge and controls checked',
+  'Defects classified correctly as NCS / AR / ID where applicable',
+  'Warning notices / labels applied where required',
+  'Customer / site contact informed of findings',
+  'Photographic evidence captured where required',
+  'Service sheet / CP15 / Joblogic record completed accurately',
+  'Engineer demonstrated safe working and technical understanding',
+  'Overall workmanship and professionalism acceptable'
+];
+
+function renderAuditQuestions(){
+  const body=$('auditQuestionRows');
+  if(!body) return;
+  body.innerHTML=AUDIT_QUESTIONS.map((q,i)=>`<tr>
+    <td>${i+1}</td>
+    <td>${q}</td>
+    <td><select class="auditResp" onchange="calculateAuditScore()"><option value="">Select</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="na">N/A</option></select></td>
+    <td><input class="auditFinding" placeholder="Evidence / finding"></td>
+  </tr>`).join('');
+}
+function calculateAuditScore(){
+  const responses=[...document.querySelectorAll('.auditResp')];
+  const applicable=responses.filter(r=>r.value && r.value!=='na');
+  const passes=applicable.filter(r=>r.value==='pass').length;
+  const fails=applicable.filter(r=>r.value==='fail').length;
+  const score=applicable.length?Math.round((passes/applicable.length)*100):0;
+  let result='Awaiting completion', action='Complete audit questions';
+  if(applicable.length){
+    if(score>=95){result='Excellent'; action='No action required'}
+    else if(score>=85){result='Pass'; action='Monitor through normal audit cycle'}
+    else if(score>=75){result='Improvement Required'; action='Assign refresher training and re-audit'}
+    else {result='Fail'; action='Manager review, training and re-audit required'}
+  }
+  if($('aClassification') && ['AR','ID'].includes($('aClassification').value)){
+    result='Fail';
+    action='Unsafe situation identified - manager review required';
+  }
+  $('aScoreOut').textContent=score+'%';
+  $('aResultOut').textContent=result;
+  $('aActionOut').textContent=action;
+  return {score,result,action,fails};
+}
+function resetAuditForm(){
+  ['aSite','aClient','aManufacturer','aModel','aAsset','aCO','aCO2','aO2','aFlueTemp','aEfficiency','aRatio','aInletPressure','aBurnerPressure','aFindings','aPositive'].forEach(id=>{if($(id))$(id).value=''});
+  renderAuditQuestions();
+  calculateAuditScore();
+}
+function collectAuditData(){
+  const calc=calculateAuditScore();
+  const questions=[...document.querySelectorAll('#auditQuestionRows tr')].map((tr,i)=>({
+    no:i+1,
+    question:AUDIT_QUESTIONS[i],
+    response:tr.querySelector('.auditResp')?.value||'',
+    finding:tr.querySelector('.auditFinding')?.value||''
+  }));
+  return {
+    role:user.role,
+    engineer_name:$('aEngineer').value,
+    site_name:$('aSite').value,
+    client:$('aClient').value,
+    audit_date:$('aDate').value,
+    auditor:$('aAuditor').value,
+    audit_type:$('aAuditType').value,
+    manufacturer:$('aManufacturer').value,
+    model:$('aModel').value,
+    asset_number:$('aAsset').value,
+    gas_type:$('aGasType').value,
+    classification:$('aClassification').value,
+    training_required:$('aTrainingRequired').value,
+    findings:$('aFindings').value,
+    positive_observations:$('aPositive').value,
+    combustion:{co:$('aCO').value,co2:$('aCO2').value,o2:$('aO2').value,flue_temp:$('aFlueTemp').value,efficiency:$('aEfficiency').value,ratio:$('aRatio').value,inlet_pressure:$('aInletPressure').value,burner_pressure:$('aBurnerPressure').value},
+    questions,
+    score:calc.score,
+    result:calc.result,
+    required_action:calc.action
+  };
+}
+async function loadAuditHistory(){
+  const role=user.role, engineer=encodeURIComponent(user.name||'');
   try{
-    const j=await api(`/api/reports?type=${type}&engineer=${engineer}`);
-    $('reportPreview').textContent=JSON.stringify(j.data||j,null,2);
-  }catch(e){$('reportPreview').textContent=e.message}
+    const j=await api(`/api/audits?role=${role}&engineer=${engineer}`);
+    const rows=j.audits||[];
+    window._auditHistory=rows;
+    $('auditHistoryRows').innerHTML=rows.map(a=>`<tr>
+      <td>${a.ref||('HBS-'+a.id)}</td><td>${a.audit_date||a.created_at||''}</td><td>${a.engineer_name||''}</td><td>${a.site_name||''}</td>
+      <td>${a.manufacturer||''}</td><td>${a.model||''}</td><td>${a.score||0}</td><td>${a.result||''}</td>
+      <td><button onclick="viewAuditDetail(${a.id})">Review</button></td>
+    </tr>`).join('');
+    if(!rows.length) $('auditHistoryRows').innerHTML='<tr><td colspan="9">No audits found.</td></tr>';
+  }catch(e){$('auditHistoryRows').innerHTML='<tr><td colspan="9">'+e.message+'</td></tr>'}
 }
-function downloadReport(format){
-  const type=$('reportType').value, engineer=encodeURIComponent($('reportEngineer').value||'');
-  window.open(`/api/reports?type=${type}&engineer=${engineer}&format=${format}`,'_blank');
+function viewAuditDetail(id){
+  const a=(window._auditHistory||[]).find(x=>Number(x.id)===Number(id));
+  if(!a){$('auditDetail').textContent='Audit not found.';return;}
+  let data={};
+  try{data=JSON.parse(a.audit_json||'{}')}catch(e){}
+  const qs=data.questions||[];
+  $('auditDetail').innerHTML=`<table>
+    <tr><th>Reference</th><td>${a.ref||('HBS-'+a.id)}</td></tr>
+    <tr><th>Engineer</th><td>${a.engineer_name||''}</td></tr>
+    <tr><th>Site</th><td>${a.site_name||''}</td></tr>
+    <tr><th>Date</th><td>${a.audit_date||''}</td></tr>
+    <tr><th>Auditor</th><td>${a.auditor||''}</td></tr>
+    <tr><th>Manufacturer / Model</th><td>${a.manufacturer||''} ${a.model||''}</td></tr>
+    <tr><th>Score / Result</th><td>${a.score||0}% - ${a.result||''}</td></tr>
+    <tr><th>Classification</th><td>${data.classification||''}</td></tr>
+    <tr><th>Training Required</th><td>${a.training_required||data.training_required||''}</td></tr>
+    <tr><th>Findings</th><td>${a.findings||data.findings||''}</td></tr>
+  </table>
+  <h4>Question Results</h4>
+  <table><thead><tr><th>No</th><th>Question</th><th>Response</th><th>Finding</th></tr></thead><tbody>
+  ${qs.map(q=>`<tr><td>${q.no}</td><td>${q.question}</td><td>${q.response}</td><td>${q.finding||''}</td></tr>`).join('')}
+  </tbody></table>`;
 }
+
+
+// --- HBS Compliance Manager v7 Role & Engineer Filtering ---
+const HBS_MANAGERS = ['Peter Taylor','Eward Richards','Lucy Coppage'];
+const HBS_NON_ENGINEER_USERS = ['Peter Taylor','Eward Richards','Lucy Coppage',''];
+function hbsIsEngineerName(name){
+  return !!name && !HBS_NON_ENGINEER_USERS.map(x=>x.toLowerCase()).includes(String(name).toLowerCase());
+}
+function hbsRoleLabel(role){
+  return role==='manager'?'Manager':role==='senior_engineer'?'Senior Engineer':'Engineer';
+}
+const _hbsOldPopulateEngineerSelects = typeof populateEngineerSelects === 'function' ? populateEngineerSelects : null;
+if(_hbsOldPopulateEngineerSelects){
+  populateEngineerSelects = async function(){
+    try{
+      const j=await api('/api/users');
+      const users=(j.users||[]).filter(u=>hbsIsEngineerName(u.name));
+      ['aEngineer','tmEngineer','mtEngineer'].forEach(id=>{
+        const s=$(id);
+        if(s) s.innerHTML=users.map(u=>`<option>${u.name}</option>`).join('');
+      });
+    }catch(e){console.warn(e)}
+    if($('aDate')) $('aDate').value=new Date().toISOString().slice(0,10);
+    if($('aAuditor')) $('aAuditor').value=user?.name||'';
+  }
+}
+function loadSettingsCentre(){}
 
 </script>
 </body>
