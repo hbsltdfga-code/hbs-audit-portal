@@ -299,117 +299,25 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
 
  
  
+ 
  <div id="tightnessCalculator" class="card hide">
-  <h2>HBS Commercial Gas Tightness Test Calculator v2.0</h2>
-  <div class="card warning" style="background:#fff8dc;border:2px solid #e0b000">
-    <b>Engineer Use</b><br>
-    Green cells are engineer entries. Calculated cells are blue. This portal version uses the same IGEM UP/1 calculation method as the working HBS calculator and saves every calculation into the audit portal.
-  </div>
+  <h2>HBS Gas Tightness Test Calculator</h2>
+  <p class="muted">This portal module runs the same calculator file used on Netlify, isolated from the main portal so the pipework section calculations are not affected by portal scripts or styling.</p>
+  <p>
+    <button onclick="hbsLoadEmbeddedTightness()">Reload Calculator</button>
+    <button onclick="hbsSaveEmbeddedTightness()">Save Current Calculation to Portal</button>
+    <button onclick="hbsLoadTightnessRecords()">Refresh Saved Records</button>
+  </p>
+  <p id="ttMsg"></p>
+  <iframe id="hbsTightnessFrame" title="HBS Gas Tightness Test Calculator" style="width:100%;height:1450px;border:1px solid #cfd8dc;border-radius:10px;background:white"></iframe>
 
-  <section class="card">
-    <h3>1. Site Details</h3>
-    <div class="grid">
-      <label>Site Name<input class="input" id="siteName"></label>
-      <label>Job Number / Audit Ref<input class="input" id="jobNumber"></label>
-      <label>Engineer<input class="input" id="engineer"></label>
-      <label>Date<input class="input" type="date" id="testDate"></label>
-      <label>Client<input class="input" id="ttClientPortal"></label>
-      <label>Area / Pipework Tested<input class="input" id="ttAreaPortal"></label>
-    </div>
-  </section>
-
-  <section class="card">
-    <h3>2. Gas and Test Details</h3>
-    <div class="grid">
-      <label>Gas Type<select class="input" id="gasType"><option>Natural Gas</option><option>Propane</option><option>Butane</option></select></label>
-      <label>Procedure<select class="input" id="procedure"><option value="auto">Auto based on volume</option><option value="TPCP1A">TPCP1A up to 1m³</option><option value="TPCP1">TPCP1 above 1m³</option></select></label>
-      <label>Installation Type<select class="input" id="installationType"><option>Existing</option><option>New</option></select></label>
-      <label>Test Area<select class="input" id="testArea"><option value="A">Type A - New & inadequately ventilated</option><option value="B">Type B - Existing rooms under 60m³</option><option value="C">Type C - Room volume over 60m³ + pipe volume</option><option value="D">Type D - Underground</option></select></label>
-      <label>Gauge Type<select class="input" id="gaugeType"><option value="0.01">Electronic Gauge 2 decimal place</option><option value="0.1">Electronic Gauge 1 decimal place</option><option value="1">Electronic Gauge 0 decimal place</option><option value="0.5">Water Gauge</option><option value="0.1">High S.G Gauge</option></select></label>
-      <label>Room Volume m³<input class="input" type="number" step="0.001" id="roomVolume" value="0"></label>
-      <label>MOP mbar<input class="input" type="number" step="0.1" id="mop" value="21"></label>
-      <label>MIP mbar<input class="input" type="number" step="0.1" id="mip" value="75"></label>
-      <label>Test Pressure mbar<input class="input" type="number" step="0.1" id="testPressure" value="21"></label>
-      <label>Measured Pressure Drop mbar<input class="input" type="number" step="0.001" id="measuredDrop" value="0"></label>
-    </div>
-  </section>
-
-  <section class="card" id="pipeworkSections">
-    <div style="font-size:22px;background:#163f4d;color:#fff;padding:10px;border-radius:8px;margin-bottom:10px">3. PIPEWORK SECTIONS - VISIBLE ENGINEER INPUT</div>
-    <p style="background:#e6f6e6;border:2px solid #1f7a1f;padding:8px;border-radius:8px;font-weight:700">This section is visible by default. Add every pipe section below.</p>
-    <div style="overflow-x:auto">
-      <table id="pipeTable">
-        <thead><tr><th>No.</th><th>Material</th><th>Size</th><th>Length m</th><th>Internal Dia mm</th><th>m³/m</th><th>Volume m³</th><th>Remove</th></tr></thead>
-        <tbody id="pipeBody">
-          <tr><td>1</td><td><select class="input mat"></select></td><td><select class="input size"></select></td><td><input class="input len" type="number" step="0.01" value="0"></td><td class="calc idmm">0</td><td class="calc perM">0.000000</td><td class="calc vol">0.000000</td><td><button type="button" class="danger remove">X</button></td></tr>
-          <tr><td>2</td><td><select class="input mat"></select></td><td><select class="input size"></select></td><td><input class="input len" type="number" step="0.01" value="0"></td><td class="calc idmm">0</td><td class="calc perM">0.000000</td><td class="calc vol">0.000000</td><td><button type="button" class="danger remove">X</button></td></tr>
-          <tr><td>3</td><td><select class="input mat"></select></td><td><select class="input size"></select></td><td><input class="input len" type="number" step="0.01" value="0"></td><td class="calc idmm">0</td><td class="calc perM">0.000000</td><td class="calc vol">0.000000</td><td><button type="button" class="danger remove">X</button></td></tr>
-        </tbody>
-      </table>
-    </div>
-    <button type="button" onclick="hbsAddPipeRow()">+ Add Pipework Section</button>
-  </section>
-
-  <section class="card">
-    <h3>4. Meter / Turbine Meter</h3>
-    <div class="grid">
-      <label>Meter Type<select class="input" id="meterType"><option value="None">None</option><option value="Diaphragm">Diaphragm</option><option value="Rotary">Rotary</option><option value="Turbine">Turbine</option><option value="Other">Other / Manual</option></select></label>
-      <label>Meter Size / Standard Volume<select class="input" id="meterStd"><option value="0">None/manual</option><option value="0.006">U6 0.006m³</option><option value="0.016">U16 0.016m³</option><option value="0.025">U25 0.025m³</option><option value="0.040">U40 0.040m³</option><option value="0.065">U65 0.065m³</option><option value="0.100">U100 0.100m³</option><option value="0.160">G160 0.160m³</option><option value="0.250">G250 0.250m³</option><option value="0.400">G400 0.400m³</option><option value="0.650">G650 0.650m³</option></select></label>
-      <label>Manual / Manufacturer Meter Volume m³<input class="input" type="number" step="0.001" id="meterManual" value="0"></label>
-      <label>Turbine Flange Diameter mm<input class="input" type="number" step="1" id="turbineDia" value="0"></label>
-      <label>Turbine Meter Length mm<input class="input" type="number" step="1" id="turbineLen" value="0"></label>
-      <label>Fittings Allowance<select class="input" id="fittingsMode"><option value="10">Apply 10% of pipe volume</option><option value="manual">Manual fittings volume</option><option value="0">No fittings allowance</option></select></label>
-      <label>Manual Fittings Volume m³<input class="input" type="number" step="0.001" id="manualFittings" value="0"></label>
-    </div>
-  </section>
-
-  <section class="card">
-    <h3>5. Purge / Additional Report Details</h3>
-    <div class="grid">
-      <label>Purge Multiplier<input class="input" type="number" step="0.1" id="purgeMultiplier" value="1"></label>
-      <label>Engineer Notes<input class="input" id="engineerNotes" placeholder="Optional notes for report"></label>
-    </div>
-  </section>
-
-  <section class="card">
-    <h3>6. Results</h3>
-    <div class="grid">
-      <div class="card calc"><span>Pipework Volume</span><br><strong id="pipeVol">0.000000 m³</strong></div>
-      <div class="card calc"><span>Meter Volume</span><br><strong id="meterVol">0.000000 m³</strong></div>
-      <div class="card calc"><span>Fittings Volume</span><br><strong id="fitVol">0.000000 m³</strong></div>
-      <div class="card calc"><span>Total Installation Volume</span><br><strong id="totalVol">0.000000 m³</strong></div>
-      <div class="card calc"><span>Selected Standard</span><br><strong id="stdOut">TPCP1A</strong></div>
-      <div class="card calc"><span>Stabilisation Period</span><br><strong id="stabOut">6 minutes</strong></div>
-      <div class="card calc"><span>Test Time Duration</span><br><strong id="ttdOut">2 minutes</strong></div>
-      <div class="card calc"><span>Total Time</span><br><strong id="totalTimeOut">8 minutes</strong></div>
-      <div class="card calc"><span>Indicative Allowable Drop</span><br><strong id="dropOut">0.000 mbar</strong></div>
-      <div class="card calc"><span>Pass / Fail</span><br><strong id="resultOut">CHECK</strong></div>
-      <div class="card calc"><span>Maximum Permitted Leak Rate</span><br><strong id="mplrOut">0.000000 m³/hr</strong></div>
-      <div class="card calc"><span>Actual Leak Rate</span><br><strong id="actualLeakOut">0.000000 m³/hr</strong></div>
-      <div class="card calc"><span>Leak Rate Margin</span><br><strong id="leakMarginOut">0.0%</strong></div>
-      <div class="card calc"><span>Leak Rate Result</span><br><strong id="leakResultOut">CHECK</strong></div>
-      <div class="card calc"><span>F1 Factor</span><br><strong id="f1Out">0</strong></div>
-      <div class="card calc"><span>F3 Factor</span><br><strong id="f3Out">0.000</strong></div>
-      <div class="card calc"><span>MPLR Source</span><br><strong id="mplrSourceOut">-</strong></div>
-      <div class="card calc"><span>Purge Volume</span><br><strong id="purgeVolOut">0.000000 m³</strong></div>
-    </div>
-    <p class="muted">For support only. Final work must be completed by competent engineers in accordance with controlled IGE/UP/1 and IGE/UP/1A documents.</p>
-  </section>
-
-  <section class="card">
-    <h3>7. Report & Portal Record</h3>
-    <button onclick="hbsSaveTightnessPortalRecord()">Save Calculation to Portal</button>
-    <button onclick="window.print()">Print / Save as PDF</button>
-    <button onclick="hbsSaveTightnessJson()">Save Calculation JSON</button>
-    <p id="ttMsg"></p>
-    <pre id="report" style="white-space:pre-wrap;background:#f8fafb;border:1px solid #cfd8dc;padding:10px;border-radius:8px"></pre>
-  </section>
-
-  <section class="card">
-    <h3>Saved Tightness Test Records</h3>
-    <button onclick="hbsLoadTightnessRecords()">Refresh Records</button>
-    <table><thead><tr><th>ID</th><th>Date</th><th>Engineer</th><th>Site</th><th>Volume</th><th>Drop</th><th>Leak Rate</th><th>Result</th></tr></thead><tbody id="ttRows"></tbody></table>
-  </section>
+  <h3>Saved Tightness Test Records</h3>
+  <table>
+    <thead><tr><th>ID</th><th>Date</th><th>Engineer</th><th>Site</th><th>Volume</th><th>Drop</th><th>Result</th><th>Action</th></tr></thead>
+    <tbody id="ttRows"></tbody>
+  </table>
+  <h3>Selected Record</h3>
+  <div id="ttRecordDetail" class="muted">Select a saved record to view details.</div>
  </div>
 <div id="booklet" class="card hide"><h2>Audit Booklet</h2><div id="bookletBody"></div><button class="noprint" onclick="window.print()">Print / Save PDF</button></div>
 </section>
@@ -1157,152 +1065,104 @@ setInterval(function(){try{ensureConductAuditButton();}catch(e){}},1000);
 
 
 
-// --- HBS Commercial Gas Tightness Calculator v2.0: IGEM UP/1 method from HBS v0.7.0 ---
-const hbsPipeData={
-'Steel/Iron':{'DN15':16.1,'DN20':21.6,'DN25':27.2,'DN32':35.9,'DN40':41.8,'DN50':53.0,'DN65':68.8,'DN80':80.8,'DN100':105.3,'DN125':130.8,'DN150':155.4},
-'Copper':{'DN15':13.6,'DN22':20.2,'DN28':26.2,'DN35':32.6,'DN42':39.6,'DN54':51.6,'DN67':64.6,'DN76':73.6,'DN108':105.6},
-'PE SDR11':{'DN20':16.4,'DN25':20.4,'DN32':26.2,'DN40':32.6,'DN63':51.4,'DN90':73.6,'DN125':102.2,'DN180':147.2},
-'PE SDR17':{'DN63':55.4,'DN90':79.2,'DN125':110.2,'DN180':158.6,'DN250':220.4}
-};
-function hbsN(id){return document.getElementById(id)}
-function hbsPerM(idmm){let d=idmm/1000;return Math.PI*d*d/4}
-function hbsFillRow(tr){
-  let mat=tr.querySelector('.mat'), size=tr.querySelector('.size');
-  if(!mat.options.length){Object.keys(hbsPipeData).forEach(m=>mat.add(new Option(m,m)))}
-  let cur=size.value; size.innerHTML='';
-  Object.keys(hbsPipeData[mat.value]).forEach(s=>size.add(new Option(s,s)));
-  if(hbsPipeData[mat.value][cur]) size.value=cur;
-  hbsCalcTightness();
+
+// --- HBS embedded Netlify tightness calculator integration ---
+const HBS_TIGHTNESS_CALC_B64 = "PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9ImVuIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9InV0Zi04Ij4KPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xIj4KPHRpdGxlPkhCUyBHYXMgVGlnaHRuZXNzIFRlc3QgQ2FsY3VsYXRvciB2MC42LjE8L3RpdGxlPgo8bGluayByZWw9Im1hbmlmZXN0IiBocmVmPSJtYW5pZmVzdC53ZWJtYW5pZmVzdCI+CjxzdHlsZT4KOnJvb3R7LS1oYnM6IzEyM2M0YTstLWdyZWVuOiNlNmY2ZTY7LS1ibHVlOiNlYWYzZmY7LS1saW5lOiNjZmQ4ZGM7LS1yZWQ6I2ZmZjBmMH0KKntib3gtc2l6aW5nOmJvcmRlci1ib3h9Ym9keXtmb250LWZhbWlseTpBcmlhbCxIZWx2ZXRpY2Esc2Fucy1zZXJpZjttYXJnaW46MDtiYWNrZ3JvdW5kOiNmNGY2Zjg7Y29sb3I6IzFkMWQxZjtmb250LXNpemU6MTZweH0udG9we2JhY2tncm91bmQ6dmFyKC0taGJzKTtjb2xvcjp3aGl0ZTtwYWRkaW5nOjE4cHh9LnRvcCBoMXttYXJnaW46NHB4IDA7Zm9udC1zaXplOjI0cHh9LndyYXB7bWF4LXdpZHRoOjEwODBweDttYXJnaW46MCBhdXRvO3BhZGRpbmc6MTJweH0uY2FyZHtiYWNrZ3JvdW5kOndoaXRlO2JvcmRlcjoxcHggc29saWQgdmFyKC0tbGluZSk7Ym9yZGVyLXJhZGl1czoxMnB4O3BhZGRpbmc6MTRweDttYXJnaW46MTJweCAwO2JveC1zaGFkb3c6MCAxcHggM3B4IHJnYmEoMCwwLDAsLjA2KX1oMnttYXJnaW46MCAwIDEwcHg7Y29sb3I6dmFyKC0taGJzKTtmb250LXNpemU6MjFweH0uZ3JpZHtkaXNwbGF5OmdyaWQ7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCgyLG1pbm1heCgwLDFmcikpO2dhcDoxMHB4fWxhYmVse2ZvbnQtd2VpZ2h0OjcwMDtmb250LXNpemU6MTRweH0uaW5wdXQsc2VsZWN0e3dpZHRoOjEwMCU7bWluLWhlaWdodDo0NHB4O2ZvbnQtc2l6ZToxN3B4O3BhZGRpbmc6OXB4O2JvcmRlcjoycHggc29saWQgIzliYjBiODtib3JkZXItcmFkaXVzOjhweDtiYWNrZ3JvdW5kOnZhcigtLWdyZWVuKTttYXJnaW4tdG9wOjRweH0uY2FsY3tiYWNrZ3JvdW5kOnZhcigtLWJsdWUpfXRhYmxle3dpZHRoOjEwMCU7Ym9yZGVyLWNvbGxhcHNlOmNvbGxhcHNlO2ZvbnQtc2l6ZToxNHB4fXRoLHRke2JvcmRlcjoxcHggc29saWQgdmFyKC0tbGluZSk7cGFkZGluZzo2cHg7dmVydGljYWwtYWxpZ246bWlkZGxlfXRoe2JhY2tncm91bmQ6I2VlZjRmNjtjb2xvcjojMTIzYzRhfXRkIGlucHV0LHRkIHNlbGVjdHttaW4taGVpZ2h0OjQwcHg7Zm9udC1zaXplOjE1cHh9LmJ0bntiYWNrZ3JvdW5kOiMxMjNjNGE7Y29sb3I6I2ZmZjtib3JkZXI6bm9uZTtib3JkZXItcmFkaXVzOjhweDtwYWRkaW5nOjEycHggMTZweDtmb250LXNpemU6MTZweDtmb250LXdlaWdodDo3MDA7bWFyZ2luOjhweCA0cHggOHB4IDB9LmJ0bi5kYW5nZXJ7YmFja2dyb3VuZDojOGIxZTFlfS5yZXN1bHQtZ3JpZHtkaXNwbGF5OmdyaWQ7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCgzLG1pbm1heCgwLDFmcikpO2dhcDoxMHB4fS5yZXN1bHR7YmFja2dyb3VuZDp2YXIoLS1ibHVlKTtib3JkZXI6MXB4IHNvbGlkICNiOWQ0ZjM7Ym9yZGVyLXJhZGl1czo5cHg7cGFkZGluZzoxMHB4fS5yZXN1bHQgc3BhbntkaXNwbGF5OmJsb2NrO2ZvbnQtc2l6ZToxM3B4fS5yZXN1bHQgc3Ryb25ne2ZvbnQtc2l6ZToxOHB4fS53YXJuaW5ne2JhY2tncm91bmQ6I2ZmZjhkYztib3JkZXI6MnB4IHNvbGlkICNlMGIwMDB9LnBpcGUtc2VjdGlvbi10aXRsZXtmb250LXNpemU6MjRweDtiYWNrZ3JvdW5kOiMxNjNmNGQ7Y29sb3I6I2ZmZjtwYWRkaW5nOjEycHg7Ym9yZGVyLXJhZGl1czo4cHg7bWFyZ2luLWJvdHRvbToxMHB4fS52aXNpYmxlLWJhbm5lcntiYWNrZ3JvdW5kOiNlNmY2ZTY7Ym9yZGVyOjJweCBzb2xpZCAjMWY3YTFmO3BhZGRpbmc6MTBweDtib3JkZXItcmFkaXVzOjhweDtmb250LXdlaWdodDo3MDB9LnRhYmxlLXdyYXB7b3ZlcmZsb3cteDphdXRvfS5zbWFsbHtmb250LXNpemU6MTJweDtjb2xvcjojNTU1fXByZXt3aGl0ZS1zcGFjZTpwcmUtd3JhcDtiYWNrZ3JvdW5kOiNmOGZhZmI7Ym9yZGVyOjFweCBzb2xpZCB2YXIoLS1saW5lKTtwYWRkaW5nOjEwcHg7Ym9yZGVyLXJhZGl1czo4cHh9QG1lZGlhKG1heC13aWR0aDo3NjBweCl7LmdyaWQsLnJlc3VsdC1ncmlke2dyaWQtdGVtcGxhdGUtY29sdW1uczoxZnJ9dGFibGV7Zm9udC1zaXplOjEzcHh9LnRvcCBoMXtmb250LXNpemU6MjBweH19CkBtZWRpYSBwcmludHsuYnRue2Rpc3BsYXk6bm9uZX0uY2FyZHtib3gtc2hhZG93Om5vbmU7YnJlYWstaW5zaWRlOmF2b2lkfWJvZHl7YmFja2dyb3VuZDojZmZmfS5pbnB1dCxzZWxlY3R7Ym9yZGVyOjFweCBzb2xpZCAjOTk5O2JhY2tncm91bmQ6I2ZmZn19Cjwvc3R5bGU+CjwvaGVhZD4KPGJvZHk+CjxoZWFkZXIgY2xhc3M9InRvcCI+PGRpdj5Ib2NrbGV5IEJ1aWxkaW5nIFNlcnZpY2VzIEx0ZDwvZGl2PjxoMT5Db21tZXJjaWFsIEdhcyBUaWdodG5lc3MgVGVzdCBDYWxjdWxhdG9yIHYwLjYuMS4xPC9oMT48ZGl2PlRQQ1AxIC8gVFBDUDFBIMK3IFBpcGV3b3JrIFNlY3Rpb25zIHZpc2libGUgwrcgR2FzIHR5cGUgdmlzaWJsZSDCtyBQcmVzc3VyZSBsb3NzIGNvcnJlY3RlZDwvZGl2PjwvaGVhZGVyPgo8ZGl2IGNsYXNzPSJ3cmFwIj4KPHNlY3Rpb24gY2xhc3M9ImNhcmQgd2FybmluZyI+PGgyPkVuZ2luZWVyIFVzZTwvaDI+PHA+PGI+R3JlZW4gY2VsbHMgYXJlIGVuZ2luZWVyIGVudHJpZXMuPC9iPiBDYWxjdWxhdGVkIGNlbGxzIGFyZSBibHVlLiBUaGUgUGlwZXdvcmsgU2VjdGlvbnMgdGFibGUgYmVsb3cgaXMgaGFyZC1jb2RlZCBpbnRvIHRoaXMgcGFnZSBhbmQgZG9lcyBub3QgcmVseSBvbiBoaWRkZW4gbmF2aWdhdGlvbi48L3A+PC9zZWN0aW9uPgo8c2VjdGlvbiBjbGFzcz0iY2FyZCI+PGgyPjEuIFNpdGUgRGV0YWlsczwvaDI+PGRpdiBjbGFzcz0iZ3JpZCI+CjxsYWJlbD5TaXRlIE5hbWU8aW5wdXQgY2xhc3M9ImlucHV0IiBpZD0ic2l0ZU5hbWUiPjwvbGFiZWw+PGxhYmVsPkpvYiBOdW1iZXI8aW5wdXQgY2xhc3M9ImlucHV0IiBpZD0iam9iTnVtYmVyIj48L2xhYmVsPgo8bGFiZWw+RW5naW5lZXI8aW5wdXQgY2xhc3M9ImlucHV0IiBpZD0iZW5naW5lZXIiPjwvbGFiZWw+PGxhYmVsPkRhdGU8aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJkYXRlIiBpZD0idGVzdERhdGUiPjwvbGFiZWw+CjwvZGl2Pjwvc2VjdGlvbj4KPHNlY3Rpb24gY2xhc3M9ImNhcmQiPjxoMj4yLiBHYXMgYW5kIFRlc3QgRGV0YWlsczwvaDI+PGRpdiBjbGFzcz0iZ3JpZCI+CjxsYWJlbD5HYXMgVHlwZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0iZ2FzVHlwZSI+PG9wdGlvbj5OYXR1cmFsIEdhczwvb3B0aW9uPjxvcHRpb24+UHJvcGFuZTwvb3B0aW9uPjxvcHRpb24+QnV0YW5lPC9vcHRpb24+PC9zZWxlY3Q+PC9sYWJlbD4KPGxhYmVsPlByb2NlZHVyZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0icHJvY2VkdXJlIj48b3B0aW9uIHZhbHVlPSJhdXRvIj5BdXRvIGJhc2VkIG9uIHZvbHVtZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IlRQQ1AxQSI+VFBDUDFBIHVwIHRvIDFtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJUUENQMSI+VFBDUDEgYWJvdmUgMW3Cszwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5JbnN0YWxsYXRpb24gVHlwZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0iaW5zdGFsbGF0aW9uVHlwZSI+PG9wdGlvbj5FeGlzdGluZzwvb3B0aW9uPjxvcHRpb24+TmV3PC9vcHRpb24+PC9zZWxlY3Q+PC9sYWJlbD4KPGxhYmVsPlRlc3QgQXJlYTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0idGVzdEFyZWEiPjxvcHRpb24gdmFsdWU9IkEiPlR5cGUgQSAtIE5ldyAmIGluYWRlcXVhdGVseSB2ZW50aWxhdGVkPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iQiI+VHlwZSBCIC0gRXhpc3Rpbmcgcm9vbXMgdW5kZXIgNjBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJDIj5UeXBlIEMgLSBSb29tIHZvbHVtZSBvdmVyIDYwbcKzICsgcGlwZSB2b2x1bWU8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJEIj5UeXBlIEQgLSBVbmRlcmdyb3VuZDwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5HYXVnZSBUeXBlPHNlbGVjdCBjbGFzcz0iaW5wdXQiIGlkPSJnYXVnZVR5cGUiPjxvcHRpb24gdmFsdWU9IjAuMDEiPkVsZWN0cm9uaWMgR2F1Z2UgMiBkZWNpbWFsIHBsYWNlPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC4xIj5FbGVjdHJvbmljIEdhdWdlIDEgZGVjaW1hbCBwbGFjZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjEiPkVsZWN0cm9uaWMgR2F1Z2UgMCBkZWNpbWFsIHBsYWNlPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC41Ij5XYXRlciBHYXVnZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjAuMSI+SGlnaCBTLkcgR2F1Z2U8L29wdGlvbj48L3NlbGVjdD48L2xhYmVsPgo8bGFiZWw+Um9vbSBWb2x1bWUgbcKzPGlucHV0IGNsYXNzPSJpbnB1dCIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjAwMSIgaWQ9InJvb21Wb2x1bWUiIHZhbHVlPSIwIj48L2xhYmVsPgo8bGFiZWw+TU9QIG1iYXI8aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJudW1iZXIiIHN0ZXA9IjAuMSIgaWQ9Im1vcCIgdmFsdWU9IjIxIj48L2xhYmVsPgo8bGFiZWw+TUlQIG1iYXI8aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJudW1iZXIiIHN0ZXA9IjAuMSIgaWQ9Im1pcCIgdmFsdWU9Ijc1Ij48L2xhYmVsPgo8bGFiZWw+VGVzdCBQcmVzc3VyZSBtYmFyPGlucHV0IGNsYXNzPSJpbnB1dCIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjEiIGlkPSJ0ZXN0UHJlc3N1cmUiIHZhbHVlPSIyMSI+PC9sYWJlbD4KPGxhYmVsPk1lYXN1cmVkIFByZXNzdXJlIERyb3AgbWJhcjxpbnB1dCBjbGFzcz0iaW5wdXQiIHR5cGU9Im51bWJlciIgc3RlcD0iMC4wMDEiIGlkPSJtZWFzdXJlZERyb3AiIHZhbHVlPSIwIj48L2xhYmVsPgo8L2Rpdj48L3NlY3Rpb24+CjxzZWN0aW9uIGNsYXNzPSJjYXJkIiBpZD0icGlwZXdvcmtTZWN0aW9ucyI+CjxkaXYgY2xhc3M9InBpcGUtc2VjdGlvbi10aXRsZSI+My4gUElQRVdPUksgU0VDVElPTlMgLSBWSVNJQkxFIEVOR0lORUVSIElOUFVUPC9kaXY+CjxwIGNsYXNzPSJ2aXNpYmxlLWJhbm5lciI+VGhpcyBzZWN0aW9uIGlzIHZpc2libGUgYnkgZGVmYXVsdC4gQWRkIGV2ZXJ5IHBpcGUgc2VjdGlvbiBiZWxvdy48L3A+CjxkaXYgY2xhc3M9InRhYmxlLXdyYXAiPjx0YWJsZSBpZD0icGlwZVRhYmxlIj48dGhlYWQ+PHRyPjx0aD5Oby48L3RoPjx0aD5NYXRlcmlhbDwvdGg+PHRoPlNpemU8L3RoPjx0aD5MZW5ndGggbTwvdGg+PHRoPkludGVybmFsIERpYSBtbTwvdGg+PHRoPm3Csy9tPC90aD48dGg+Vm9sdW1lIG3CszwvdGg+PHRoPlJlbW92ZTwvdGg+PC90cj48L3RoZWFkPjx0Ym9keSBpZD0icGlwZUJvZHkiPgo8dHI+PHRkPjE8L3RkPjx0ZD48c2VsZWN0IGNsYXNzPSJpbnB1dCBtYXQiPjwvc2VsZWN0PjwvdGQ+PHRkPjxzZWxlY3QgY2xhc3M9ImlucHV0IHNpemUiPjwvc2VsZWN0PjwvdGQ+PHRkPjxpbnB1dCBjbGFzcz0iaW5wdXQgbGVuIiB0eXBlPSJudW1iZXIiIHN0ZXA9IjAuMDEiIHZhbHVlPSIwIj48L3RkPjx0ZCBjbGFzcz0iY2FsYyBpZG1tIj4wPC90ZD48dGQgY2xhc3M9ImNhbGMgcGVyTSI+MC4wMDAwMDA8L3RkPjx0ZCBjbGFzcz0iY2FsYyB2b2wiPjAuMDAwMDAwPC90ZD48dGQ+PGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJidG4gZGFuZ2VyIHJlbW92ZSI+WDwvYnV0dG9uPjwvdGQ+PC90cj4KPHRyPjx0ZD4yPC90ZD48dGQ+PHNlbGVjdCBjbGFzcz0iaW5wdXQgbWF0Ij48L3NlbGVjdD48L3RkPjx0ZD48c2VsZWN0IGNsYXNzPSJpbnB1dCBzaXplIj48L3NlbGVjdD48L3RkPjx0ZD48aW5wdXQgY2xhc3M9ImlucHV0IGxlbiIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjAxIiB2YWx1ZT0iMCI+PC90ZD48dGQgY2xhc3M9ImNhbGMgaWRtbSI+MDwvdGQ+PHRkIGNsYXNzPSJjYWxjIHBlck0iPjAuMDAwMDAwPC90ZD48dGQgY2xhc3M9ImNhbGMgdm9sIj4wLjAwMDAwMDwvdGQ+PHRkPjxidXR0b24gdHlwZT0iYnV0dG9uIiBjbGFzcz0iYnRuIGRhbmdlciByZW1vdmUiPlg8L2J1dHRvbj48L3RkPjwvdHI+Cjx0cj48dGQ+MzwvdGQ+PHRkPjxzZWxlY3QgY2xhc3M9ImlucHV0IG1hdCI+PC9zZWxlY3Q+PC90ZD48dGQ+PHNlbGVjdCBjbGFzcz0iaW5wdXQgc2l6ZSI+PC9zZWxlY3Q+PC90ZD48dGQ+PGlucHV0IGNsYXNzPSJpbnB1dCBsZW4iIHR5cGU9Im51bWJlciIgc3RlcD0iMC4wMSIgdmFsdWU9IjAiPjwvdGQ+PHRkIGNsYXNzPSJjYWxjIGlkbW0iPjA8L3RkPjx0ZCBjbGFzcz0iY2FsYyBwZXJNIj4wLjAwMDAwMDwvdGQ+PHRkIGNsYXNzPSJjYWxjIHZvbCI+MC4wMDAwMDA8L3RkPjx0ZD48YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9ImJ0biBkYW5nZXIgcmVtb3ZlIj5YPC9idXR0b24+PC90ZD48L3RyPgo8L3Rib2R5PjwvdGFibGU+PC9kaXY+PGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJidG4iIGlkPSJhZGRQaXBlIj4rIEFkZCBQaXBld29yayBTZWN0aW9uPC9idXR0b24+PC9zZWN0aW9uPgo8c2VjdGlvbiBjbGFzcz0iY2FyZCI+PGgyPjQuIE1ldGVyIC8gVHVyYmluZSBNZXRlcjwvaDI+PGRpdiBjbGFzcz0iZ3JpZCI+CjxsYWJlbD5NZXRlciBUeXBlPHNlbGVjdCBjbGFzcz0iaW5wdXQiIGlkPSJtZXRlclR5cGUiPjxvcHRpb24gdmFsdWU9Ik5vbmUiPk5vbmU8L29wdGlvbj48b3B0aW9uIHZhbHVlPSJEaWFwaHJhZ20iPkRpYXBocmFnbTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IlJvdGFyeSI+Um90YXJ5PC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iVHVyYmluZSI+VHVyYmluZTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9Ik90aGVyIj5PdGhlciAvIE1hbnVhbDwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5NZXRlciBTaXplIC8gU3RhbmRhcmQgVm9sdW1lPHNlbGVjdCBjbGFzcz0iaW5wdXQiIGlkPSJtZXRlclN0ZCI+PG9wdGlvbiB2YWx1ZT0iMCI+Tm9uZS9tYW51YWw8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjAwNiI+VTYgMC4wMDZtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjAxNiI+VTE2IDAuMDE2bcKzPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC4wMjUiPlUyNSAwLjAyNW3Cszwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjAuMDQwIj5VNDAgMC4wNDBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjA2NSI+VTY1IDAuMDY1bcKzPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC4xMDAiPlUxMDAgMC4xMDBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjE2MCI+RzE2MCAwLjE2MG3Cszwvb3B0aW9uPjxvcHRpb24gdmFsdWU9IjAuMjUwIj5HMjUwIDAuMjUwbcKzPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMC40MDAiPkc0MDAgMC40MDBtwrM8L29wdGlvbj48b3B0aW9uIHZhbHVlPSIwLjY1MCI+RzY1MCAwLjY1MG3Cszwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+CjxsYWJlbD5NYW51YWwgLyBNYW51ZmFjdHVyZXIgTWV0ZXIgVm9sdW1lIG3CszxpbnB1dCBjbGFzcz0iaW5wdXQiIHR5cGU9Im51bWJlciIgc3RlcD0iMC4wMDEiIGlkPSJtZXRlck1hbnVhbCIgdmFsdWU9IjAiPjwvbGFiZWw+CjxsYWJlbD5UdXJiaW5lIEZsYW5nZSBEaWFtZXRlciBtbTxpbnB1dCBjbGFzcz0iaW5wdXQiIHR5cGU9Im51bWJlciIgc3RlcD0iMSIgaWQ9InR1cmJpbmVEaWEiIHZhbHVlPSIwIj48L2xhYmVsPgo8bGFiZWw+VHVyYmluZSBNZXRlciBMZW5ndGggbW08aW5wdXQgY2xhc3M9ImlucHV0IiB0eXBlPSJudW1iZXIiIHN0ZXA9IjEiIGlkPSJ0dXJiaW5lTGVuIiB2YWx1ZT0iMCI+PC9sYWJlbD4KPGxhYmVsPkZpdHRpbmdzIEFsbG93YW5jZTxzZWxlY3QgY2xhc3M9ImlucHV0IiBpZD0iZml0dGluZ3NNb2RlIj48b3B0aW9uIHZhbHVlPSIxMCI+QXBwbHkgMTAlIG9mIHBpcGUgdm9sdW1lPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0ibWFudWFsIj5NYW51YWwgZml0dGluZ3Mgdm9sdW1lPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT0iMCI+Tm8gZml0dGluZ3MgYWxsb3dhbmNlPC9vcHRpb24+PC9zZWxlY3Q+PC9sYWJlbD4KPGxhYmVsPk1hbnVhbCBGaXR0aW5ncyBWb2x1bWUgbcKzPGlucHV0IGNsYXNzPSJpbnB1dCIgdHlwZT0ibnVtYmVyIiBzdGVwPSIwLjAwMSIgaWQ9Im1hbnVhbEZpdHRpbmdzIiB2YWx1ZT0iMCI+PC9sYWJlbD4KPC9kaXY+PC9zZWN0aW9uPgo8c2VjdGlvbiBjbGFzcz0iY2FyZCI+PGgyPjUuIFJlc3VsdHM8L2gyPjxkaXYgY2xhc3M9InJlc3VsdC1ncmlkIj4KPGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5QaXBld29yayBWb2x1bWU8L3NwYW4+PHN0cm9uZyBpZD0icGlwZVZvbCI+MC4wMDAwMDAgbcKzPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5NZXRlciBWb2x1bWU8L3NwYW4+PHN0cm9uZyBpZD0ibWV0ZXJWb2wiPjAuMDAwMDAwIG3Cszwvc3Ryb25nPjwvZGl2PjxkaXYgY2xhc3M9InJlc3VsdCI+PHNwYW4+Rml0dGluZ3MgVm9sdW1lPC9zcGFuPjxzdHJvbmcgaWQ9ImZpdFZvbCI+MC4wMDAwMDAgbcKzPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5Ub3RhbCBJbnN0YWxsYXRpb24gVm9sdW1lPC9zcGFuPjxzdHJvbmcgaWQ9InRvdGFsVm9sIj4wLjAwMDAwMCBtwrM8L3N0cm9uZz48L2Rpdj48ZGl2IGNsYXNzPSJyZXN1bHQiPjxzcGFuPlNlbGVjdGVkIFN0YW5kYXJkPC9zcGFuPjxzdHJvbmcgaWQ9InN0ZE91dCI+VFBDUDFBPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5TdGFiaWxpc2F0aW9uIFBlcmlvZDwvc3Bhbj48c3Ryb25nIGlkPSJzdGFiT3V0Ij42IG1pbnV0ZXM8L3N0cm9uZz48L2Rpdj48ZGl2IGNsYXNzPSJyZXN1bHQiPjxzcGFuPlRlc3QgVGltZSBEdXJhdGlvbjwvc3Bhbj48c3Ryb25nIGlkPSJ0dGRPdXQiPjIgbWludXRlczwvc3Ryb25nPjwvZGl2PjxkaXYgY2xhc3M9InJlc3VsdCI+PHNwYW4+VG90YWwgVGltZTwvc3Bhbj48c3Ryb25nIGlkPSJ0b3RhbFRpbWVPdXQiPjggbWludXRlczwvc3Ryb25nPjwvZGl2PjxkaXYgY2xhc3M9InJlc3VsdCI+PHNwYW4+SW5kaWNhdGl2ZSBBbGxvd2FibGUgRHJvcDwvc3Bhbj48c3Ryb25nIGlkPSJkcm9wT3V0Ij4wLjAwMCBtYmFyPC9zdHJvbmc+PC9kaXY+PGRpdiBjbGFzcz0icmVzdWx0Ij48c3Bhbj5QYXNzIC8gRmFpbDwvc3Bhbj48c3Ryb25nIGlkPSJyZXN1bHRPdXQiPkNIRUNLPC9zdHJvbmc+PC9kaXY+CjwvZGl2PjxwIGNsYXNzPSJzbWFsbCI+Rm9yIHN1cHBvcnQgb25seS4gRmluYWwgd29yayBtdXN0IGJlIGNvbXBsZXRlZCBieSBjb21wZXRlbnQgZW5naW5lZXJzIGluIGFjY29yZGFuY2Ugd2l0aCBjb250cm9sbGVkIElHRS9VUC8xIGFuZCBJR0UvVVAvMUEgZG9jdW1lbnRzLjwvcD48L3NlY3Rpb24+CjxzZWN0aW9uIGNsYXNzPSJjYXJkIj48aDI+Ni4gUERGIC8gSm9ibG9naWMgUmVwb3J0PC9oMj48YnV0dG9uIGNsYXNzPSJidG4iIG9uY2xpY2s9IndpbmRvdy5wcmludCgpIj5QcmludCAvIFNhdmUgYXMgUERGPC9idXR0b24+PHByZSBpZD0icmVwb3J0Ij48L3ByZT48L3NlY3Rpb24+CjwvZGl2Pgo8c2NyaXB0Pgpjb25zdCBwaXBlRGF0YT17CidTdGVlbC9Jcm9uJzp7J0ROMTUnOjE2LjEsJ0ROMjAnOjIxLjYsJ0ROMjUnOjI3LjIsJ0ROMzInOjM1LjksJ0RONDAnOjQxLjgsJ0RONTAnOjUzLjAsJ0RONjUnOjY4LjgsJ0ROODAnOjgwLjgsJ0ROMTAwJzoxMDUuMywnRE4xMjUnOjEzMC44LCdETjE1MCc6MTU1LjR9LAonQ29wcGVyJzp7J0ROMTUnOjEzLjYsJ0ROMjInOjIwLjIsJ0ROMjgnOjI2LjIsJ0ROMzUnOjMyLjYsJ0RONDInOjM5LjYsJ0RONTQnOjUxLjYsJ0RONjcnOjY0LjYsJ0RONzYnOjczLjYsJ0ROMTA4JzoxMDUuNn0sCidQRSBTRFIxMSc6eydETjIwJzoxNi40LCdETjI1JzoyMC40LCdETjMyJzoyNi4yLCdETjQwJzozMi42LCdETjYzJzo1MS40LCdETjkwJzo3My42LCdETjEyNSc6MTAyLjIsJ0ROMTgwJzoxNDcuMn0sCidQRSBTRFIxNyc6eydETjYzJzo1NS40LCdETjkwJzo3OS4yLCdETjEyNSc6MTEwLjIsJ0ROMTgwJzoxNTguNiwnRE4yNTAnOjIyMC40fQp9OwpmdW5jdGlvbiBwZXJNKGlkbW0pe2xldCBkPWlkbW0vMTAwMDtyZXR1cm4gTWF0aC5QSSpkKmQvNH0KZnVuY3Rpb24gbihpZCl7cmV0dXJuIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKGlkKX0KZnVuY3Rpb24gZmlsbFJvdyh0cil7bGV0IG1hdD10ci5xdWVyeVNlbGVjdG9yKCcubWF0JyksIHNpemU9dHIucXVlcnlTZWxlY3RvcignLnNpemUnKTsgaWYoIW1hdC5vcHRpb25zLmxlbmd0aCl7T2JqZWN0LmtleXMocGlwZURhdGEpLmZvckVhY2gobT0+bWF0LmFkZChuZXcgT3B0aW9uKG0sbSkpKX07IGxldCBjdXI9c2l6ZS52YWx1ZTsgc2l6ZS5pbm5lckhUTUw9Jyc7IE9iamVjdC5rZXlzKHBpcGVEYXRhW21hdC52YWx1ZV0pLmZvckVhY2gocz0+c2l6ZS5hZGQobmV3IE9wdGlvbihzLHMpKSk7IGlmKHBpcGVEYXRhW21hdC52YWx1ZV1bY3VyXSkgc2l6ZS52YWx1ZT1jdXI7IGNhbGMoKX0KZnVuY3Rpb24gcmVudW1iZXIoKXtbLi4uZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnI3BpcGVCb2R5IHRyJyldLmZvckVhY2goKHRyLGkpPT50ci5jZWxsc1swXS50ZXh0Q29udGVudD1pKzEpfQpmdW5jdGlvbiBhZGRSb3coKXtsZXQgdHI9ZG9jdW1lbnQucXVlcnlTZWxlY3RvcignI3BpcGVCb2R5IHRyJykuY2xvbmVOb2RlKHRydWUpOyB0ci5xdWVyeVNlbGVjdG9yKCcubGVuJykudmFsdWU9JzAnOyBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncGlwZUJvZHknKS5hcHBlbmRDaGlsZCh0cik7IGJpbmRSb3codHIpOyBmaWxsUm93KHRyKTsgcmVudW1iZXIoKTt9CmZ1bmN0aW9uIGJpbmRSb3codHIpe3RyLnF1ZXJ5U2VsZWN0b3IoJy5tYXQnKS5vbmNoYW5nZT0oKT0+ZmlsbFJvdyh0cik7IHRyLnF1ZXJ5U2VsZWN0b3IoJy5zaXplJykub25jaGFuZ2U9Y2FsYzsgdHIucXVlcnlTZWxlY3RvcignLmxlbicpLm9uaW5wdXQ9Y2FsYzsgdHIucXVlcnlTZWxlY3RvcignLnJlbW92ZScpLm9uY2xpY2s9KCk9PntpZihkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcjcGlwZUJvZHkgdHInKS5sZW5ndGg+MSl7dHIucmVtb3ZlKCk7cmVudW1iZXIoKTtjYWxjKCk7fX19CmZ1bmN0aW9uIGNhbGMoKXtsZXQgcGlwZT0wOyBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcjcGlwZUJvZHkgdHInKS5mb3JFYWNoKHRyPT57bGV0IG1hdD10ci5xdWVyeVNlbGVjdG9yKCcubWF0JykudmFsdWUsIHNpemU9dHIucXVlcnlTZWxlY3RvcignLnNpemUnKS52YWx1ZSwgbGVuPXBhcnNlRmxvYXQodHIucXVlcnlTZWxlY3RvcignLmxlbicpLnZhbHVlKXx8MDsgbGV0IGlkPShwaXBlRGF0YVttYXRdfHx7fSlbc2l6ZV18fDA7IGxldCBwbT1wZXJNKGlkKTsgbGV0IHY9cG0qbGVuOyBwaXBlKz12OyB0ci5xdWVyeVNlbGVjdG9yKCcuaWRtbScpLnRleHRDb250ZW50PWlkLnRvRml4ZWQoMSk7IHRyLnF1ZXJ5U2VsZWN0b3IoJy5wZXJNJykudGV4dENvbnRlbnQ9cG0udG9GaXhlZCg2KTsgdHIucXVlcnlTZWxlY3RvcignLnZvbCcpLnRleHRDb250ZW50PXYudG9GaXhlZCg2KTt9KTsKbGV0IG10PW4oJ21ldGVyVHlwZScpLnZhbHVlLCBtZXRlcj1wYXJzZUZsb2F0KG4oJ21ldGVyTWFudWFsJykudmFsdWUpfHwwOyBpZighbWV0ZXIpIG1ldGVyPXBhcnNlRmxvYXQobignbWV0ZXJTdGQnKS52YWx1ZSl8fDA7IGlmKG10PT09J1R1cmJpbmUnICYmICFtZXRlcil7bGV0IGQ9KHBhcnNlRmxvYXQobigndHVyYmluZURpYScpLnZhbHVlKXx8MCkvMTAwMCwgbD0ocGFyc2VGbG9hdChuKCd0dXJiaW5lTGVuJykudmFsdWUpfHwwKS8xMDAwOyBtZXRlcj0wLjcwKmQqZCpsfQpsZXQgZml0PTAsIGZtPW4oJ2ZpdHRpbmdzTW9kZScpLnZhbHVlOyBpZihmbT09PScxMCcpIGZpdD1waXBlKjAuMTA7IGVsc2UgaWYoZm09PT0nbWFudWFsJykgZml0PXBhcnNlRmxvYXQobignbWFudWFsRml0dGluZ3MnKS52YWx1ZSl8fDA7IGxldCB0b3RhbD1waXBlK21ldGVyK2ZpdDsgbGV0IHByb2M9bigncHJvY2VkdXJlJykudmFsdWU7IGxldCBzdGQ9cHJvYz09PSdhdXRvJz8odG90YWw8PTE/J1RQQ1AxQSc6J1RQQ1AxJyk6cHJvYzsKCmxldCBnYXM9bignZ2FzVHlwZScpLnZhbHVlOwpsZXQgaW5zdD1uKCdpbnN0YWxsYXRpb25UeXBlJykudmFsdWU7CmxldCBhcmVhPW4oJ3Rlc3RBcmVhJykudmFsdWU7CmxldCBncm09cGFyc2VGbG9hdChuKCdnYXVnZVR5cGUnKS52YWx1ZSl8fDAuMDE7CmxldCByb29tVm9sPXBhcnNlRmxvYXQobigncm9vbVZvbHVtZScpLnZhbHVlKXx8MDsKbGV0IHJ2ID0gcm9vbVZvbD4wID8gcm9vbVZvbCA6IDYwOwoKLy8gRjEgdmFsdWVzIGZvciB0ZXN0IHVzaW5nIGZ1ZWwgZ2FzIGF0IE9QLCBmcm9tIElHRS9VUC8xIFRhYmxlIDEwLgpsZXQgZjFNYXA9eydOYXR1cmFsIEdhcyc6NDIsJ1Byb3BhbmUnOjEwMiwnQnV0YW5lJzoxMjh9OwpsZXQgZjE9ZjFNYXBbZ2FzXXx8NDI7CgovLyBUVEQgZm9ybXVsYSBmb2xsb3dzIElHRS9VUC8xIFRhYmxlIDk6Ci8vIE5ldyBhbmQgQXJlYSBBOiBHUk0geCBJViB4IEYxCi8vIEV4aXN0aW5nIEFyZWEgQjogMi44IHggR1JNIHggSVYgeCBSVl4tMSB4IEYxCi8vIEV4aXN0aW5nIEFyZWEgQy9EOiAwLjA0NyB4IEdSTSB4IElWIHggRjEKbGV0IHR0ZFJhdz0wOwppZihpbnN0PT09J05ldycgfHwgYXJlYT09PSdBJyl7CiAgdHRkUmF3ID0gZ3JtICogdG90YWwgKiBmMTsKfWVsc2UgaWYoYXJlYT09PSdCJyl7CiAgdHRkUmF3ID0gMi44ICogZ3JtICogdG90YWwgKiAoMS9ydikgKiBmMTsKfWVsc2V7CiAgdHRkUmF3ID0gMC4wNDcgKiBncm0gKiB0b3RhbCAqIGYxOwp9CmxldCB0dGQ9TWF0aC5tYXgoMixNYXRoLmNlaWwodHRkUmF3KSk7CmxldCBzdGFiPXN0ZD09PSdUUENQMUEnP01hdGgubWF4KHR0ZCw2KTpNYXRoLm1heCh0dGQsMTUpOwoKLy8gTVBMUiB2YWx1ZXMgbcKzL2ggYXQgT1AgZnJvbSBJR0UvVVAvMSBUYWJsZXMgNyBhbmQgOCAvIEFwcGVuZGl4IDQgVGFibGUgMTUuCmxldCBtcGxyTmV3PXsnTmF0dXJhbCBHYXMnOjAuMDAxNCwnUHJvcGFuZSc6MC4wMDA1NywnQnV0YW5lJzowLjAwMDQ0fTsKbGV0IG1wbHJCcGVyTTM9eydOYXR1cmFsIEdhcyc6MC4wMDA1LCdQcm9wYW5lJzowLjAwMDIsJ0J1dGFuZSc6MC4wMDAxNn07CmxldCBtcGxyQ0Q9eydOYXR1cmFsIEdhcyc6MC4wMywnUHJvcGFuZSc6MC4wMTIzLCdCdXRhbmUnOjAuMDA5OH07CgpsZXQgbXBscj0wOwppZihpbnN0PT09J05ldycgfHwgYXJlYT09PSdBJyl7CiAgbXBscj1tcGxyTmV3W2dhc118fDAuMDAxNDsKfWVsc2UgaWYoYXJlYT09PSdCJyl7CiAgbXBscj0obXBsckJwZXJNM1tnYXNdfHwwLjAwMDUpICogcnY7Cn1lbHNlewogIG1wbHI9bXBsckNEW2dhc118fDAuMDM7Cn0KCi8vIEYzIGZvciB0ZXN0IHVzaW5nIGZ1ZWwgZ2FzIGF0IE9QIGlzIDAuMDU5IGZyb20gSUdFL1VQLzEgVGFibGUgMTEuCi8vIFJlLWFycmFuZ2VkIGZyb20gTFIgPSBGMyB4IEdNIHggSVYgLyB0OgovLyBQZXJtaXNzaWJsZSBwcmVzc3VyZSBsb3NzIEdNID0gTVBMUiB4IHQgLyAoRjMgeCBJVikuCmxldCBmMz0wLjA1OTsKbGV0IGRyb3AgPSB0b3RhbD4wID8gKG1wbHIgKiB0dGQpIC8gKGYzICogdG90YWwpIDogMDsKbGV0IHRlc3RQcmVzc3VyZT1wYXJzZUZsb2F0KG4oJ3Rlc3RQcmVzc3VyZScpLnZhbHVlKXx8MjE7CmlmKGRyb3A+dGVzdFByZXNzdXJlKXsgZHJvcD10ZXN0UHJlc3N1cmU7IH0KbGV0IG1lYXM9cGFyc2VGbG9hdChuKCdtZWFzdXJlZERyb3AnKS52YWx1ZSl8fDA7Cm4oJ3BpcGVWb2wnKS50ZXh0Q29udGVudD1waXBlLnRvRml4ZWQoNikrJyBtwrMnOyBuKCdtZXRlclZvbCcpLnRleHRDb250ZW50PW1ldGVyLnRvRml4ZWQoNikrJyBtwrMnOyBuKCdmaXRWb2wnKS50ZXh0Q29udGVudD1maXQudG9GaXhlZCg2KSsnIG3Csyc7IG4oJ3RvdGFsVm9sJykudGV4dENvbnRlbnQ9dG90YWwudG9GaXhlZCg2KSsnIG3Csyc7IG4oJ3N0ZE91dCcpLnRleHRDb250ZW50PXN0ZDsgbignc3RhYk91dCcpLnRleHRDb250ZW50PXN0YWIrJyBtaW51dGVzJzsgbigndHRkT3V0JykudGV4dENvbnRlbnQ9dHRkKycgbWludXRlcyc7IG4oJ3RvdGFsVGltZU91dCcpLnRleHRDb250ZW50PShzdGFiK3R0ZCkrJyBtaW51dGVzJzsgbignZHJvcE91dCcpLnRleHRDb250ZW50PWRyb3AudG9GaXhlZCgzKSsnIG1iYXInOyBuKCdyZXN1bHRPdXQnKS50ZXh0Q29udGVudD1tZWFzPD1kcm9wPydQQVNTIC8gQ0hFQ0snOidGQUlMIC8gSU5WRVNUSUdBVEUnOwpuKCdyZXBvcnQnKS50ZXh0Q29udGVudD1gSEJTIENvbW1lcmNpYWwgR2FzIFRpZ2h0bmVzcyBUZXN0IENhbGN1bGF0b3JcblNpdGU6ICR7bignc2l0ZU5hbWUnKS52YWx1ZX1cbkpvYjogJHtuKCdqb2JOdW1iZXInKS52YWx1ZX1cbkVuZ2luZWVyOiAke24oJ2VuZ2luZWVyJykudmFsdWV9XG5EYXRlOiAke24oJ3Rlc3REYXRlJykudmFsdWV9XG5HYXMgVHlwZTogJHtnYXN9XG5JbnN0YWxsYXRpb24gVHlwZTogJHtpbnN0fVxuU3RhbmRhcmQ6ICR7c3RkfVxuUGlwZXdvcmsgVm9sdW1lOiAke3BpcGUudG9GaXhlZCg2KX0gbcKzXG5NZXRlciBWb2x1bWU6ICR7bWV0ZXIudG9GaXhlZCg2KX0gbcKzXG5GaXR0aW5ncyBWb2x1bWU6ICR7Zml0LnRvRml4ZWQoNil9IG3Cs1xuVG90YWwgSW5zdGFsbGF0aW9uIFZvbHVtZTogJHt0b3RhbC50b0ZpeGVkKDYpfSBtwrNcblN0YWJpbGlzYXRpb246ICR7c3RhYn0gbWludXRlc1xuVFREOiAke3R0ZH0gbWludXRlc1xuVG90YWwgVGltZTogJHtzdGFiK3R0ZH0gbWludXRlc1xuSW5kaWNhdGl2ZSBBbGxvd2FibGUgRHJvcDogJHtkcm9wLnRvRml4ZWQoMyl9IG1iYXJcbk1lYXN1cmVkIERyb3A6ICR7bWVhcy50b0ZpeGVkKDMpfSBtYmFyXG5SZXN1bHQ6ICR7bigncmVzdWx0T3V0JykudGV4dENvbnRlbnR9YDt9CmRvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGwoJyNwaXBlQm9keSB0cicpLmZvckVhY2godHI9PntiaW5kUm93KHRyKTtmaWxsUm93KHRyKX0pOyBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYWRkUGlwZScpLm9uY2xpY2s9YWRkUm93OyBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCdpbnB1dCxzZWxlY3QnKS5mb3JFYWNoKGVsPT5lbC5hZGRFdmVudExpc3RlbmVyKCdpbnB1dCcsY2FsYykpOyBjYWxjKCk7CgpmdW5jdGlvbiBoYnNQb3J0YWxDb2xsZWN0U3RhdGUoKXsKICBjYWxjKCk7CiAgY29uc3QgdHh0PWlkPT5uKGlkKT9uKGlkKS50ZXh0Q29udGVudDonJzsKICBjb25zdCB2YWw9aWQ9Pm4oaWQpP24oaWQpLnZhbHVlOicnOwogIGZ1bmN0aW9uIG51bVRleHQoaWQpe3JldHVybiBOdW1iZXIoU3RyaW5nKHR4dChpZCkpLnJlcGxhY2UoL1teXGQuLV0vZywnJykpfHwwO30KICBjb25zdCBzdGF0ZT17CiAgICBzaXRlX25hbWU6IHZhbCgnc2l0ZU5hbWUnKSwKICAgIGF1ZGl0X3JlZjogdmFsKCdqb2JOdW1iZXInKSwKICAgIGVuZ2luZWVyX25hbWU6IHZhbCgnZW5naW5lZXInKSwKICAgIHRlc3RfZGF0ZTogdmFsKCd0ZXN0RGF0ZScpLAogICAgZ2FzX3R5cGU6IHZhbCgnZ2FzVHlwZScpLAogICAgcHJvY2VkdXJlOiB2YWwoJ3Byb2NlZHVyZScpLAogICAgaW5zdGFsbGF0aW9uX3R5cGU6IHZhbCgnaW5zdGFsbGF0aW9uVHlwZScpLAogICAgdGVzdF9hcmVhOiB2YWwoJ3Rlc3RBcmVhJyksCiAgICBnYXVnZV90eXBlOiB2YWwoJ2dhdWdlVHlwZScpLAogICAgcm9vbV92b2x1bWU6IE51bWJlcih2YWwoJ3Jvb21Wb2x1bWUnKXx8MCksCiAgICBtb3A6IE51bWJlcih2YWwoJ21vcCcpfHwwKSwKICAgIG1pcDogTnVtYmVyKHZhbCgnbWlwJyl8fDApLAogICAgdGVzdF9wcmVzc3VyZTogTnVtYmVyKHZhbCgndGVzdFByZXNzdXJlJyl8fDApLAogICAgbWVhc3VyZWRfZHJvcDogTnVtYmVyKHZhbCgnbWVhc3VyZWREcm9wJyl8fDApLAogICAgcGlwZXdvcmtfdm9sdW1lOiBudW1UZXh0KCdwaXBlVm9sJyksCiAgICBtZXRlcl92b2x1bWU6IG51bVRleHQoJ21ldGVyVm9sJyksCiAgICBmaXR0aW5nc192b2x1bWU6IG51bVRleHQoJ2ZpdFZvbCcpLAogICAgaW5zdGFsbGF0aW9uX3ZvbHVtZTogbnVtVGV4dCgndG90YWxWb2wnKSwKICAgIHNlbGVjdGVkX3N0YW5kYXJkOiB0eHQoJ3N0ZE91dCcpLAogICAgc3RhYmlsaXNhdGlvbl90aW1lOiBudW1UZXh0KCdzdGFiT3V0JyksCiAgICB0ZXN0X2R1cmF0aW9uOiBudW1UZXh0KCd0dGRPdXQnKSwKICAgIHRvdGFsX3RpbWU6IG51bVRleHQoJ3RvdGFsVGltZU91dCcpLAogICAgcGVybWl0dGVkX3ByZXNzdXJlX2Ryb3A6IG51bVRleHQoJ2Ryb3BPdXQnKSwKICAgIG91dGNvbWU6IHR4dCgncmVzdWx0T3V0JyksCiAgICByZXBvcnQ6IHR4dCgncmVwb3J0JyksCiAgICBwaXBlczpbLi4uZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnI3BpcGVCb2R5IHRyJyldLm1hcCh0cj0+KHsKICAgICAgbWF0ZXJpYWw6IHRyLnF1ZXJ5U2VsZWN0b3IoJy5tYXQnKS52YWx1ZSwKICAgICAgc2l6ZTogdHIucXVlcnlTZWxlY3RvcignLnNpemUnKS52YWx1ZSwKICAgICAgbGVuZ3RoOiBOdW1iZXIodHIucXVlcnlTZWxlY3RvcignLmxlbicpLnZhbHVlfHwwKSwKICAgICAgaW50ZXJuYWxfZGlhX21tOiBOdW1iZXIodHIucXVlcnlTZWxlY3RvcignLmlkbW0nKS50ZXh0Q29udGVudHx8MCksCiAgICAgIHZvbHVtZV9tMzogTnVtYmVyKHRyLnF1ZXJ5U2VsZWN0b3IoJy52b2wnKS50ZXh0Q29udGVudHx8MCkKICAgIH0pKQogIH07CiAgcmV0dXJuIHN0YXRlOwp9Cgo8L3NjcmlwdD4KPC9ib2R5PjwvaHRtbD4K";
+function hbsDecodeB64Utf8(b64){
+  const bin=atob(b64);
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
 }
-function hbsRenumber(){[...document.querySelectorAll('#pipeBody tr')].forEach((tr,i)=>tr.cells[0].textContent=i+1)}
-function hbsBindRow(tr){
-  tr.querySelector('.mat').onchange=()=>hbsFillRow(tr);
-  tr.querySelector('.size').onchange=hbsCalcTightness;
-  tr.querySelector('.len').oninput=hbsCalcTightness;
-  tr.querySelector('.remove').onclick=()=>{if(document.querySelectorAll('#pipeBody tr').length>1){tr.remove();hbsRenumber();hbsCalcTightness();}}
-}
-function hbsAddPipeRow(){
-  let first=document.querySelector('#pipeBody tr');
-  let tr=first.cloneNode(true);
-  tr.querySelector('.len').value='0';
-  document.getElementById('pipeBody').appendChild(tr);
-  hbsBindRow(tr); hbsFillRow(tr); hbsRenumber(); hbsCalcTightness();
-}
-function hbsCollectState(){
-  let pipes=[...document.querySelectorAll('#pipeBody tr')].map(tr=>({mat:tr.querySelector('.mat').value,size:tr.querySelector('.size').value,len:tr.querySelector('.len').value}));
-  let ids=['siteName','jobNumber','engineer','testDate','ttClientPortal','ttAreaPortal','gasType','procedure','installationType','testArea','gaugeType','roomVolume','mop','mip','testPressure','measuredDrop','meterType','meterStd','meterManual','turbineDia','turbineLen','fittingsMode','manualFittings','purgeMultiplier','engineerNotes'];
-  let values={}; ids.forEach(id=>{if(hbsN(id)) values[id]=hbsN(id).value;});
-  return {version:'portal-v2.0',values,pipes,lastResult:window.hbsLastTightnessResult||{}};
-}
-function hbsCalcTightness(){
-  if(!hbsN('pipeBody')) return {};
-  let pipe=0;
-  document.querySelectorAll('#pipeBody tr').forEach(tr=>{
-    let mat=tr.querySelector('.mat').value, size=tr.querySelector('.size').value, len=parseFloat(tr.querySelector('.len').value)||0;
-    let id=(hbsPipeData[mat]||{})[size]||0; let pm=hbsPerM(id); let v=pm*len; pipe+=v;
-    tr.querySelector('.idmm').textContent=id.toFixed(1);
-    tr.querySelector('.perM').textContent=pm.toFixed(6);
-    tr.querySelector('.vol').textContent=v.toFixed(6);
-  });
-  let mt=hbsN('meterType').value, meter=parseFloat(hbsN('meterManual').value)||0;
-  if(!meter) meter=parseFloat(hbsN('meterStd').value)||0;
-  if(mt==='Turbine' && !meter){
-    let d=(parseFloat(hbsN('turbineDia').value)||0)/1000, l=(parseFloat(hbsN('turbineLen').value)||0)/1000;
-    meter=0.70*d*d*l;
-  }
-  let fit=0, fm=hbsN('fittingsMode').value;
-  if(fm==='10') fit=pipe*0.10;
-  else if(fm==='manual') fit=parseFloat(hbsN('manualFittings').value)||0;
-  let total=pipe+meter+fit;
-  let proc=hbsN('procedure').value;
-  let std=proc==='auto'?(total<=1?'TPCP1A':'TPCP1'):proc;
-
-  let gas=hbsN('gasType').value;
-  let inst=hbsN('installationType').value;
-  let area=hbsN('testArea').value;
-  let grm=parseFloat(hbsN('gaugeType').value)||0.01;
-  let roomVol=parseFloat(hbsN('roomVolume').value)||0;
-  let rv = roomVol>0 ? roomVol : 60;
-
-  let f1Map={'Natural Gas':42,'Propane':102,'Butane':128};
-  let f1=f1Map[gas]||42;
-
-  let ttdRaw=0;
-  if(inst==='New' || area==='A'){
-    ttdRaw = grm * total * f1;
-  }else if(area==='B'){
-    ttdRaw = 2.8 * grm * total * (1/rv) * f1;
-  }else{
-    ttdRaw = 0.047 * grm * total * f1;
-  }
-  let ttd=Math.max(2,Math.ceil(ttdRaw));
-  let stab=std==='TPCP1A'?Math.max(ttd,6):Math.max(ttd,15);
-
-  let mplrNew={'Natural Gas':0.0014,'Propane':0.00057,'Butane':0.00044};
-  let mplrBperM3={'Natural Gas':0.0005,'Propane':0.0002,'Butane':0.00016};
-  let mplrCD={'Natural Gas':0.03,'Propane':0.0123,'Butane':0.0098};
-
-  let mplr=0;
-  if(inst==='New' || area==='A') mplr=mplrNew[gas]||0.0014;
-  else if(area==='B') mplr=(mplrBperM3[gas]||0.0005)*rv;
-  else mplr=mplrCD[gas]||0.03;
-
-  let f3Map={'Natural Gas':0.059,'Propane':0.024,'Butane':0.019};
-  let f3=f3Map[gas]||0.059;
-  let drop = total>0 ? (mplr * ttd) / (f3 * total) : 0;
-  let testPressure=parseFloat(hbsN('testPressure').value)||21;
-  if(drop>testPressure) drop=testPressure;
-  let meas=parseFloat(hbsN('measuredDrop').value)||0;
-  let actualLeakRate = total>0 ? (f3 * meas * total) / Math.max(ttd,1) : 0;
-  let leakMargin = mplr>0 ? (actualLeakRate / mplr) * 100 : 0;
-  let leakResult = actualLeakRate<=mplr ? 'PASS / CHECK' : 'FAIL / INVESTIGATE';
-  let purgeMultiplier=parseFloat(hbsN('purgeMultiplier') ? hbsN('purgeMultiplier').value : 1)||1;
-  let purgeVol=total*purgeMultiplier;
-  let mplrSource = (inst==='New'||area==='A') ? 'New / Type A' : (area==='B' ? 'Type B x Room Volume' : 'Type C/D');
-
-  hbsN('pipeVol').textContent=pipe.toFixed(6)+' m³'; hbsN('meterVol').textContent=meter.toFixed(6)+' m³'; hbsN('fitVol').textContent=fit.toFixed(6)+' m³'; hbsN('totalVol').textContent=total.toFixed(6)+' m³'; hbsN('stdOut').textContent=std; hbsN('stabOut').textContent=stab+' minutes'; hbsN('ttdOut').textContent=ttd+' minutes'; hbsN('totalTimeOut').textContent=(stab+ttd)+' minutes'; hbsN('dropOut').textContent=drop.toFixed(3)+' mbar'; hbsN('resultOut').textContent=meas<=drop?'PASS / CHECK':'FAIL / INVESTIGATE';
-  hbsN('mplrOut').textContent=mplr.toFixed(6)+' m³/hr'; hbsN('actualLeakOut').textContent=actualLeakRate.toFixed(6)+' m³/hr'; hbsN('leakMarginOut').textContent=leakMargin.toFixed(1)+'%'; hbsN('leakResultOut').textContent=leakResult; hbsN('f1Out').textContent=f1.toString(); hbsN('f3Out').textContent=f3.toFixed(3); hbsN('mplrSourceOut').textContent=mplrSource; hbsN('purgeVolOut').textContent=purgeVol.toFixed(6)+' m³';
-
-  let report=`HBS Commercial Gas Tightness Test Calculator\nSite: ${hbsN('siteName').value}\nJob: ${hbsN('jobNumber').value}\nEngineer: ${hbsN('engineer').value}\nDate: ${hbsN('testDate').value}\nGas Type: ${gas}\nInstallation Type: ${inst}\nStandard: ${std}\nPipework Volume: ${pipe.toFixed(6)} m³\nMeter Volume: ${meter.toFixed(6)} m³\nFittings Volume: ${fit.toFixed(6)} m³\nTotal Installation Volume: ${total.toFixed(6)} m³\nStabilisation: ${stab} minutes\nTTD: ${ttd} minutes\nTotal Time: ${stab+ttd} minutes\nMPLR: ${mplr.toFixed(6)} m³/hr\nActual Leak Rate: ${actualLeakRate.toFixed(6)} m³/hr\nLeak Rate Margin: ${leakMargin.toFixed(1)}%\nF1 Factor: ${f1}\nF3 Factor: ${f3.toFixed(3)}\nPurge Volume: ${purgeVol.toFixed(6)} m³\nIndicative Allowable Drop: ${drop.toFixed(3)} mbar\nMeasured Drop: ${meas.toFixed(3)} mbar\nPressure Drop Result: ${hbsN('resultOut').textContent}\nLeak Rate Result: ${leakResult}\nNotes: ${hbsN('engineerNotes') ? hbsN('engineerNotes').value : ''}`;
-  hbsN('report').textContent=report;
-  window.hbsLastTightnessResult={pipe,meter,fit,total,std,stab,ttd,totalTime:stab+ttd,drop,measuredDrop:meas,mplr,actualLeakRate,leakMargin,leakResult,f1,f3,purgeVol,mplrSource,report};
-  return window.hbsLastTightnessResult;
+function hbsLoadEmbeddedTightness(){
+  const frame=document.getElementById('hbsTightnessFrame');
+  if(!frame) return;
+  frame.srcdoc=hbsDecodeB64Utf8(HBS_TIGHTNESS_CALC_B64);
+  setTimeout(()=>{
+    try{
+      const d=frame.contentDocument;
+      if(d?.getElementById('engineer')) d.getElementById('engineer').value=user?.name||'';
+      if(d?.getElementById('testDate')) d.getElementById('testDate').value=new Date().toISOString().slice(0,10);
+      if(frame.contentWindow?.calc) frame.contentWindow.calc();
+    }catch(e){}
+  },500);
 }
 async function loadTightnessCalculator(){
   show('tightnessCalculator');
-  if(hbsN('engineer')) hbsN('engineer').value=user?.name||'';
-  if(hbsN('testDate')) hbsN('testDate').value=new Date().toISOString().slice(0,10);
-  document.querySelectorAll('#pipeBody tr').forEach(tr=>{hbsBindRow(tr);hbsFillRow(tr)});
-  document.querySelectorAll('#tightnessCalculator input,#tightnessCalculator select').forEach(el=>{el.oninput=hbsCalcTightness;el.onchange=hbsCalcTightness;});
-  hbsCalcTightness();
+  hbsLoadEmbeddedTightness();
   await hbsLoadTightnessRecords();
 }
-function hbsSaveTightnessJson(){
-  let blob=new Blob([JSON.stringify(hbsCollectState(),null,2)],{type:'application/json'});
-  let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='HBS_Gas_Tightness_Test_'+(hbsN('jobNumber').value||'Calculation')+'.json'; a.click(); URL.revokeObjectURL(a.href);
+function hbsGetEmbeddedState(){
+  const frame=document.getElementById('hbsTightnessFrame');
+  if(!frame?.contentWindow) throw new Error('Calculator has not loaded yet.');
+  if(frame.contentWindow.hbsPortalCollectState) return frame.contentWindow.hbsPortalCollectState();
+  throw new Error('Calculator state function not available. Reload the calculator and try again.');
 }
-async function hbsSaveTightnessPortalRecord(){
-  const r=hbsCalcTightness();
-  const body={
-    engineer_name:user?.name||hbsN('engineer').value, role:user?.role||'engineer',
-    site_name:hbsN('siteName').value, client:hbsN('ttClientPortal').value, audit_ref:hbsN('jobNumber').value,
-    test_date:hbsN('testDate').value, area_tested:hbsN('ttAreaPortal').value, test_type:r.std,
-    installation_volume:r.total, test_pressure:Number(hbsN('testPressure').value||0), stabilisation_time:r.stab,
-    test_duration:r.ttd, measured_drop:r.measuredDrop, permitted_leak_rate:r.mplr, calculated_leak_rate:r.actualLeakRate,
-    outcome:r.leakResult, notes:hbsN('engineerNotes').value, details_json:JSON.stringify(hbsCollectState())
-  };
+async function hbsSaveEmbeddedTightness(){
   try{
+    const s=hbsGetEmbeddedState();
+    const body={
+      engineer_name:user?.name||s.engineer_name||'',
+      role:user?.role||'engineer',
+      site_name:s.site_name||'',
+      client:'',
+      audit_ref:s.audit_ref||'',
+      test_date:s.test_date||new Date().toISOString().slice(0,10),
+      area_tested:s.test_area||'',
+      test_type:s.selected_standard||s.procedure||'',
+      installation_volume:Number(s.installation_volume||0),
+      test_pressure:Number(s.test_pressure||0),
+      stabilisation_time:Number(s.stabilisation_time||0),
+      test_duration:Number(s.test_duration||0),
+      measured_drop:Number(s.measured_drop||0),
+      permitted_leak_rate:0,
+      calculated_leak_rate:0,
+      outcome:s.outcome||'CHECK',
+      notes:s.report||'',
+      details_json:JSON.stringify(s)
+    };
     const j=await api('/api/tightness',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    hbsN('ttMsg').textContent='Saved tightness calculation record ID '+j.id;
+    document.getElementById('ttMsg').textContent='Saved tightness calculation record ID '+j.id;
     await hbsLoadTightnessRecords();
-  }catch(e){hbsN('ttMsg').textContent=e.message;}
+  }catch(e){
+    document.getElementById('ttMsg').textContent=e.message;
+  }
 }
 async function hbsLoadTightnessRecords(){
   try{
     const j=await api(`/api/tightness?role=${user?.role||'engineer'}&engineer=${encodeURIComponent(user?.name||'')}`);
     const rows=j.records||[];
-    hbsN('ttRows').innerHTML=rows.length?rows.map(r=>`<tr><td>${r.id}</td><td>${r.test_date||''}</td><td>${r.engineer_name||''}</td><td>${r.site_name||''}</td><td>${Number(r.installation_volume||0).toFixed(6)}</td><td>${Number(r.measured_drop||0).toFixed(3)}</td><td>${Number(r.calculated_leak_rate||0).toFixed(6)}</td><td>${r.outcome||''}</td></tr>`).join(''):'<tr><td colspan="8">No saved records found.</td></tr>';
-  }catch(e){hbsN('ttRows').innerHTML=`<tr><td colspan="8">${e.message}</td></tr>`;}
+    window._tightnessRecords=rows;
+    const el=document.getElementById('ttRows');
+    if(!el) return;
+    el.innerHTML=rows.length?rows.map(r=>`<tr>
+      <td>${r.id}</td><td>${r.test_date||''}</td><td>${r.engineer_name||''}</td><td>${r.site_name||''}</td>
+      <td>${Number(r.installation_volume||0).toFixed(6)}</td><td>${Number(r.measured_drop||0).toFixed(3)}</td>
+      <td>${r.outcome||''}</td><td><button onclick="hbsViewTightnessRecord(${r.id})">View</button></td>
+    </tr>`).join(''):'<tr><td colspan="8">No saved records found.</td></tr>';
+  }catch(e){
+    const el=document.getElementById('ttRows');
+    if(el) el.innerHTML=`<tr><td colspan="8">${e.message}</td></tr>`;
+  }
+}
+function hbsViewTightnessRecord(id){
+  const r=(window._tightnessRecords||[]).find(x=>Number(x.id)===Number(id));
+  const el=document.getElementById('ttRecordDetail');
+  if(!r||!el) return;
+  let details=null;
+  try{details=JSON.parse(r.details_json||'null');}catch(e){}
+  el.innerHTML=`<table>
+    <tr><th>ID</th><td>${r.id}</td></tr>
+    <tr><th>Engineer</th><td>${r.engineer_name||''}</td></tr>
+    <tr><th>Site</th><td>${r.site_name||''}</td></tr>
+    <tr><th>Job/Audit Ref</th><td>${r.audit_ref||''}</td></tr>
+    <tr><th>Installation Volume</th><td>${Number(r.installation_volume||0).toFixed(6)} m³</td></tr>
+    <tr><th>Measured Drop</th><td>${Number(r.measured_drop||0).toFixed(3)} mbar</td></tr>
+    <tr><th>Stabilisation</th><td>${r.stabilisation_time||''} minutes</td></tr>
+    <tr><th>Test Duration</th><td>${r.test_duration||''} minutes</td></tr>
+    <tr><th>Outcome</th><td>${r.outcome||''}</td></tr>
+    <tr><th>Report</th><td><pre>${(details?.report||r.notes||'')}</pre></td></tr>
+  </table>`;
 }
 
 </script>
