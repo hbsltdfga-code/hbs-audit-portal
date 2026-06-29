@@ -49,7 +49,7 @@ textarea{width:100%;min-height:80px}
     <label>4 digit PIN<br><input id="loginPin" type="password" inputmode="numeric" autocomplete="current-password"></label>
   </div>
   <p><button onclick="login()">Login</button></p>
-  <p id="loginMsg" class="muted"></p>
+  <p id="loginMsg" class="muted"></p><p class="muted">Manager login example: Peter Taylor / peter@hbs.local / PIN 3110</p>
 </section>
 
 <section id="app" class="hide">
@@ -343,12 +343,47 @@ async function api(url, opts){const r=await fetch(url, opts||{cache:'no-store'})
 function roleLabel(r){return r==='manager'?'Manager':r==='senior_engineer'?'Senior Engineer':'Engineer'}
 function outcome(score){score=Number(score||0); if(score>=95)return'Excellent'; if(score>=85)return'Pass'; if(score>=75)return'Improvement Required'; return'Fail'}
 
+
 async function login(){
+  const emailEl = $('loginEmail');
+  const pinEl = $('loginPin');
+  const msgEl = $('loginMsg');
+  const loginValue = String(emailEl?.value || '').trim();
+  const pinValue = String(pinEl?.value || '').trim();
+
+  if(msgEl) msgEl.textContent = 'Checking login...';
+
+  if(!loginValue || !pinValue){
+    if(msgEl) msgEl.textContent = 'Enter your email/name and PIN.';
+    return;
+  }
+
   try{
-    const j=await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:$('loginEmail').value,pin:$('loginPin').value})});
-    user=j.user; localStorage.setItem('hbs_user',JSON.stringify(user)); startApp();
-  }catch(e){$('loginMsg').textContent=e.message}
+    const res = await fetch('/api/login', {
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({ email:loginValue, username:loginValue, pin:pinValue, password:pinValue })
+    });
+
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch(e) { throw new Error('Login API did not return JSON: ' + text.slice(0,200)); }
+
+    if(!res.ok || data.ok === false){
+      throw new Error(data.error || 'Login failed.');
+    }
+
+    user = data.user;
+    localStorage.setItem('hbs_user', JSON.stringify(user));
+    if(msgEl) msgEl.textContent = 'Login successful.';
+    startApp();
+  }catch(e){
+    if(msgEl) msgEl.textContent = e.message;
+    console.error('Login failed:', e);
+  }
 }
+
 function logout(){localStorage.removeItem('hbs_user'); location.reload()}
 function startApp(){
   $('loginCard').classList.add('hide'); $('app').classList.remove('hide');
