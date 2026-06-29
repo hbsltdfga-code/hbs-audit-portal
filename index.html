@@ -61,6 +61,58 @@ textarea{width:100%;min-height:80px}
   </div>
 
   <main>
+    
+    <section id="complianceKpis" class="card section hide">
+      <h2>Commercial Gas Compliance KPI Dashboard</h2>
+      <p class="muted">Manager view of company-wide audit, training, re-audit and tightness test compliance.</p>
+      <p><button onclick="loadComplianceKpis()">Refresh KPIs</button></p>
+      <div class="statgrid">
+        <div class="stat"><b>Overall Compliance Score</b><br><b id="kpiOverall">0%</b></div>
+        <div class="stat"><b>Open Training</b><br><b id="kpiOpenTraining">0</b></div>
+        <div class="stat"><b>Open Re-audits</b><br><b id="kpiOpenReaudits">0</b></div>
+        <div class="stat"><b>Failed Audits</b><br><b id="kpiFails">0</b></div>
+        <div class="stat"><b>Tightness Tests</b><br><b id="kpiTightness">0</b></div>
+        <div class="stat"><b>Knowledge Documents</b><br><b id="kpiDocs">0</b></div>
+      </div>
+      <h3>Manager Notifications</h3>
+      <table><thead><tr><th>Priority</th><th>Notification</th><th>Action Required</th></tr></thead><tbody id="notificationRows"></tbody></table>
+    </section>
+
+    <section id="competencyCentre" class="card section hide">
+      <h2>Engineer Competency Centre</h2>
+      <p class="muted">Permanent engineer competency record based on audits, training, tests and tightness records.</p>
+      <p><button onclick="loadCompetencyCentre()">Refresh Competency Records</button></p>
+      <table>
+        <thead><tr><th>Engineer</th><th>Audits</th><th>Average</th><th>Fails</th><th>Open Training</th><th>Tests</th><th>Tightness Tests</th><th>Competency Status</th><th>Action</th></tr></thead>
+        <tbody id="competencyRows"></tbody>
+      </table>
+      <h3>Selected Engineer Detail</h3>
+      <div id="competencyDetail" class="muted">Select an engineer to view their competency record.</div>
+    </section>
+
+    <section id="reportsCentre" class="card section hide">
+      <h2>Reports Centre</h2>
+      <p class="muted">Export audit, training, competency and tightness test data for management records.</p>
+      <div class="grid">
+        <label>Report Type<br>
+          <select id="reportType">
+            <option value="audit">Audit Register</option>
+            <option value="training">Training Records</option>
+            <option value="competency">Engineer Competency</option>
+            <option value="tightness">Tightness Tests</option>
+            <option value="kpi">Compliance KPI Summary</option>
+          </select>
+        </label>
+        <label>Engineer Filter<br><input id="reportEngineer" placeholder="Optional"></label>
+      </div>
+      <p>
+        <button onclick="downloadReport('csv')">Download CSV</button>
+        <button onclick="downloadReport('json')">Download JSON</button>
+        <button onclick="loadReportsCentre()">Preview</button>
+      </p>
+      <pre id="reportPreview" style="white-space:pre-wrap;background:#f8fafb;border:1px solid #cfd8dc;padding:10px;border-radius:8px"></pre>
+    </section>
+
     <section id="dashboard" class="card section">
       <h2>Manager Dashboard / Audit Register</h2>
       <p><button onclick="loadDashboard()">Refresh</button></p>
@@ -247,12 +299,12 @@ function startApp(){
 }
 function buildNav(){
   const menus={
-    manager:[['New Audit','auditForm'],['My Dashboard','dashboard'],['Training / Re-audits','trainingView'],['Training Management','trainingManager'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Test Results','toolboxResults'],['Manage Tests','managerTestSignoff'],['Users','userAdmin'],['Record Management','recordManager'],['Backup','backup'],['Logout','logout']],
+    manager:[['New Audit','auditForm'],['My Dashboard','dashboard'],['Compliance KPIs','complianceKpis'],['Engineer Competency','competencyCentre'],['Training / Re-audits','trainingView'],['Training Management','trainingManager'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Test Results','toolboxResults'],['Manage Tests','managerTestSignoff'],['Users','userAdmin'],['Record Management','recordManager'],['Reports','reportsCentre'],['Backup','backup'],['Logout','logout']],
     senior_engineer:[['Conduct Audit','auditForm'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Logout','logout']],
     engineer:[['My Dashboard','trainingView'],['Toolbox Test','toolboxTest'],['Knowledge Centre','knowledgeCentre'],['Tightness Calculator','tightnessCalculator'],['Logout','logout']]
   };
   $('navButtons').innerHTML='';
-  (menus[user.role]||menus.engineer).forEach(([label,id])=>{const b=document.createElement('button'); b.textContent=label; b.onclick=()=>{if(id==='logout') logout(); else {show(id); if(id==='dashboard')loadDashboard(); if(id==='trainingView')loadTraining(); if(id==='knowledgeCentre')loadKnowledgeCentre(); if(id==='tightnessCalculator')loadTightnessCalculator(); if(id==='userAdmin')loadUsers(); if(id==='managerTestSignoff')loadManagerTests(); if(id==='recordManager')loadRecordManager(); if(id==='toolboxResults')loadToolboxResults();}}; $('navButtons').appendChild(b);});
+  (menus[user.role]||menus.engineer).forEach(([label,id])=>{const b=document.createElement('button'); b.textContent=label; b.onclick=()=>{if(id==='logout') logout(); else {show(id); if(id==='dashboard')loadDashboard(); if(id==='trainingView')loadTraining(); if(id==='knowledgeCentre')loadKnowledgeCentre(); if(id==='tightnessCalculator')loadTightnessCalculator(); if(id==='userAdmin')loadUsers(); if(id==='managerTestSignoff')loadManagerTests(); if(id==='recordManager')loadRecordManager(); if(id==='complianceKpis')loadComplianceKpis(); if(id==='competencyCentre')loadCompetencyCentre(); if(id==='reportsCentre')loadReportsCentre(); if(id==='toolboxResults')loadToolboxResults();}}; $('navButtons').appendChild(b);});
 }
 
 async function populateEngineerSelects(){
@@ -418,6 +470,62 @@ async function returnTraining(id){
     await api('/api/training',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Returned for Further Training',manager_name:user.name,manager_notes:notes||''})});
     await loadTraining();
   }catch(e){alert(e.message)}
+}
+
+
+async function loadComplianceKpis(){
+  if(user.role!=='manager') return;
+  try{
+    const j=await api('/api/enterprise');
+    const s=j.summary||{};
+    $('kpiOverall').textContent=(s.overall_compliance||0)+'%';
+    $('kpiOpenTraining').textContent=s.open_training||0;
+    $('kpiOpenReaudits').textContent=s.open_reaudits||0;
+    $('kpiFails').textContent=s.failed_audits||0;
+    $('kpiTightness').textContent=s.tightness_tests||0;
+    $('kpiDocs').textContent=s.documents||0;
+    $('notificationRows').innerHTML=(j.notifications||[]).map(n=>`<tr><td>${n.priority}</td><td>${n.message}</td><td>${n.action}</td></tr>`).join('');
+  }catch(e){$('notificationRows').innerHTML='<tr><td colspan="3">'+e.message+'</td></tr>'}
+}
+async function loadCompetencyCentre(){
+  if(user.role!=='manager') return;
+  try{
+    const j=await api('/api/competency');
+    $('competencyRows').innerHTML=(j.engineers||[]).map(e=>`<tr>
+      <td>${e.engineer}</td><td>${e.audits}</td><td>${e.average_score}%</td><td>${e.fails}</td><td>${e.open_training}</td>
+      <td>${e.tests}</td><td>${e.tightness_tests}</td><td>${e.status}</td>
+      <td><button onclick="showCompetencyDetail('${String(e.engineer).replace(/'/g,"\\'")}')">View</button></td>
+    </tr>`).join('');
+    window._competency=j.engineers||[];
+  }catch(e){$('competencyRows').innerHTML='<tr><td colspan="9">'+e.message+'</td></tr>'}
+}
+function showCompetencyDetail(engineer){
+  const e=(window._competency||[]).find(x=>x.engineer===engineer);
+  if(!e){$('competencyDetail').textContent='Record not found.';return;}
+  $('competencyDetail').innerHTML=`<table>
+    <tr><th>Engineer</th><td>${e.engineer}</td></tr>
+    <tr><th>Audits</th><td>${e.audits}</td></tr>
+    <tr><th>Average Score</th><td>${e.average_score}%</td></tr>
+    <tr><th>Failed Audits</th><td>${e.fails}</td></tr>
+    <tr><th>Open Training</th><td>${e.open_training}</td></tr>
+    <tr><th>Completed Training</th><td>${e.completed_training}</td></tr>
+    <tr><th>Toolbox / Competency Tests</th><td>${e.tests}</td></tr>
+    <tr><th>Tightness Tests</th><td>${e.tightness_tests}</td></tr>
+    <tr><th>Status</th><td>${e.status}</td></tr>
+    <tr><th>Recommended Action</th><td>${e.recommended_action}</td></tr>
+  </table>`;
+}
+async function loadReportsCentre(){
+  if(user.role!=='manager') return;
+  const type=$('reportType').value, engineer=encodeURIComponent($('reportEngineer').value||'');
+  try{
+    const j=await api(`/api/reports?type=${type}&engineer=${engineer}`);
+    $('reportPreview').textContent=JSON.stringify(j.data||j,null,2);
+  }catch(e){$('reportPreview').textContent=e.message}
+}
+function downloadReport(format){
+  const type=$('reportType').value, engineer=encodeURIComponent($('reportEngineer').value||'');
+  window.open(`/api/reports?type=${type}&engineer=${engineer}&format=${format}`,'_blank');
 }
 
 </script>
