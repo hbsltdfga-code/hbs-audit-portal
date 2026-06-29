@@ -1,12 +1,8 @@
-function outcome(score){
-  score=Number(score||0);
-  if(score>=95) return 'Excellent';
-  if(score>=85) return 'Pass';
-  if(score>=75) return 'Improvement Required';
-  return 'Fail';
+async function tableInfo(env, table) {
+  try { return (await env.DB.prepare(`PRAGMA table_info(${table})`).all()).results || []; }
+  catch(e) { return []; }
 }
-
-async function ensureAudits(env){
+async function ensureAudits(env) {
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS audits (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     engineer_name TEXT,
@@ -27,43 +23,59 @@ async function ensureAudits(env){
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`).run();
 }
-
+function outcome(score) {
+  score = Number(score || 0);
+  if (score >= 95) return 'Excellent';
+  if (score >= 85) return 'Pass';
+  if (score >= 75) return 'Improvement Required';
+  return 'Fail';
+}
+function auditRef(row) {
+  return row.audit_ref || row.ref || (row.id ? `HBS-${row.id}` : '');
+}
 export async function onRequestGet({ request, env }) {
   try {
     await ensureAudits(env);
     const url = new URL(request.url);
     const role = url.searchParams.get('role') || 'engineer';
     const engineer = url.searchParams.get('engineer') || '';
-    let rows;
 
+    let rows;
     if (role === 'manager') {
-      rows = await env.DB.prepare('SELECT * FROM audits ORDER BY id DESC').all();
+      rows = await env.DB.prepare(`SELECT * FROM audits ORDER BY id DESC`).all();
     } else if (role === 'senior_engineer') {
       rows = await env.DB.prepare(`SELECT * FROM audits
         WHERE lower(engineer_name)=lower(?) OR lower(auditor)=lower(?)
         ORDER BY id DESC`).bind(engineer, engineer).all();
     } else {
-      rows = await env.DB.prepare('SELECT * FROM audits WHERE lower(engineer_name)=lower(?) ORDER BY id DESC')
-        .bind(engineer).all();
+      rows = await env.DB.prepare(`SELECT * FROM audits
+        WHERE lower(engineer_name)=lower(?)
+        ORDER BY id DESC`).bind(engineer).all();
     }
 
-    return Response.json({ ok:true, audits: rows.results || [] });
+    const audits = (rows.results || []).map(r => ({
+      ...r,
+      ref: auditRef(r),
+      score: Number(r.score || 0),
+      result: r.result || outcome(r.score)
+    }));
+
+    return Response.json({ ok: true, audits });
   } catch (e) {
-    return Response.json({ ok:false, error:e.message }, { status:500 });
+    return Response.json({ ok: false, error: e.message }, { status: 500 });
   }
 }
-
 export async function onRequestPost({ request, env }) {
   try {
     await ensureAudits(env);
     const body = await request.json();
     const role = body.role || 'engineer';
 
-    if (!['manager','senior_engineer'].includes(role)) {
-      return Response.json({ ok:false, error:'Only managers or senior engineers can create audits' }, { status:403 });
+    if (!['manager', 'senior_engineer'].includes(role)) {
+      return Response.json({ ok: false, error: 'Only managers or senior engineers can create audits' }, { status: 403 });
     }
 
-    const score = Number(body.score || body.calculated_score || 0);
+    const score = Number(body.score || body.calculated_score || body.total_score || 0);
     const result = body.result || body.outcome || outcome(score);
 
     const ins = await env.DB.prepare(`INSERT INTO audits
@@ -73,7 +85,7 @@ export async function onRequestPost({ request, env }) {
         body.engineer_name || body.engineer || '',
         body.site_name || body.site || '',
         body.client || '',
-        body.audit_date || body.date || new Date().toISOString().slice(0,10),
+        body.audit_date || body.date || new Date().toISOString().slice(0, 10),
         body.auditor || body.created_by || '',
         body.appliance_type || '',
         body.manufacturer || '',
@@ -87,8 +99,8 @@ export async function onRequestPost({ request, env }) {
         JSON.stringify(body)
       ).run();
 
-    return Response.json({ ok:true, id:ins.meta?.last_row_id, result, score });
+    return Response.json({ ok: true, id: ins.meta?.last_row_id, ref: `HBS-${ins.meta?.last_row_id}`, score, result });
   } catch (e) {
-    return Response.json({ ok:false, error:e.message }, { status:500 });
+    return Response.json({ ok: false, error: e.message }, { status: 500 });
   }
 }

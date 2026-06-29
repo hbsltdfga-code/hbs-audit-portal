@@ -14,8 +14,10 @@ export async function onRequestPost({ request, env }) {
       active INTEGER DEFAULT 1
     )`).run();
 
-    const cols = await env.DB.prepare('PRAGMA table_info(users)').all();
-    if (!(cols.results || []).some(c => c.name === 'title')) await env.DB.prepare('ALTER TABLE users ADD COLUMN title TEXT').run();
+    const cols = await env.DB.prepare(`PRAGMA table_info(users)`).all();
+    if (!(cols.results || []).some(c => c.name === 'title')) {
+      await env.DB.prepare(`ALTER TABLE users ADD COLUMN title TEXT`).run();
+    }
 
     await env.DB.prepare(`UPDATE users SET role='senior_engineer', title='Senior Engineer' WHERE lower(name)=lower('Mark Fuller')`).run();
 
@@ -23,10 +25,10 @@ export async function onRequestPost({ request, env }) {
       WHERE lower(email)=lower(?) AND pin=? AND COALESCE(active,1)=1`)
       .bind(email, pin).first();
 
-    if (!user) return Response.json({ ok:false, error:'Invalid login details' }, { status:401 });
+    if (!user) return Response.json({ ok: false, error: 'Invalid login details' }, { status: 401 });
 
-    return Response.json({ ok:true, user });
+    return Response.json({ ok: true, user });
   } catch (e) {
-    return Response.json({ ok:false, error:e.message }, { status:500 });
+    return Response.json({ ok: false, error: e.message }, { status: 500 });
   }
 }
