@@ -1157,211 +1157,114 @@ function hbsViewTightnessRecord(id){
 
 
 
-// --- HBS Portal v2 Stable Role Navigation ---
+// --- HBS Clean Stable Client Controller ---
 (function(){
+  function ntext(s){ return String(s||'').replace(/\s+/g,' ').trim(); }
+  function roleLabel(role){ return role==='manager'?'Manager':role==='senior_engineer'?'Senior Engineer':'Engineer'; }
+
   const menus = {
-    manager: [
-      ['New Audit','auditForm'],
-      ['My Dashboard','dashboard'],
-      ['Training / Re-audits','trainingView'],
-      ['Training Management','trainingManager'],
-      ['Toolbox Test','toolboxTest'],
-      ['Knowledge Centre','knowledgeCentre'],
-      ['Tightness Calculator','tightnessCalculator'],
-      ['Test Results','toolboxResults'],
-      ['Users','userAdmin'],
-      ['Record Management','recordManager'],
-      ['Backup','backupAction'],
-      ['Logout','logoutAction']
-    ],
-    senior_engineer: [
-      ['Conduct Audit','auditForm'],
-      ['Toolbox Test','toolboxTest'],
-      ['Knowledge Centre','knowledgeCentre'],
-      ['Tightness Calculator','tightnessCalculator'],
-      ['Logout','logoutAction']
-    ],
-    engineer: [
-      ['My Dashboard','dashboard'],
-      ['Toolbox Test','toolboxTest'],
-      ['Knowledge Centre','knowledgeCentre'],
-      ['Tightness Calculator','tightnessCalculator'],
-      ['Logout','logoutAction']
-    ]
+    manager: ['New Audit','My Dashboard','Training / Re-audits','Training Management','Toolbox Test','Knowledge Centre','Tightness Calculator','Test Results','Users','Record Management','Backup','Logout'],
+    senior_engineer: ['Conduct Audit','Toolbox Test','Knowledge Centre','Tightness Calculator','Logout'],
+    engineer: ['My Dashboard','Toolbox Test','Knowledge Centre','Tightness Calculator','Logout']
   };
 
-  function norm(t){ return String(t||'').replace(/\s+/g,' ').trim(); }
-  function roleLabel(role){ return role==='manager'?'Manager':role==='senior_engineer'?'Senior Engineer':'Engineer'; }
-  window.hbsRoleLabel = roleLabel;
+  function apiGet(url){ return fetch(url).then(r=>r.text().then(t=>{let j;try{j=JSON.parse(t)}catch(e){throw new Error(t.slice(0,200))} if(!r.ok||j.ok===false)throw new Error(j.error||r.status); return j;})); }
 
-  function hideAllSections(){
-    const ids=['dashboard','auditForm','booklet','trainingView','userAdmin','toolboxTest','trainingManager','toolboxResults','recordManager','knowledgeCentre','technicalLibrary','tightnessCalculator'];
-    ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.add('hide'); });
-  }
+  function open(label){
+    if(label==='Logout'){ if(typeof logout==='function') logout(); else location.reload(); return; }
+    if(label==='Backup'){ if(typeof downloadBackup==='function') downloadBackup(); return; }
 
-  function openSection(id){
-    if(id==='logoutAction'){ if(typeof logout==='function') logout(); else location.reload(); return; }
-    if(id==='backupAction'){ if(typeof downloadBackup==='function') downloadBackup(); else alert('Backup function not available on this build.'); return; }
+    const map = {
+      'New Audit':'auditForm','Conduct Audit':'auditForm','My Dashboard':'dashboard','Training / Re-audits':'trainingView',
+      'Training Management':'trainingManager','Toolbox Test':'toolboxTest','Knowledge Centre':'knowledgeCentre',
+      'Tightness Calculator':'tightnessCalculator','Test Results':'toolboxResults','Users':'userAdmin','Record Management':'recordManager'
+    };
+    const id = map[label];
 
-    if(window.user && user.role==='senior_engineer'){
-      const allowed=['auditForm','toolboxTest','knowledgeCentre','technicalLibrary','tightnessCalculator'];
-      if(!allowed.includes(id)) return;
-    }
+    if(window.user && user.role==='senior_engineer' && !['auditForm','toolboxTest','knowledgeCentre','tightnessCalculator'].includes(id)) return;
 
     if(typeof show==='function') show(id);
-    else { hideAllSections(); const el=document.getElementById(id); if(el) el.classList.remove('hide'); }
+    else {
+      document.querySelectorAll('.card.hide, .card').forEach(()=>{});
+      const el=document.getElementById(id); if(el) el.classList.remove('hide');
+    }
 
-    if(id==='dashboard' && typeof loadDashboard==='function') setTimeout(()=>loadDashboard(),50);
-    if(id==='trainingView' && typeof loadTraining==='function') setTimeout(()=>loadTraining(),50);
-    if(id==='knowledgeCentre' && typeof loadKnowledgeCentre==='function') setTimeout(()=>loadKnowledgeCentre(),50);
-    if(id==='technicalLibrary' && typeof loadTechnicalLibrary==='function') setTimeout(()=>loadTechnicalLibrary(),50);
-    if(id==='tightnessCalculator' && typeof loadTightnessCalculator==='function') setTimeout(()=>loadTightnessCalculator(),50);
+    if(label==='My Dashboard' && typeof hbsLoadManagerDashboard==='function') setTimeout(hbsLoadManagerDashboard,100);
+    if(label==='Training / Re-audits' && typeof loadTraining==='function') setTimeout(loadTraining,100);
+    if(label==='Knowledge Centre' && typeof loadKnowledgeCentre==='function') setTimeout(loadKnowledgeCentre,100);
+    if(label==='Tightness Calculator' && typeof loadTightnessCalculator==='function') setTimeout(loadTightnessCalculator,100);
     if(id==='auditForm'){
-      const aud=document.getElementById('auditor');
-      if(aud && window.user) aud.value=user.name || '';
+      const a=document.getElementById('auditor'); if(a&&window.user) a.value=user.name||'';
     }
   }
 
-  window.hbsOpenSection = openSection;
-
-  function findNavHost(){
-    const loginText=[...document.querySelectorAll('body *')].find(el=>norm(el.textContent).startsWith('Logged in:'));
-    if(loginText) return loginText.closest('.card') || loginText.parentElement;
-    return document.querySelector('nav') || document.querySelector('.nav') || document.querySelector('.toolbar');
+  function navHost(){
+    const el=[...document.querySelectorAll('body *')].find(x=>ntext(x.textContent).startsWith('Logged in:'));
+    return el ? (el.closest('.card') || el.parentElement) : (document.querySelector('nav') || document.body);
   }
 
-  window.hbsBuildRoleNav = function(){
+  window.hbsBuildMenu = function(){
     if(!window.user) return;
-    const host=findNavHost();
+    const host = navHost();
     if(!host) return;
-    const allLabels=new Set(Object.values(menus).flat().map(x=>x[0]));
-    [...host.querySelectorAll('button')].forEach(b=>{ if(allLabels.has(norm(b.textContent))) b.remove(); });
+    const all = new Set(Object.values(menus).flat());
 
-    // Normalise login label
-    const loginNode=[...host.childNodes].find(n=>String(n.textContent||'').includes('Logged in:'));
-    if(loginNode && loginNode.nodeType===3){
-      loginNode.textContent = `Logged in: ${user.name} (${roleLabel(user.role)}) `;
-    } else {
-      const maybe=[...host.querySelectorAll('*')].find(el=>norm(el.textContent).startsWith('Logged in:'));
-      if(maybe) maybe.textContent = `Logged in: ${user.name} (${roleLabel(user.role)})`;
-    }
+    [...host.querySelectorAll('button')].forEach(b=>{ if(all.has(ntext(b.textContent))) b.remove(); });
 
-    const menu=menus[user.role] || menus.engineer;
-    menu.forEach(([label,id])=>{
-      const btn=document.createElement('button');
-      btn.textContent=label;
-      btn.onclick=()=>openSection(id);
-      host.appendChild(btn);
+    const loginEl=[...host.querySelectorAll('*')].find(x=>ntext(x.textContent).startsWith('Logged in:'));
+    if(loginEl) loginEl.textContent = `Logged in: ${user.name} (${roleLabel(user.role)})`;
+
+    (menus[user.role]||menus.engineer).forEach(label=>{
+      const b=document.createElement('button');
+      b.textContent=label;
+      b.onclick=()=>open(label);
+      host.appendChild(b);
     });
-
-    if(user.role==='senior_engineer'){
-      ['dashboard','trainingView','trainingManager','toolboxResults','recordManager','userAdmin'].forEach(id=>{
-        const el=document.getElementById(id); if(el) el.classList.add('hide');
-      });
-    }
   };
 
-  const oldShow=window.show;
-  if(oldShow && !window.__hbsV2ShowPatched){
-    window.__hbsV2ShowPatched=true;
-    window.show=function(id){
-      if(window.user && user.role==='senior_engineer'){
-        const allowed=['auditForm','toolboxTest','knowledgeCentre','technicalLibrary','tightnessCalculator'];
-        if(!allowed.includes(id)) return;
-      }
-      return oldShow.apply(this,arguments);
-    };
-  }
+  function sc(a){return Number(a.score||0)}
+  function res(a){return a.result||a.outcome||''}
+  function eng(a){return a.engineer_name||a.engineer||''}
 
-  setInterval(()=>{ try{ window.hbsBuildRoleNav(); }catch(e){} }, 1000);
-})();
-
-
-// --- HBS Portal v2 Manager Dashboard Direct Loader ---
-(function(){
-  async function fetchJson(url, opts){
-    const r=await fetch(url, opts||{});
-    const text=await r.text();
-    let j; try{ j=JSON.parse(text); }catch(e){ throw new Error(text.slice(0,250)); }
-    if(!r.ok || j.ok===false) throw new Error(j.error || ('HTTP '+r.status));
-    return j;
-  }
-  function score(a){ return Number(a.score ?? a.audit_score ?? a.total_score ?? a.calculated_score ?? 0); }
-  function eng(a){ return a.engineer_name || a.engineer || a.engineerName || ''; }
-  function result(a){ return a.result || a.outcome || a.audit_result || ''; }
-  function setCardByTitle(title, value){
-    [...document.querySelectorAll('.card, .stat, div')].forEach(c=>{
-      const t=(c.textContent||'').trim();
-      if(t.startsWith(title) && t.length < 80) c.innerHTML='<b>'+title+'</b><br><b>'+value+'</b>';
-    });
-  }
-
-  window.hbsV2LoadManagerDashboard = async function(){
+  window.hbsLoadManagerDashboard = async function(){
     if(!window.user || user.role!=='manager') return;
     let audits=[], training=[], reaudits=[];
-    try{ audits=(await fetchJson('/api/audits?role=manager&engineer='+encodeURIComponent(user.name||''))).audits||[]; }catch(e){ console.warn(e); }
-    try{ training=(await fetchJson('/api/training?role=manager&engineer='+encodeURIComponent(user.name||''))).training||[]; }catch(e){ console.warn(e); }
-    try{ reaudits=(await fetchJson('/api/reaudits?role=manager&engineer='+encodeURIComponent(user.name||''))).reaudits||[]; }catch(e){ console.warn(e); }
+    try{ audits=(await apiGet('/api/audits?role=manager&engineer='+encodeURIComponent(user.name||''))).audits||[]; }catch(e){console.warn(e)}
+    try{ training=(await apiGet('/api/training?role=manager&engineer='+encodeURIComponent(user.name||''))).training||[]; }catch(e){console.warn(e)}
+    try{ reaudits=(await apiGet('/api/reaudits?role=manager&engineer='+encodeURIComponent(user.name||''))).reaudits||[]; }catch(e){console.warn(e)}
 
-    const total=audits.length;
-    const avg=total?Math.round(audits.reduce((s,a)=>s+score(a),0)/total):0;
-    const exc=audits.filter(a=>score(a)>=95 || /excellent/i.test(result(a))).length;
-    const pass=audits.filter(a=>(score(a)>=85 && score(a)<95) || /^pass$/i.test(result(a))).length;
-    const imp=audits.filter(a=>(score(a)>=75 && score(a)<85) || /improvement/i.test(result(a))).length;
-    const fail=audits.filter(a=>(score(a)>0 && score(a)<75) || /fail/i.test(result(a))).length;
+    const total=audits.length, avg=total?Math.round(audits.reduce((s,a)=>s+sc(a),0)/total):0;
+    const excellent=audits.filter(a=>sc(a)>=95||/excellent/i.test(res(a))).length;
+    const pass=audits.filter(a=>(sc(a)>=85&&sc(a)<95)||/^pass$/i.test(res(a))).length;
+    const improvement=audits.filter(a=>(sc(a)>=75&&sc(a)<85)||/improvement/i.test(res(a))).length;
+    const fail=audits.filter(a=>(sc(a)>0&&sc(a)<75)||/fail/i.test(res(a))).length;
     const openT=training.filter(t=>/open|pending/i.test(t.status||'')).length;
     const openR=reaudits.filter(r=>/open|pending/i.test(r.status||'')).length;
-    const passRate=total?Math.round(((exc+pass)/total)*100):0;
-
-    setCardByTitle('Total Audits', total);
-    setCardByTitle('Average Score', avg+'%');
-    setCardByTitle('Pass Rate', passRate+'%');
-    setCardByTitle('Excellent', exc);
-    setCardByTitle('Pass', pass);
-    setCardByTitle('Improvement Required', imp);
-    setCardByTitle('Fail', fail);
-    setCardByTitle('Open Training / Re-audits', openT+' / '+openR);
+    const cards=[...document.querySelectorAll('.card,div')].filter(x=>(x.textContent||'').length<100);
+    const set=(name,val)=>cards.forEach(c=>{if(ntext(c.textContent).startsWith(name))c.innerHTML=`<b>${name}</b><br><b>${val}</b>`});
+    set('Total Audits', total); set('Average Score', avg+'%'); set('Pass Rate', total?Math.round(((excellent+pass)/total)*100)+'%':'0%');
+    set('Excellent', excellent); set('Pass', pass); set('Improvement Required', improvement); set('Fail', fail); set('Open Training / Re-audits', openT+' / '+openR);
 
     const tables=[...document.querySelectorAll('table')];
-
-    const auditTable=tables.find(t=>{
-      const h=(t.querySelector('thead')?.textContent || '').toLowerCase();
-      return h.includes('ref') && h.includes('engineer') && h.includes('site') && h.includes('score');
-    });
+    const auditTable=tables.find(t=>{const h=(t.querySelector('thead')?.textContent||'').toLowerCase();return h.includes('ref')&&h.includes('engineer')&&h.includes('site')&&h.includes('score')});
     if(auditTable){
-      const body=auditTable.querySelector('tbody') || auditTable.appendChild(document.createElement('tbody'));
-      body.innerHTML=audits.map(a=>{
-        const ref=a.audit_ref || a.ref || ('HBS-'+(a.id||''));
-        return `<tr><td>${ref}</td><td>${a.audit_date||a.date||a.created_at||''}</td><td>${eng(a)}</td><td>${a.site_name||a.site||''}</td><td>${a.manufacturer||''}</td><td>${a.model||''}</td><td>${score(a)}</td><td>${result(a)}</td><td>${ref}</td></tr>`;
-      }).join('');
+      const body=auditTable.querySelector('tbody')||auditTable.appendChild(document.createElement('tbody'));
+      body.innerHTML=audits.map(a=>`<tr><td>${a.ref||('HBS-'+a.id)}</td><td>${a.audit_date||a.created_at||''}</td><td>${eng(a)}</td><td>${a.site_name||''}</td><td>${a.manufacturer||''}</td><td>${a.model||''}</td><td>${sc(a)}</td><td>${res(a)}</td><td>${a.ref||('HBS-'+a.id)}</td></tr>`).join('');
     }
-
-    const league=tables.find(t=>{
-      const h=(t.querySelector('thead')?.textContent || '').toLowerCase();
-      return h.includes('rank') && h.includes('avg score');
-    });
+    const league=tables.find(t=>{const h=(t.querySelector('thead')?.textContent||'').toLowerCase();return h.includes('rank')&&h.includes('avg score')});
     if(league){
       const stats={};
-      audits.forEach(a=>{
-        const e=eng(a)||'Unknown';
-        if(!stats[e]) stats[e]={count:0,total:0,excellent:0,improvement:0,fail:0};
-        const s=score(a);
-        stats[e].count++; stats[e].total+=s;
-        if(s>=95) stats[e].excellent++;
-        else if(s>=75 && s<85) stats[e].improvement++;
-        else if(s>0 && s<75) stats[e].fail++;
-      });
-      const rows=Object.entries(stats).map(([name,v])=>({name,...v,avg:v.count?Math.round(v.total/v.count):0})).sort((a,b)=>b.avg-a.avg);
-      const body=league.querySelector('tbody') || league.appendChild(document.createElement('tbody'));
-      body.innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.count}</td><td>${r.avg}%</td><td>${r.excellent}</td><td>${r.improvement}</td><td>${r.fail}</td></tr>`).join('');
+      audits.forEach(a=>{const e=eng(a)||'Unknown'; if(!stats[e])stats[e]={c:0,t:0,ex:0,im:0,fa:0}; const s=sc(a); stats[e].c++; stats[e].t+=s; if(s>=95)stats[e].ex++; else if(s>=75&&s<85)stats[e].im++; else if(s>0&&s<75)stats[e].fa++;});
+      const rows=Object.entries(stats).map(([name,v])=>({name,...v,avg:v.c?Math.round(v.t/v.c):0})).sort((a,b)=>b.avg-a.avg);
+      const body=league.querySelector('tbody')||league.appendChild(document.createElement('tbody'));
+      body.innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.c}</td><td>${r.avg}%</td><td>${r.ex}</td><td>${r.im}</td><td>${r.fa}</td></tr>`).join('');
     }
   };
 
-  const oldLoadDashboard=window.loadDashboard;
-  window.loadDashboard=async function(){
-    if(oldLoadDashboard) { try{ await oldLoadDashboard.apply(this,arguments); }catch(e){ console.warn(e); } }
-    if(window.user && user.role==='manager') setTimeout(window.hbsV2LoadManagerDashboard,150);
-  };
+  const oldDash=window.loadDashboard;
+  window.loadDashboard=async function(){ if(oldDash)try{await oldDash.apply(this,arguments)}catch(e){}; setTimeout(hbsLoadManagerDashboard,150); };
+
+  setInterval(()=>{try{hbsBuildMenu(); if(window.user&&user.role==='manager'&&document.body.textContent.includes('Manager Dashboard')) hbsLoadManagerDashboard();}catch(e){}},1500);
 })();
 
 </script>
