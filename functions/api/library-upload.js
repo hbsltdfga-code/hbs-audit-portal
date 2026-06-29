@@ -1,0 +1,1 @@
+export async function onRequestPost(){return Response.json({ok:false,error:'Upload from portal is disabled in v8 clean release. Upload directly to R2 and register later.'},{status:501})}

@@ -1,30 +1,14 @@
-# HBS Audit Portal Phase 2
+# HBS Compliance Manager v8 Clean Repository
 
-This version works with the existing D1 tables you have already created:
-users, audits, audit_photos, training_records, competency_records and reaudits.
+Replace the whole GitHub repository with this package.
 
-## Upload to GitHub
-Replace the current repository files with these root items:
+Required root contents:
 - index.html
+- css/
+- js/
 - functions/
-- sql/
 - wrangler.toml
-- README.md
+- package.json
 
-Commit to `main`. Cloudflare Pages should automatically redeploy.
-
-## Login
-- peter@hbs.local / 1234
-- engineer1@hbs.local / 1234
-- engineer2@hbs.local / 1234
-- engineer3@hbs.local / 1234
-
-## Features added
-- Full engineer audit capture form
-- Weighted question scoring
-- Automatic audit outcome
-- Photo upload from iPad/phone
-- Automatic training record for scores below 85%
-- Automatic 30-day re-audit record for scores below 85%
-- Manager dashboard
-- Printable PDF audit booklet using browser print/save as PDF
+Delete old root JS files and legacy HTML files before upload.
+Known login: peter@hbs.local / 3110
