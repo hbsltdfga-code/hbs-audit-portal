@@ -43,14 +43,6 @@ body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb;color:#071b34}.top
 }
 </style>
 
-
-<style id="hbs-header-stray-fix">
-body > div:first-child:not(.card):not(.top):not(.wrap):not(#app):not(#root) {
-  /* hides stray pre-login status text previously injected above the portal header */
-}
-.hbsStrayStatus, #hbsHeaderUser, #hbsHeaderRole, #hbsUserPanel { display:none!important; }
-</style>
-
 </head>
 <body>
 
@@ -1415,168 +1407,84 @@ function hbsViewTightnessRecord(id){
 })();
 
 
-// --- HBS Definitive Dashboard Restore ---
+// --- HBS Direct Dashboard Fix ---
 (function(){
-  function txt(x){return String(x||'').replace(/\s+/g,' ').trim();}
-  async function getJson(url){
-    const r=await fetch(url,{cache:'no-store'});
-    const t=await r.text();
-    let j; try{j=JSON.parse(t)}catch(e){throw new Error(t.slice(0,300))}
-    if(!r.ok || j.ok===false) throw new Error(j.error||('HTTP '+r.status));
+  function text(v){ return String(v||'').replace(/\s+/g,' ').trim(); }
+  async function getDashboard(){
+    const r = await fetch('/api/dashboard?_=' + Date.now(), { cache:'no-store' });
+    const t = await r.text();
+    let j;
+    try { j = JSON.parse(t); } catch(e) { throw new Error(t.slice(0,250)); }
+    if(!r.ok || j.ok === false) throw new Error(j.error || ('HTTP ' + r.status));
     return j;
   }
-  function normaliseAudit(a){
-    if(!a) return null;
-    let raw=a.audit_json;
-    let j={};
-    if(typeof raw==='string'){
-      try{j=JSON.parse(raw)}catch(e){}
-    } else if(raw && typeof raw==='object') j=raw;
-    const merged=Object.assign({}, j, a);
-    const score=Number(merged.score ?? merged.audit_score ?? merged.total_score ?? merged.calculated_score ?? merged.final_score ?? 0);
-    const engineer=merged.engineer_name || merged.engineer || merged.engineerName || merged.Engineer || '';
-    const site=merged.site_name || merged.site || merged.Site || merged.client_site || '';
-    const date=merged.audit_date || merged.date || merged.created_at || merged.AuditDate || '';
-    const result=merged.result || merged.outcome || merged.audit_result || (score>=95?'Excellent':score>=85?'Pass':score>=75?'Improvement Required':score>0?'Fail':'');
-    const ref=merged.ref || merged.audit_ref || merged.auditRef || (merged.id?('HBS-'+merged.id):'');
-    return {
-      ...merged,
-      ref, score, engineer_name: engineer, site_name: site, audit_date: date,
-      result,
-      manufacturer: merged.manufacturer || merged.Manufacturer || '',
-      model: merged.model || merged.Model || ''
-    };
-  }
-  async function loadAuditData(){
-    let audits=[];
-    // Primary endpoint
-    try{
-      const j=await getJson('/api/audits?role=manager&_=' + Date.now());
-      audits=(j.audits||j.records||[]).map(normaliseAudit).filter(Boolean);
-    }catch(e){console.warn('audits endpoint failed',e)}
-    if(audits.length) return audits;
-
-    // Single audit endpoint sometimes returns list in older builds
-    try{
-      const j=await getJson('/api/audit?role=manager&_=' + Date.now());
-      audits=(j.audits||j.records||j.audit_records||[]).map(normaliseAudit).filter(Boolean);
-    }catch(e){console.warn('audit endpoint failed',e)}
-    if(audits.length) return audits;
-
-    // Backup fallback: scan all arrays for audit-like records
-    try{
-      const b=await getJson('/api/backup?_=' + Date.now());
-      const arrays=[];
-      function walk(o){
-        if(Array.isArray(o)) arrays.push(o);
-        else if(o && typeof o==='object') Object.values(o).forEach(walk);
-      }
-      walk(b);
-      const candidates=[];
-      arrays.forEach(arr=>{
-        arr.forEach(x=>{
-          const s=JSON.stringify(x||{}).toLowerCase();
-          if(s.includes('engineer') && (s.includes('score') || s.includes('audit'))) candidates.push(x);
-        });
-      });
-      audits=candidates.map(normaliseAudit).filter(a=>a && (a.engineer_name || a.site_name || a.score));
-    }catch(e){console.warn('backup fallback failed',e)}
-    return audits;
-  }
-  async function loadTrainingData(){
-    try{const j=await getJson('/api/training?role=manager&_=' + Date.now()); return j.training||j.records||[];}catch(e){return []}
-  }
-  async function loadReauditData(){
-    try{const j=await getJson('/api/reaudits?role=manager&_=' + Date.now()); return j.reaudits||j.records||[];}catch(e){return []}
-  }
-  function setCard(title, value){
-    const els=[...document.querySelectorAll('.card, .stat, div')].filter(e=>(e.textContent||'').length<120);
-    els.forEach(e=>{
-      if(txt(e.textContent).startsWith(title)){
-        e.innerHTML='<b>'+title+'</b><br><b>'+value+'</b>';
+  function setCard(label, value){
+    [...document.querySelectorAll('.card, div')].forEach(el=>{
+      const s = text(el.textContent);
+      if(s.startsWith(label) && s.length < 120){
+        el.innerHTML = '<b>' + label + '</b><br><b>' + value + '</b>';
       }
     });
   }
   function findTable(words){
     return [...document.querySelectorAll('table')].find(t=>{
-      const h=(t.querySelector('thead')?.textContent || t.textContent || '').toLowerCase();
-      return words.every(w=>h.includes(w));
+      const h = (t.querySelector('thead')?.textContent || t.textContent || '').toLowerCase();
+      return words.every(w => h.includes(w));
     });
   }
-  window.hbsDefinitiveDashboardLoad = async function(){
-    if(!window.user || user.role!=='manager') return;
-    const audits=await loadAuditData();
-    const training=await loadTrainingData();
-    const reaudits=await loadReauditData();
+  window.hbsLoadDirectDashboard = async function(){
+    if(!window.user || user.role !== 'manager') return;
+    try{
+      const j = await getDashboard();
+      const s = j.summary || {};
+      setCard('Total Audits', s.total_audits || 0);
+      setCard('Average Score', (s.average_score || 0) + '%');
+      setCard('Pass Rate', (s.pass_rate || 0) + '%');
+      setCard('Excellent', s.excellent || 0);
+      setCard('Pass', s.pass || 0);
+      setCard('Improvement Required', s.improvement || 0);
+      setCard('Fail', s.fail || 0);
+      setCard('Open Training / Re-audits', (s.open_training || 0) + ' / ' + (s.open_reaudits || 0));
 
-    const scores=audits.map(a=>Number(a.score||0)).filter(v=>Number.isFinite(v));
-    const total=audits.length;
-    const avg=total?Math.round(scores.reduce((a,b)=>a+b,0)/total):0;
-    const excellent=audits.filter(a=>a.score>=95 || /excellent/i.test(a.result||'')).length;
-    const pass=audits.filter(a=>(a.score>=85&&a.score<95) || /^pass$/i.test(a.result||'')).length;
-    const improvement=audits.filter(a=>(a.score>=75&&a.score<85) || /improvement/i.test(a.result||'')).length;
-    const fail=audits.filter(a=>(a.score>0&&a.score<75) || /fail/i.test(a.result||'')).length;
-    const openT=training.filter(t=>/open|pending/i.test(t.status||'')).length;
-    const openR=reaudits.filter(r=>/open|pending/i.test(r.status||'')).length;
-    const passRate=total?Math.round(((excellent+pass)/total)*100):0;
+      const leagueTable = findTable(['rank','engineer','avg score']);
+      if(leagueTable){
+        const body = leagueTable.querySelector('tbody') || leagueTable.appendChild(document.createElement('tbody'));
+        body.innerHTML = (j.league || []).map((r,i)=>`<tr>
+          <td>${i+1}</td><td>${r.engineer}</td><td>${r.audits}</td><td>${r.avg_score}%</td>
+          <td>${r.excellent}</td><td>${r.improvement}</td><td>${r.fails}</td>
+        </tr>`).join('');
+      }
 
-    setCard('Total Audits', total);
-    setCard('Average Score', avg+'%');
-    setCard('Pass Rate', passRate+'%');
-    setCard('Excellent', excellent);
-    setCard('Pass', pass);
-    setCard('Improvement Required', improvement);
-    setCard('Fail', fail);
-    setCard('Open Training / Re-audits', openT+' / '+openR);
-
-    const auditTable=findTable(['ref','engineer','site','score']);
-    if(auditTable){
-      const body=auditTable.querySelector('tbody') || auditTable.appendChild(document.createElement('tbody'));
-      body.innerHTML=audits.map(a=>`<tr>
-        <td>${a.ref||''}</td><td>${a.audit_date||''}</td><td>${a.engineer_name||''}</td><td>${a.site_name||''}</td>
-        <td>${a.manufacturer||''}</td><td>${a.model||''}</td><td>${a.score||0}</td><td>${a.result||''}</td>
-        <td>${a.ref||''}</td>
-      </tr>`).join('');
-    }
-    const league=findTable(['rank','engineer','avg score']);
-    if(league){
-      const stats={};
-      audits.forEach(a=>{
-        const e=a.engineer_name||'Unknown';
-        if(!stats[e]) stats[e]={audits:0,total:0,excellent:0,improvement:0,fails:0};
-        stats[e].audits++; stats[e].total += Number(a.score||0);
-        if(a.score>=95) stats[e].excellent++;
-        else if(a.score>=75&&a.score<85) stats[e].improvement++;
-        else if(a.score>0&&a.score<75) stats[e].fails++;
-      });
-      const rows=Object.entries(stats).map(([engineer,v])=>({engineer,...v,avg:v.audits?Math.round(v.total/v.audits):0})).sort((a,b)=>b.avg-a.avg);
-      const body=league.querySelector('tbody') || league.appendChild(document.createElement('tbody'));
-      body.innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.engineer}</td><td>${r.audits}</td><td>${r.avg}%</td><td>${r.excellent}</td><td>${r.improvement}</td><td>${r.fails}</td></tr>`).join('');
-    }
-
-    // Useful diagnostic shown only when still zero
-    if(!audits.length){
-      console.warn('HBS dashboard found no audits from /api/audits, /api/audit or /api/backup. Check D1 table data.');
+      const auditTable = findTable(['ref','engineer','site','score']);
+      if(auditTable){
+        const body = auditTable.querySelector('tbody') || auditTable.appendChild(document.createElement('tbody'));
+        body.innerHTML = (j.audits || []).map(a=>`<tr>
+          <td>${a.ref}</td><td>${a.date}</td><td>${a.engineer}</td><td>${a.site}</td>
+          <td>${a.manufacturer}</td><td>${a.model}</td><td>${a.score}</td><td>${a.result}</td><td>${a.ref}</td>
+        </tr>`).join('');
+      }
+    }catch(e){
+      console.error('Direct dashboard load failed:', e);
     }
   };
 
-  // Remove the stray status text above header if present.
-  window.hbsRemoveStrayStatus = function(){
-    [...document.body.childNodes].forEach(node=>{
-      if(node.nodeType===3 && /Not logged in\s*Portal Access/i.test(node.textContent||'')) node.textContent='';
-      if(node.nodeType===1 && /Not logged in\s*Portal Access/i.test(node.textContent||'') && node.getBoundingClientRect().top < 60 && !node.querySelector('button')) node.style.display='none';
-    });
+  const oldLoadDashboard = window.loadDashboard;
+  window.loadDashboard = async function(){
+    if(oldLoadDashboard){ try{ await oldLoadDashboard.apply(this, arguments); }catch(e){} }
+    setTimeout(window.hbsLoadDirectDashboard, 250);
   };
 
-  const oldDash=window.loadDashboard;
-  window.loadDashboard=async function(){
-    if(oldDash) { try{ await oldDash.apply(this,arguments); }catch(e){console.warn(e)} }
-    setTimeout(window.hbsDefinitiveDashboardLoad,200);
-  };
   document.addEventListener('click', e=>{
-    if(txt(e.target?.textContent)==='Refresh') setTimeout(window.hbsDefinitiveDashboardLoad,200);
+    if(text(e.target?.textContent) === 'Refresh') setTimeout(window.hbsLoadDirectDashboard, 250);
   });
-  setInterval(()=>{try{hbsRemoveStrayStatus(); if(window.user&&user.role==='manager'&&document.body.textContent.includes('Manager Dashboard')) hbsDefinitiveDashboardLoad();}catch(e){}},4000);
+
+  setInterval(()=>{
+    try{
+      if(window.user && user.role === 'manager' && document.body.textContent.includes('Manager Dashboard')){
+        window.hbsLoadDirectDashboard();
+      }
+    }catch(e){}
+  }, 3000);
 })();
 
 </script>
