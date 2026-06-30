@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HBS Compliance Manager v11.0 Foundation</title>
+<title>HBS Compliance Manager v11.1</title>
 <style>
 :root{--blue:#123f6d;--blue2:#2369a7;--bg:#f4f7fb;--line:#d3dfed;--muted:#52677f;--danger:#8b1e1e;--ok:#ddf5e4;--warn:#fff1c9}
 *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;margin:0;background:var(--bg);color:#071b34}
@@ -32,17 +32,13 @@ table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border-bottom:1px
 .audit-photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:10px}
 .audit-photo-thumb{border:1px solid var(--line);border-radius:10px;background:#fff;padding:6px;text-align:center;font-size:12px;color:var(--muted)}
 .audit-photo-thumb img{width:100%;height:90px;object-fit:cover;border-radius:8px;margin-bottom:4px}
-
-/* v11.0 Foundation role dashboards */
-.home-hero{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;background:linear-gradient(135deg,#ffffff,#eef6ff);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px}.home-hero h2{margin:0 0 6px}.home-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}.action-card{background:#fff;border:1px solid #d6e4f3;border-radius:14px;padding:15px;box-shadow:0 1px 4px #0000000f}.action-card h3{margin:0 0 6px;color:#123f6d}.status-badge{display:inline-block;border-radius:999px;padding:5px 10px;font-weight:800;font-size:12px}.status-green{background:#ddf5e4;color:#0b5c27}.status-amber{background:#fff1c9;color:#6b4a00}.status-red{background:#ffe0df;color:#8b1e1e}.test-panel{border:1px solid #d6e4f3;border-radius:14px;padding:14px;background:#fbfdff;margin:12px 0}.compact-table th,.compact-table td{font-size:14px}.manager-split{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.urgent{border-left:6px solid #8b1e1e}.warning-left{border-left:6px solid #d58a00}.ok-left{border-left:6px solid #18803c}@media(max-width:900px){.home-hero,.manager-split{display:block}.home-actions{grid-template-columns:1fr}}
-
 </style>
 </head>
 <body>
 <header>
   <h1>HBS Compliance Manager</h1>
   <div>Commercial Gas Compliance Management System</div>
-  <div class="version">Version 11.0 · Foundation</div>
+  <div class="version">Development Release 5 · Version 11.1</div>
 </header>
 
 <section id="loginCard" class="card">
@@ -620,111 +616,9 @@ async function loadRecords(){show('records');setHtml('records','<h2>Record Manag
 async function deleteRecord(){if(!isManager()){alert('Manager access only.');return}if(!$('delId').value){alert('Enter a record ID.');return}if(!confirm('Delete selected record? This cannot be undone unless you have a backup.'))return;try{const j=await api('/api/admin-delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({role:user.role,type:$('delType').value,id:$('delId').value,manager:user.name})});$('delMsg').textContent=j.message||'Deleted'}catch(e){$('delMsg').textContent=e.message}}
 async function loadBackup(){show('backup');setHtml('backup','<h2>Backup</h2><p><button onclick="loadUsers()">Back to Administration</button><button onclick="loadRecords()">Record Management</button></p><p class="muted">Download a JSON backup before deleting test records or making major changes.</p><p><button onclick="downloadBackup()">Download JSON Backup</button></p><pre id="backupOut"></pre>')}
 async function downloadBackup(){try{const j=await api('/api/backup');const text=JSON.stringify(j.backup||j,null,2);$('backupOut').textContent=text.slice(0,5000);const blob=new Blob([text],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hbs-compliance-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click()}catch(e){$('backupOut').textContent=e.message}}
-
-
-/* ==============================
-   v11.0 FOUNDATION OVERRIDES
-   Role-based home, cleaner training workflow, audit-linked tests
-   ============================== */
-function v11StatusBadge(result, score){
-  const s=Number(score||0); const r=String(result||outcome(s));
-  const cls=s>=85?'status-green':s>=75?'status-amber':'status-red';
-  return '<span class="status-badge '+cls+'">'+safe(r)+' · '+safe(s)+'%</span>';
-}
-function openModule(id, fn){show(id); if(typeof fn==='function') fn();}
-function buildNav(){
- const nav=$('nav'); if(!nav)return; nav.innerHTML='';
- const items=isManager()?[
-  ['Dashboard','dashboard',loadDashboard],['New Audit','conductAudit',loadConductAudit],['Audit History','auditHistory',loadAuditHistory],['Engineer Performance','competency',loadCompetency],['Training Centre','training',loadTraining],['Tightness Test Centre','tightness',loadTightness],['Knowledge Centre','knowledge',loadKnowledge],['Administration','users',loadUsers]
- ]:[
-  ['Home','dashboard',loadEngineerHome],['My Audits','auditHistory',loadAuditHistory],['Training Centre','training',loadTraining],['Tightness Test Centre','tightness',loadTightness],['Knowledge Centre','knowledge',loadKnowledge]
- ];
- items.forEach(([label,id,fn])=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>openModule(id,fn);nav.appendChild(b)});
- const out=document.createElement('button');out.className='secondary';out.textContent='Logout';out.onclick=logout;nav.appendChild(out);
-}
-function startApp(){
- $('loginCard').classList.add('hide'); $('app').classList.remove('hide');
- $('loginStatus').textContent='Logged in: '+user.name+' ('+roleLabel(user.role)+')';
- buildNav();
- if(isManager()){show('dashboard');loadDashboard()}else{show('dashboard');loadEngineerHome()}
-}
-function trainingKeyForType(type){
- const t=String(type||'').toLowerCase();
- if(t.includes('level 2')||t.includes('advanced')||t.includes('unsafe')||t.includes('gas safety / unsafe')) return 'gas_safety';
- if(t.includes('level 1')||t.includes('refresher')||t.includes('post-audit')||t.includes('toolbox')) return 'post_audit';
- return '';
-}
-function trainingLabelForKey(key){return key==='gas_safety'?'Level 2 Advanced Commercial Gas Safety Competency Assessment':'Level 1 Commercial Gas Safety Refresher'}
-function isOpenStatus(status){return !String(status||'Open').toLowerCase().includes('complete')}
-async function loadEngineerHome(){
- setHtml('dashboard','<div class="home-hero"><div><h2>Engineer Home</h2><p class="muted">Your current compliance actions, audits and training requirements.</p></div><div>'+safe(user.name)+'</div></div><div id="engineerHomeBody"><div class="stat">Loading...</div></div>');
- const eng=encodeURIComponent(user.name);
- const [aud,tr,tests,rea]=await Promise.all([
-   api('/api/audits?role='+user.role+'&engineer='+eng).catch(e=>({audits:[]})),
-   api('/api/training?role='+user.role+'&engineer='+eng).catch(e=>({training:[]})),
-   api('/api/toolbox-test?role='+user.role+'&engineer='+eng).catch(e=>({results:[]})),
-   api('/api/reaudits?role='+user.role+'&engineer='+eng).catch(e=>({reaudits:[]}))
- ]);
- const audits=aud.audits||[]; const latest=audits[0]||{}; const openTraining=(tr.training||[]).filter(x=>isOpenStatus(x.status)); const openRe=(rea.reaudits||[]).filter(x=>isOpenStatus(x.status));
- const avg=audits.length?Math.round(audits.reduce((a,x)=>a+Number(x.score||0),0)/audits.length):0;
- const required=openTraining.map(x=>{const key=trainingKeyForType(x.training_type);return '<div class="action-card warning-left"><h3>'+safe(x.training_type)+'</h3><p class="muted">Audit: '+safe(x.audit_ref||'')+' · Assigned: '+safe(x.assigned_date||'')+'</p>'+(key?'<button onclick="show(\'training\');loadTraining();setTimeout(function(){startTrainingTest(\''+key+'\','+Number(x.id)+')},400)">Take Required Test</button>':'<span class="muted">No online test linked.</span>')+'</div>'}).join('') || '<div class="action-card ok-left"><h3>No Required Tests</h3><p class="muted">No open audit-linked training is currently assigned.</p></div>';
- $('engineerHomeBody').innerHTML='<div class="statgrid"><div class="stat"><b>Current Competency</b><br><b>'+avg+'%</b></div><div class="stat"><b>Latest Audit</b><br><b>'+safe(latest.ref||latest.audit_ref||'None')+'</b><br>'+v11StatusBadge(latest.result,latest.score)+'</div><div class="stat"><b>Open Training</b><br><b>'+openTraining.length+'</b></div><div class="stat"><b>Open Re-audits</b><br><b>'+openRe.length+'</b></div></div><h3>Outstanding Actions</h3><div class="home-actions">'+required+'</div><h3>Quick Actions</h3><div class="home-actions"><div class="action-card"><h3>Review My Audits</h3><p class="muted">View audit findings and notes.</p><button onclick="openModule(\'auditHistory\',loadAuditHistory)">Open Audits</button></div><div class="action-card"><h3>Tightness Test</h3><p class="muted">Start a gas tightness calculation and save a record.</p><button onclick="openModule(\'tightness\',loadTightness)">Start Test</button></div><div class="action-card"><h3>Knowledge Centre</h3><p class="muted">Open manufacturer and technical guidance.</p><button onclick="openModule(\'knowledge\',loadKnowledge)">Open Knowledge</button></div></div><h3>Recent Test Results</h3><table class="compact-table"><thead><tr><th>Date</th><th>Test</th><th>Score</th><th>Result</th><th>Status</th></tr></thead><tbody>'+((tests.results||[]).slice(0,5).map(t=>'<tr><td>'+safe(t.created_at)+'</td><td>'+safe(t.test_type)+'</td><td>'+safe(t.score)+'%</td><td>'+safe(t.result)+'</td><td>'+safe(t.status)+'</td></tr>').join('')||'<tr><td colspan="5">No test results recorded.</td></tr>')+'</tbody></table>';
-}
-async function loadDashboard(){
- if(!isManager()) return loadEngineerHome();
- setHtml('dashboard','<div class="home-hero"><div><h2>Manager Compliance Dashboard</h2><p class="muted">Company compliance overview, training actions and re-audit position.</p></div><button onclick="loadDashboard()">Refresh</button></div><div id="managerDashBody"><div class="stat">Loading...</div></div>');
- const [d,tr,tests,rea]=await Promise.all([
-   api('/api/dashboard').catch(e=>({summary:{},audits:[],league:[]})),
-   api('/api/training?role=manager').catch(e=>({training:[]})),
-   api('/api/toolbox-test?role=manager').catch(e=>({results:[]})),
-   api('/api/reaudits?role=manager').catch(e=>({reaudits:[]}))
- ]);
- const s=d.summary||{}; const openTraining=(tr.training||[]).filter(x=>isOpenStatus(x.status)); const pendingTests=(tests.results||[]).filter(x=>String(x.status||'').toLowerCase().includes('pending')); const openRe=(rea.reaudits||[]).filter(x=>isOpenStatus(x.status));
- $('managerDashBody').innerHTML='<div class="statgrid"><div class="stat"><b>Company Compliance</b><br><b>'+safe(s.average_score||0)+'%</b></div><div class="stat"><b>Total Audits</b><br><b>'+safe(s.total_audits||0)+'</b></div><div class="stat"><b>Failed Audits</b><br><b>'+safe(s.fail||0)+'</b></div><div class="stat"><b>Open Training</b><br><b>'+openTraining.length+'</b></div><div class="stat"><b>Tests Awaiting Sign-off</b><br><b>'+pendingTests.length+'</b></div><div class="stat"><b>Re-audits Due</b><br><b>'+openRe.length+'</b></div></div><div class="manager-split"><div><h3>Open Training Actions</h3><table class="compact-table"><thead><tr><th>Engineer</th><th>Audit</th><th>Training</th><th>Status</th><th>Action</th></tr></thead><tbody>'+openTraining.slice(0,12).map(x=>'<tr><td>'+safe(x.engineer_name)+'</td><td>'+safe(x.audit_ref)+'</td><td>'+safe(x.training_type)+'</td><td>'+safe(x.status)+'</td><td><button onclick="openModule(\'training\',loadTraining)">Review</button></td></tr>').join('')+'</tbody></table></div><div><h3>Tests Awaiting Sign-off</h3><table class="compact-table"><thead><tr><th>Engineer</th><th>Test</th><th>Score</th><th>Action</th></tr></thead><tbody>'+pendingTests.slice(0,12).map(t=>'<tr><td>'+safe(t.engineer_name)+'</td><td>'+safe(t.test_type)+'</td><td>'+safe(t.score)+'%</td><td><button onclick="signoffTest('+Number(t.id)+')">Sign Off</button></td></tr>').join('')+'</tbody></table></div></div><h3>Engineer League Table</h3><table><thead><tr><th>Rank</th><th>Engineer</th><th>Audits</th><th>Average</th><th>Fails</th></tr></thead><tbody>'+((d.league||[]).filter(r=>isEngineerName(r.engineer)).map((r,i)=>'<tr><td>'+(i+1)+'</td><td>'+safe(r.engineer)+'</td><td>'+safe(r.audits)+'</td><td>'+safe(r.avg_score)+'%</td><td>'+safe(r.fails)+'</td></tr>').join('')||'<tr><td colspan="5">No league data.</td></tr>')+'</tbody></table>';
-}
-function trainingActionButton(x){
- const key=trainingKeyForType(x.training_type); const open=isOpenStatus(x.status); let out='';
- if(key&&open) out+='<button onclick="startTrainingTest(\''+key+'\','+Number(x.id)+')">Take Test</button>';
- if(isManager()) out+=(out?' ':'')+'<button class="secondary" onclick="completeTraining('+Number(x.id)+')">Mark Complete</button>';
- return out || '<span class="muted">No action</span>';
-}
-function requiredTrainingCard(x){
- const key=trainingKeyForType(x.training_type); const type=safe(x.training_type); const level=key==='gas_safety'?'Level 2':'Level 1';
- return '<div class="action-card '+(key==='gas_safety'?'urgent':'warning-left')+'"><h3>'+level+': '+type+'</h3><p class="muted">Audit: '+safe(x.audit_ref||'')+'<br>Assigned: '+safe(x.assigned_date||'')+'<br>'+safe(x.manager_notes||'')+'</p>'+(key?'<button onclick="startTrainingTest(\''+key+'\','+Number(x.id)+')">Take Test</button>':'<span class="muted">No linked online test configured.</span>')+'</div>';
-}
-async function loadTraining(){
- setHtml('training','<div class="home-hero"><div><h2>Training Centre</h2><p class="muted">Audit-linked tests are assigned automatically from audit score and safety findings.</p></div><button onclick="loadTraining()">Refresh</button></div><div id="trainingBody"><div class="stat">Loading...</div></div><div id="trainingTestPanel"></div>');
- const role=user.role, eng=encodeURIComponent(user.name);
- const [t,r,tests]=await Promise.all([
-  api('/api/training?role='+role+'&engineer='+eng).catch(e=>({training:[]})),
-  api('/api/reaudits?role='+role+'&engineer='+eng).catch(e=>({reaudits:[]})),
-  api('/api/toolbox-test?role='+role+'&engineer='+eng).catch(e=>({results:[]}))
- ]);
- const records=t.training||[]; const open=records.filter(x=>isOpenStatus(x.status));
- if(!isManager()){
-  $('trainingBody').innerHTML='<h3>Required Tests</h3><div class="home-actions">'+(open.map(requiredTrainingCard).join('')||'<div class="action-card ok-left"><h3>No Required Tests</h3><p class="muted">No audit-linked tests are currently required.</p></div>')+'</div><h3>Assigned Training Records</h3><table><thead><tr><th>Audit</th><th>Training</th><th>Assigned</th><th>Status</th><th>Action</th></tr></thead><tbody>'+((records||[]).map(x=>'<tr><td>'+safe(x.audit_ref)+'</td><td>'+safe(x.training_type)+'</td><td>'+safe(x.assigned_date)+'</td><td>'+safe(x.status)+'</td><td>'+trainingActionButton(x)+'</td></tr>').join('')||'<tr><td colspan="5">No training records.</td></tr>')+'</tbody></table><h3>My Test Results</h3><table><thead><tr><th>Date</th><th>Test</th><th>Score</th><th>Result</th><th>Status</th></tr></thead><tbody>'+((tests.results||[]).map(x=>'<tr><td>'+safe(x.created_at)+'</td><td>'+safe(x.test_type)+'</td><td>'+safe(x.score)+'%</td><td>'+safe(x.result)+'</td><td>'+safe(x.status)+'</td></tr>').join('')||'<tr><td colspan="5">No test results.</td></tr>')+'</tbody></table>';
-  return;
- }
- $('trainingBody').innerHTML='<div class="statgrid"><div class="stat"><b>Open Training</b><br><b>'+open.length+'</b></div><div class="stat"><b>Tests Awaiting Sign-off</b><br><b>'+((tests.results||[]).filter(x=>String(x.status||'').toLowerCase().includes('pending')).length)+'</b></div><div class="stat"><b>Open Re-audits</b><br><b>'+((r.reaudits||[]).filter(x=>isOpenStatus(x.status)).length)+'</b></div></div><h3>Open Training</h3><table><thead><tr><th>ID</th><th>Engineer</th><th>Audit</th><th>Training</th><th>Assigned</th><th>Status</th><th>Action</th></tr></thead><tbody>'+((records||[]).map(x=>'<tr><td>'+safe(x.id)+'</td><td>'+safe(x.engineer_name)+'</td><td>'+safe(x.audit_ref)+'</td><td>'+safe(x.training_type)+'</td><td>'+safe(x.assigned_date)+'</td><td>'+safe(x.status)+'</td><td>'+trainingActionButton(x)+'</td></tr>').join('')||'<tr><td colspan="7">No training records.</td></tr>')+'</tbody></table><h3>Test Results / Sign-off</h3><table><thead><tr><th>ID</th><th>Engineer</th><th>Test</th><th>Score</th><th>Result</th><th>Status</th><th>Action</th></tr></thead><tbody>'+((tests.results||[]).map(x=>'<tr><td>'+safe(x.id)+'</td><td>'+safe(x.engineer_name)+'</td><td>'+safe(x.test_type)+'</td><td>'+safe(x.score)+'%</td><td>'+safe(x.result)+'</td><td>'+safe(x.status)+'</td><td>'+(String(x.status||'').toLowerCase().includes('pending')?'<button onclick="signoffTest('+Number(x.id)+')">Sign Off</button>':'')+'</td></tr>').join('')||'<tr><td colspan="7">No test results.</td></tr>')+'</tbody></table>';
-}
-async function completeTraining(id){await api('/api/training',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed',manager_name:user.name})});await loadTraining(); if(isManager()) loadDashboard();}
-function startTrainingTest(key, trainingId){
- window._activeTrainingId=trainingId||''; const t=TRAINING_TESTS[key]; if(!t)return;
- const html='<div class="test-panel"><h3>'+safe(t.title)+'</h3><p class="muted">'+safe(t.trigger)+'</p><p><b>Engineer:</b> '+safe(user.name)+' &nbsp; <b>Pass mark:</b> '+t.passMark+'% &nbsp; <b>Questions:</b> '+t.questions.length+'</p><table><thead><tr><th>No</th><th>Question</th><th>Answer</th></tr></thead><tbody>'+t.questions.map((q,i)=>'<tr><td>'+(i+1)+'</td><td>'+safe(q.q)+'</td><td><select class="testAnswer"><option value="">Select</option>'+q.opts.map(o=>'<option value="'+safe(o).replace(/"/g,'&quot;')+'">'+safe(o)+'</option>').join('')+'</select></td></tr>').join('')+'</tbody></table><p><button onclick="submitTrainingTest(\''+key+'\')">Submit Test</button><button class="secondary" onclick="$(\'trainingTestPanel\').innerHTML=\'\'">Close</button></p><p id="testMsg" class="muted"></p></div>';
- $('trainingTestPanel').innerHTML=html; $('trainingTestPanel').scrollIntoView({behavior:'smooth',block:'start'});
-}
-async function submitTrainingTest(key){
- const t=TRAINING_TESTS[key]; const answers=[...document.querySelectorAll('#trainingTestPanel .testAnswer')].map(x=>x.value);
- if(answers.some(x=>!x)){ $('testMsg').textContent='Please answer every question before submitting.'; return; }
- let correct=0; const detailed=t.questions.map((q,i)=>{const ok=answers[i]===q.a;if(ok)correct++;return{question:q.q,selected:answers[i],correct:q.a,pass:ok}});
- const score=Math.round((correct/t.questions.length)*100), result=score>=t.passMark?'Pass':'Fail', trainingId=window._activeTrainingId||'';
- const payload={engineer_name:user.name,test_type:t.title,level:key==='gas_safety'?'Level 2':'Level 1',score,result,status:result==='Pass'?'Pending Manager Review':'Repeat Required',answers_json:JSON.stringify({key,training_id:trainingId,answers:detailed,correct,total:t.questions.length,pass_mark:t.passMark,submitted_at:new Date().toISOString()}),manager_name:isManager()?user.name:'',manager_notes:''};
- try{ await api('/api/toolbox-test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)}); $('testMsg').textContent='Test submitted. Score '+score+'% - '+result+'.'; setTimeout(loadTraining,900); }catch(e){ $('testMsg').textContent='Score '+score+'% - '+result+'. Save failed: '+e.message; }
-}
-async function signoffTest(id){await api('/api/toolbox-test',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed',manager_name:user.name})}); if($('training')) await loadTraining(); if(isManager()) await loadDashboard();}
-
 $('loginPin').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 </script>
 <script src="js/tightness.js?v=10.5.4"></script>
+<script src="js/dashboard.js?v=11.1"></script>
 </body>
 </html>
