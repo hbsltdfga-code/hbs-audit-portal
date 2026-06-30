@@ -14,23 +14,47 @@ function hasSafetyCriticalIssue(b){
     return safety && (response.includes('fail')||response==='0'||response==='5'||response.includes('improvement'));
   });
 }
+
 async function assignAuditTraining(env,b,id,ref,result){
   try{
     await ensureTraining(env);
     const today=new Date().toISOString().slice(0,10);
     const engineer=b.engineer_name||'';
     const manager=b.auditor||b.manager_name||'';
+    const score=Number(b.score||0);
     if(!engineer) return;
-    if(['Improvement Required','Fail'].includes(result)){
-      await env.DB.prepare('INSERT INTO training_records (engineer_name,training_type,assigned_date,status,audit_ref,manager_name,manager_notes) VALUES (?,?,?,?,?,?,?)')
-        .bind(engineer,'Post-Audit Refresher Test',today,'Open',ref,manager,'Automatically assigned from audit outcome: '+result).run();
+
+    const safetyCritical=hasSafetyCriticalIssue(b);
+    const assignments=[];
+
+    // HBS audit-linked training rules:
+    // 85% and above: no test.
+    // 75% to 84%: Level 1 / 15-question refresher test.
+    // Below 75%: Level 2 / advanced gas safety competency assessment.
+    // Any ID/AR/NCS or safety-critical finding: Level 2 regardless of score.
+    if(safetyCritical || score < 75 || result==='Fail'){
+      assignments.push({
+        type:'Level 2 Advanced Commercial Gas Safety Competency Assessment',
+        notes:safetyCritical ? 'Automatically assigned from safety-critical audit finding.' : 'Automatically assigned because audit score was below 75%.'
+      });
+    }else if(score >= 75 && score < 85){
+      assignments.push({
+        type:'Level 1 Commercial Gas Safety Refresher',
+        notes:'Automatically assigned because audit score was between 75% and 84%: '+score+'%.'
+      });
     }
-    if(hasSafetyCriticalIssue(b)){
+
+    for(const a of assignments){
+      // Avoid duplicate open training rows for same engineer/audit/test type.
+      let existing=null;
+      try{existing=await env.DB.prepare('SELECT id FROM training_records WHERE lower(engineer_name)=lower(?) AND audit_ref=? AND training_type=? AND lower(status)<>? LIMIT 1').bind(engineer,ref,a.type,'completed').first()}catch(e){}
+      if(existing&&existing.id) continue;
       await env.DB.prepare('INSERT INTO training_records (engineer_name,training_type,assigned_date,status,audit_ref,manager_name,manager_notes) VALUES (?,?,?,?,?,?,?)')
-        .bind(engineer,'Gas Safety / Unsafe Situations Test',today,'Open',ref,manager,'Automatically assigned from safety-critical audit finding.').run();
+        .bind(engineer,a.type,today,'Open',ref,manager,a.notes).run();
     }
   }catch(e){console.log('Training assignment skipped:',e.message)}
 }
+
 
 function outcome(score){
   score=Number(score||0);
