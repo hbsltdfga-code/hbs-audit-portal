@@ -1,1 +1,35 @@
-async function ensure(env){await env.DB.prepare(`CREATE TABLE IF NOT EXISTS reaudits (id INTEGER PRIMARY KEY AUTOINCREMENT,audit_ref TEXT,engineer_name TEXT,due_date TEXT,completed_date TEXT,status TEXT DEFAULT 'Open',created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run()}export async function onRequestGet({request,env}){try{await ensure(env);const u=new URL(request.url),role=u.searchParams.get('role')||'engineer',eng=u.searchParams.get('engineer')||'';let rows;if(role==='manager')rows=await env.DB.prepare('SELECT * FROM reaudits ORDER BY id DESC').all();else if(role==='senior_engineer')rows={results:[]};else rows=await env.DB.prepare('SELECT * FROM reaudits WHERE lower(engineer_name)=lower(?) ORDER BY id DESC').bind(eng).all();return Response.json({ok:true,reaudits:rows.results||[]})}catch(e){return Response.json({ok:false,error:e.message},{status:500})}}
+function norm(v){return String(v||'').trim()}function lower(v){return norm(v).toLowerCase()}function addDays(dateStr,days){const d=dateStr?new Date(dateStr):new Date();if(Number.isNaN(d.getTime()))return new Date(Date.now()+days*86400000).toISOString().slice(0,10);d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
+async function cols(env,table){try{return((await env.DB.prepare(`PRAGMA table_info(${table})`).all()).results||[]).map(c=>c.name)}catch(e){return[]}}
+async function ensureColumn(env,table,name,type){const c=await cols(env,table);if(!c.includes(name)){try{await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN ${name} ${type}`).run()}catch(e){}}}
+async function ensure(env){await env.DB.prepare(`CREATE TABLE IF NOT EXISTS reaudits (id INTEGER PRIMARY KEY AUTOINCREMENT,audit_id INTEGER,audit_ref TEXT,engineer_name TEXT,due_date TEXT,completed_date TEXT,status TEXT DEFAULT 'Open',created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();await ensureColumn(env,'reaudits','audit_id','INTEGER');await ensureColumn(env,'reaudits','audit_ref','TEXT');await ensureColumn(env,'reaudits','created_at','DATETIME DEFAULT CURRENT_TIMESTAMP')}
+function parseJson(r){try{return r.audit_json?JSON.parse(r.audit_json):{}}catch(e){return{}}}function refFor(a){return a.audit_ref||a.ref||(a.id?`HBS-${a.id}`:'')}
+function safety(a){
+ const j=parseJson(a);
+ const cls=norm(j.classification||j.safety_classification||a.classification||a.safety_classification).toUpperCase();
+ if(['ID','AR'].includes(cls))return true;
+ const qs=Array.isArray(j.questions)?j.questions:[];
+ return qs.some(q=>{
+   const response=lower(q.response||q.response_value||q.score||q.assessment);
+   if(!(response.includes('fail')||response==='0'))return false;
+   const text=lower([q.finding,q.findings,q.note,q.notes,q.corrective_action,q.evidence,q.technical_reference,q.question].filter(Boolean).join(' '));
+   return text.includes('immediately dangerous')||text.includes(' at risk')||text.includes(' ar ')||text.includes(' id ')||text.includes('unsafe')||text.includes('gas leak')||text.includes('smell of gas');
+ });
+}
+
+async function cleanupLegacyReaudits(env){
+ await env.DB.prepare(`UPDATE reaudits SET audit_ref='HBS-'||audit_id WHERE COALESCE(audit_ref,'')='' AND audit_id IS NOT NULL`).run().catch(()=>{});
+ await env.DB.prepare(`DELETE FROM reaudits WHERE COALESCE(audit_ref,'')='' AND lower(COALESCE(status,'Open')) NOT IN ('completed','closed')`).run().catch(()=>{});
+ await env.DB.prepare(`DELETE FROM reaudits WHERE id IN (
+   SELECT r.id FROM reaudits r
+   JOIN reaudits newer
+     ON lower(COALESCE(r.engineer_name,''))=lower(COALESCE(newer.engineer_name,''))
+    AND COALESCE(r.audit_ref,'')=COALESCE(newer.audit_ref,'')
+    AND newer.id>r.id
+   WHERE COALESCE(r.audit_ref,'')<>''
+     AND lower(COALESCE(r.status,'Open')) NOT IN ('completed','closed')
+     AND lower(COALESCE(newer.status,'Open')) NOT IN ('completed','closed')
+ )`).run().catch(()=>{});
+}
+
+async function backfill(env){await ensure(env);const rows=await env.DB.prepare('SELECT * FROM audits ORDER BY id DESC').all().catch(()=>({results:[]}));for(const a of rows.results||[]){const score=Number(a.score||0);if(score>0&&(score<85||safety(a))){const ref=refFor(a),engineer=a.engineer_name||'';if(!ref||!engineer)continue;const existing=await env.DB.prepare(`SELECT id FROM reaudits WHERE lower(engineer_name)=lower(?) AND (COALESCE(audit_ref,'')=? OR audit_id=?) AND lower(COALESCE(status,'Open')) NOT IN ('completed','closed') LIMIT 1`).bind(engineer,ref,Number(a.id||0)).first().catch(()=>null);if(!existing)await env.DB.prepare('INSERT INTO reaudits (audit_id,audit_ref,engineer_name,due_date,status) VALUES (?,?,?,?,?)').bind(Number(a.id||0),ref,engineer,addDays(a.audit_date||a.created_at,30),'Open').run()}}await cleanupLegacyReaudits(env)}
+export async function onRequestGet({request,env}){try{await ensure(env);await backfill(env);const u=new URL(request.url),role=u.searchParams.get('role')||'engineer',eng=u.searchParams.get('engineer')||'';let rows;if(role==='manager')rows=await env.DB.prepare('SELECT * FROM reaudits ORDER BY id DESC').all();else rows=await env.DB.prepare('SELECT * FROM reaudits WHERE lower(engineer_name)=lower(?) ORDER BY id DESC').bind(eng).all();return Response.json({ok:true,reaudits:rows.results||[]})}catch(e){return Response.json({ok:false,error:e.message},{status:500})}}
