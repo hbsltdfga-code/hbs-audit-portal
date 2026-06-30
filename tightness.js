@@ -1,1 +1,28 @@
-const NON=['Peter Taylor','Eward Richards','Lucy Coppage','Russell Haines'];const isEng=n=>n&&!NON.map(x=>x.toLowerCase()).includes(String(n).toLowerCase());const name=x=>x.engineer_name||x.engineer||x.name||'Unknown';const score=a=>Number(a.score||0);export async function onRequestGet({env}){try{const q=async sql=>{try{return(await env.DB.prepare(sql).all()).results||[]}catch(e){return[]}};const users=await q('SELECT * FROM users'),audits=await q('SELECT * FROM audits'),training=await q('SELECT * FROM training_records'),tests=await q('SELECT * FROM toolbox_results'),tight=await q('SELECT * FROM tightness_records');const names=new Set();users.forEach(u=>{if(isEng(u.name))names.add(u.name)});audits.forEach(a=>{if(isEng(name(a)))names.add(name(a))});const engineers=[...names].sort().map(engineer=>{const ea=audits.filter(a=>name(a).toLowerCase()===engineer.toLowerCase()),et=training.filter(t=>name(t).toLowerCase()===engineer.toLowerCase()),ex=tests.filter(t=>name(t).toLowerCase()===engineer.toLowerCase()),eg=tight.filter(t=>name(t).toLowerCase()===engineer.toLowerCase());const avg=ea.length?Math.round(ea.reduce((s,a)=>s+score(a),0)/ea.length):0;const fails=ea.filter(a=>score(a)>0&&score(a)<75||/fail/i.test(a.result||'')).length;const open=et.filter(t=>/open|pending|returned/i.test(t.status||'')).length;let status='Competent / Monitoring',recommended_action='Continue routine audit cycle';if(fails||open){status='Action Required';recommended_action='Complete training and re-audit'}else if(avg&&avg<85){status='Improvement Required';recommended_action='Targeted coaching recommended'}else if(avg>=95){status='Excellent';recommended_action='Consider mentoring role'}return{engineer,audits:ea.length,average_score:avg,fails,open_training:open,tests:ex.length,tightness_tests:eg.length,status,recommended_action}});return Response.json({ok:true,engineers})}catch(e){return Response.json({ok:false,error:e.message},{status:500})}}
+const HBS_MANUFACTURERS=['ACV','Adveco','Andrews','AO Smith','Atag','Baxi','Buderus','Carrier','De Dietrich','Elco','Ferroli','Hamworthy','Hoval','Ideal','Intergas','Keston','Lochinvar','MHS','Nu-Way','Potterton','Powrmatic','Remeha','Riello','Robur','Stokvis','Strebel','Vaillant','Viessmann','Worcester Bosch','Worcester/Buderus','Wolf','Other'];
+async function loadKnowledge(){
+  setHtml('knowledgeCentre',`
+    <h2>Knowledge Centre</h2>
+    <p><button onclick="loadKnowledge()">Refresh</button></p>
+    <div class="toolbar">
+      <button onclick="setKnowledgeCategory('')">All Documents</button>
+      <button onclick="setKnowledgeCategory('IGEM Standards')">IGEM Standards</button>
+      <button onclick="setKnowledgeCategory('Manufacturer Manuals')">Manufacturer Manuals</button>
+      <button onclick="setKnowledgeCategory('HBS Bulletins')">HBS Bulletins</button>
+      <button onclick="setKnowledgeCategory('Gas Safe Guidance')">Gas Safe Guidance</button>
+      <button onclick="setKnowledgeCategory('Gas Installer Magazine')">Gas Installer Magazine</button>
+    </div>
+    <h3>Manufacturers</h3>
+    <div class="toolbar">${HBS_MANUFACTURERS.filter(m=>m!=='Other').map(m=>`<button class="secondary" onclick="setKnowledgeSearch('${m.replace(/'/g, "\\'")}')">${m}</button>`).join('')}</div>
+    <div class="grid">
+      <label>Search<br><input id="kcSearch"></label>
+      <label>Category<br><select id="kcFilter"><option value="">All Categories</option><option>IGEM Standards</option><option>Manufacturer Manuals</option><option>HBS Bulletins</option><option>Gas Safe Guidance</option><option>Gas Installer Magazine</option><option>Technical Images</option><option>Training Videos</option><option>Fault Library</option></select></label>
+    </div>
+    <p><button onclick="loadKnowledgeRows()">Search</button></p>
+    <div style="overflow-x:auto"><table><thead><tr><th>Title</th><th>Category</th><th>Reference</th><th>Keywords</th><th>Uploaded</th><th>Action</th></tr></thead><tbody id="kcRows"></tbody></table></div>
+    <p id="kcMsg" class="muted"></p>`);
+  await loadKnowledgeRows();
+}
+function setKnowledgeCategory(cat){if($('kcFilter'))$('kcFilter').value=cat;loadKnowledgeRows()}
+function setKnowledgeSearch(term){if($('kcSearch'))$('kcSearch').value=term;if($('kcFilter'))$('kcFilter').value='Manufacturer Manuals';loadKnowledgeRows()}
+async function loadKnowledgeRows(){try{const q=encodeURIComponent($('kcSearch')?.value||''),cat=encodeURIComponent($('kcFilter')?.value||'');const j=await api(`/api/library?q=${q}&category=${cat}`);const docs=j.documents||[];$('kcMsg').textContent=`${docs.length} document(s) found.`;$('kcRows').innerHTML=docs.map(d=>`<tr><td>${safe(d.title)}</td><td>${safe(d.category)}</td><td>${safe(d.reference)}</td><td>${safe(d.keywords)}</td><td>${safe(d.created_at)}</td><td><button onclick="openDoc(${d.id})">Open</button></td></tr>`).join('')}catch(e){$('kcRows').innerHTML='<tr><td colspan="6">'+e.message+'</td></tr>'}}
+async function openDoc(id){const j=await api('/api/library?id='+id+'&open_by='+encodeURIComponent(HBS.user.name));if(j.document?.file_url)window.open(j.document.file_url,'_blank')}

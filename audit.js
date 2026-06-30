@@ -1,1 +1,13 @@
-const NON=['Peter Taylor','Eward Richards','Lucy Coppage','Russell Haines'];const isEng=n=>n&&!NON.map(x=>x.toLowerCase()).includes(String(n).toLowerCase());function norm(row){let j={};try{if(row.audit_json)j=JSON.parse(row.audit_json)}catch(e){}const m={...j,...row};const score=Number(m.score||0);let result=m.result||'';if(!result&&score){result=score>=95?'Excellent':score>=85?'Pass':score>=75?'Improvement Required':'Fail'}return{id:m.id,ref:m.audit_ref||m.ref||(m.id?`HBS-${m.id}`:''),date:m.audit_date||m.date||m.created_at||'',engineer:m.engineer_name||m.engineer||'',site:m.site_name||m.site||'',manufacturer:m.manufacturer||'',model:m.model||'',score,result}}export async function onRequestGet({env}){try{const audits=((await env.DB.prepare('SELECT * FROM audits ORDER BY id DESC').all()).results||[]).map(norm);let training=[],reaudits=[];try{training=(await env.DB.prepare('SELECT * FROM training_records').all()).results||[]}catch(e){}try{reaudits=(await env.DB.prepare('SELECT * FROM reaudits').all()).results||[]}catch(e){}const total=audits.length,average_score=total?Math.round(audits.reduce((s,a)=>s+Number(a.score||0),0)/total):0;const excellent=audits.filter(a=>a.score>=95||/excellent/i.test(a.result)).length;const pass=audits.filter(a=>(a.score>=85&&a.score<95)||/^pass$/i.test(a.result)).length;const improvement=audits.filter(a=>(a.score>=75&&a.score<85)||/improvement/i.test(a.result)).length;const fail=audits.filter(a=>(a.score>0&&a.score<75)||/fail/i.test(a.result)).length;const pass_rate=total?Math.round(((excellent+pass)/total)*100):0;const open_training=training.filter(t=>/open|pending|returned/i.test(t.status||'')).length;const open_reaudits=reaudits.filter(r=>/open|pending/i.test(r.status||'')).length;const by={};audits.filter(a=>isEng(a.engineer)).forEach(a=>{if(!by[a.engineer])by[a.engineer]={engineer:a.engineer,audits:0,total:0,excellent:0,improvement:0,fails:0};by[a.engineer].audits++;by[a.engineer].total+=Number(a.score||0);if(a.score>=95)by[a.engineer].excellent++;else if(a.score>=75&&a.score<85)by[a.engineer].improvement++;else if(a.score>0&&a.score<75)by[a.engineer].fails++});const league=Object.values(by).map(r=>({...r,avg_score:r.audits?Math.round(r.total/r.audits):0})).sort((a,b)=>b.avg_score-a.avg_score);return Response.json({ok:true,summary:{total_audits:total,average_score,pass_rate,excellent,pass,improvement,fail,open_training,open_reaudits},league,audits})}catch(e){return Response.json({ok:false,error:e.message},{status:500})}}
+document.addEventListener('DOMContentLoaded', function(){
+  var lb = $('loginBtn');
+  var tb = $('testLoginBtn');
+  var pin = $('loginPin');
+  if(lb) lb.onclick = login;
+  if(tb) tb.onclick = testLoginApi;
+  if(pin) pin.addEventListener('keydown', function(e){ if(e.key === 'Enter') login(); });
+
+  // If the user is already in the page from a previous login, rebuild nav safely.
+  if(HBS && HBS.user){
+    try { buildNav(); } catch(e) { console.error(e); }
+  }
+});
