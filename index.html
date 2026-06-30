@@ -212,5 +212,6 @@ async function loadBackup(){show('backup');setHtml('backup','<h2>Backup</h2><p><
 async function downloadBackup(){try{const j=await api('/api/backup');const text=JSON.stringify(j.backup||j,null,2);$('backupOut').textContent=text.slice(0,5000);const blob=new Blob([text],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hbs-compliance-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click()}catch(e){$('backupOut').textContent=e.message}}
 $('loginPin').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 </script>
+<script src="js/tightness.js?v=10.4.1"></script>
 </body>
 </html>
