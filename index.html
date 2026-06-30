@@ -68,7 +68,7 @@ table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidde
 <header>
   <h1>HBS Compliance Manager</h1>
   <div>Commercial Gas Compliance Management System</div>
-  <div class="version">Development Release 6 · Version 11.3</div>
+  <div class="version">Development Release 6 · Version 11.3.1</div>
 </header>
 
 <section id="loginCard" class="card">
@@ -429,7 +429,7 @@ async function viewAuditDetail(id){try{let a=(window._audits||[]).find(x=>Number
 // v10.7.3: restored original audit-linked test banks from the earlier HBS workbook/portal workflow.
 const TRAINING_TESTS={
   post_audit:{
-    title:'Level 1 Commercial Gas Safety Refresher',
+    title:'Level 1 - Commercial Gas Safety Refresher',
     trigger:'Assigned automatically for Improvement Required audits from 75% to 84%.',
     passMark:80,
     auditScoreBand:'75% to 84%',
@@ -452,7 +452,7 @@ const TRAINING_TESTS={
     ]
   },
   gas_safety:{
-    title:'Level 2 Advanced Commercial Gas Safety Competency Assessment',
+    title:'Level 2 - Advanced Commercial Gas Safety Competency Assessment',
     trigger:'Assigned automatically for failed audits below 75% or any safety-critical/unsafe situation finding.',
     passMark:90,
     auditScoreBand:'Below 75% or safety-critical issue',
@@ -492,11 +492,35 @@ const TRAINING_TESTS={
 };
 
 
+const TRAINING_TYPE_LEVEL1='Level 1 - Commercial Gas Safety Refresher';
+const TRAINING_TYPE_LEVEL2='Level 2 - Advanced Commercial Gas Safety Competency Assessment';
+function canonicalTrainingType(type){
+  const raw=String(type||'').trim();
+  const t=raw.toLowerCase();
+  // Order matters: Level 1 contains the phrase "gas safety", so identify refresher records first.
+  if(t.includes('level 1')||t.includes('post-audit')||t.includes('post audit')||t.includes('refresher')||t.includes('toolbox')) return TRAINING_TYPE_LEVEL1;
+  if(t.includes('level 2')||t.includes('advanced')||t.includes('unsafe')||t.includes('competency assessment')||t.includes('competency')) return TRAINING_TYPE_LEVEL2;
+  return raw;
+}
 function trainingKeyForType(type){
-  const t=String(type||'').toLowerCase();
-  if(t.includes('level 2')||t.includes('advanced')||t.includes('gas safety')||t.includes('unsafe')) return 'gas_safety';
-  if(t.includes('level 1')||t.includes('post-audit')||t.includes('post audit')||t.includes('refresher')||t.includes('toolbox')) return 'post_audit';
+  const canonical=canonicalTrainingType(type);
+  if(canonical===TRAINING_TYPE_LEVEL1) return 'post_audit';
+  if(canonical===TRAINING_TYPE_LEVEL2) return 'gas_safety';
   return '';
+}
+function dedupeTrainingRecords(records){
+  const open=(records||[]).filter(x=>String(x.status||'Open').toLowerCase()!=='completed');
+  const seen=new Set();
+  const out=[];
+  open.forEach(x=>{
+    const canonical=canonicalTrainingType(x.training_type);
+    const audit=String(x.audit_ref||'').trim() || ('legacy-'+String(x.assigned_date||''));
+    const k=[String(x.engineer_name||'').toLowerCase(),canonical.toLowerCase(),audit].join('|');
+    if(seen.has(k)) return;
+    seen.add(k);
+    out.push({...x, training_type:canonical, original_training_type:x.training_type});
+  });
+  return out;
 }
 function trainingActionButton(x){
   const key=trainingKeyForType(x.training_type);
@@ -506,16 +530,18 @@ function trainingActionButton(x){
     btn+='<button onclick="startTrainingTest(\''+key+'\','+Number(x.id)+')">Take Test</button>';
   }
   if(isManager()){
-    btn+=(btn?' ':'')+'<button class="secondary" onclick="completeTraining('+Number(x.id)+')">Complete</button>';
+    btn+=(btn?' ':'')+'<button class="secondary" onclick="completeTraining('+Number(x.id)+')">Mark Complete</button>';
   }
   return btn || '<span class="muted">No action</span>';
 }
 function trainingRequiredCards(records){
-  const open=(records||[]).filter(x=>String(x.status||'Open').toLowerCase()!=='completed');
+  const open=dedupeTrainingRecords(records);
   if(!open.length) return '<div class="stat"><b>No audit-linked tests currently required</b><br><span class="muted">Tests will appear here automatically when an audit score or safety finding requires them.</span></div>';
   return open.map(x=>{
     const key=trainingKeyForType(x.training_type);
-    return '<div class="stat"><b>'+safe(x.training_type)+'</b><br><span class="muted">Audit: '+safe(x.audit_ref||'')+' · Assigned: '+safe(x.assigned_date||'')+'</span><br><br>'+(key?'<button onclick="startTrainingTest(\''+key+'\','+Number(x.id)+')">Take Test</button>':'<span class="muted">No linked online test configured.</span>')+'</div>';
+    const reason=x.audit_ref?('Audit '+safe(x.audit_ref)):'Legacy open training record';
+    const engineer=isManager()?('<br><span class="muted"><b>Engineer:</b> '+safe(x.engineer_name)+'</span>'):'';
+    return '<div class="stat"><b>'+safe(x.training_type)+'</b>'+engineer+'<br><span class="muted"><b>Reason:</b> '+reason+' · Assigned: '+safe(x.assigned_date||'')+'</span><br><br>'+(key?'<button onclick="startTrainingTest(\''+key+'\','+Number(x.id)+')">Take Test</button>':'<span class="muted">No linked online test configured.</span>')+'</div>';
   }).join('');
 }
 
@@ -531,8 +557,9 @@ async function loadTraining(){
   api('/api/toolbox-test?role='+user.role+'&engineer='+encodeURIComponent(user.name)).catch(e=>({results:[]}))
  ]);
  const records=t.training||[];
- $('requiredTestCards').innerHTML=trainingRequiredCards(records);
- $('trRows').innerHTML=records.map(x=>'<tr><td>'+safe(x.id)+'</td><td>'+safe(x.engineer_name)+'</td><td>'+safe(x.training_type)+'</td><td>'+safe(x.audit_ref||'')+'</td><td>'+safe(x.assigned_date)+'</td><td>'+safe(x.status)+'</td><td>'+safe(x.completion_date)+'</td><td>'+trainingActionButton(x)+'</td></tr>').join('')||'<tr><td colspan="8">No assigned training records.</td></tr>';
+ const displayRecords=dedupeTrainingRecords(records);
+ $('requiredTestCards').innerHTML=trainingRequiredCards(displayRecords);
+ $('trRows').innerHTML=displayRecords.map(x=>'<tr><td>'+safe(x.id)+'</td><td>'+safe(x.engineer_name)+'</td><td>'+safe(x.training_type)+'</td><td>'+safe(x.audit_ref||'')+'</td><td>'+safe(x.assigned_date)+'</td><td>'+safe(x.status)+'</td><td>'+safe(x.completion_date)+'</td><td>'+trainingActionButton(x)+'</td></tr>').join('')||'<tr><td colspan="8">No assigned training records.</td></tr>';
  $('testRows').innerHTML=(tests.results||[]).map(r=>'<tr><td>'+safe(r.id)+'</td><td>'+safe(r.engineer_name)+'</td><td>'+safe(r.test_type)+'</td><td>'+safe(r.score)+'%</td><td>'+safe(r.result)+'</td><td>'+safe(r.status)+'</td><td>'+(isManager()?'<button onclick="signoffTest('+r.id+')">Sign Off</button>':'')+'</td></tr>').join('')||'<tr><td colspan="7">No test results recorded.</td></tr>';
  $('reaRows').innerHTML=(r.reaudits||[]).map(x=>'<tr><td>'+safe(x.audit_ref)+'</td><td>'+safe(x.engineer_name)+'</td><td>'+safe(x.due_date)+'</td><td>'+safe(x.status)+'</td></tr>').join('')||'<tr><td colspan="4">No open re-audits.</td></tr>';
 }
