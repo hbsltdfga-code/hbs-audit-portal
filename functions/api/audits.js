@@ -34,12 +34,12 @@ async function assignAuditTraining(env,b,id,ref,result){
     // Any ID/AR/NCS or safety-critical finding: Level 2 regardless of score.
     if(safetyCritical || score < 75 || result==='Fail'){
       assignments.push({
-        type:'Level 2 Advanced Commercial Gas Safety Competency Assessment',
+        type:'Level 2 - Advanced Commercial Gas Safety Competency Assessment',
         notes:safetyCritical ? 'Automatically assigned from safety-critical audit finding.' : 'Automatically assigned because audit score was below 75%.'
       });
     }else if(score >= 75 && score < 85){
       assignments.push({
-        type:'Level 1 Commercial Gas Safety Refresher',
+        type:'Level 1 - Commercial Gas Safety Refresher',
         notes:'Automatically assigned because audit score was between 75% and 84%: '+score+'%.'
       });
     }
