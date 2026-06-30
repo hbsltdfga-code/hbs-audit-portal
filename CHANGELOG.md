@@ -9,4 +9,4 @@
 - Renamed Competency Centre to Engineer Performance & Competency.
 - Renamed Users to Administration.
 - Added clear exclusion wording to README and Administration screen.
-- Preserved the last working application structure and API files.
+- Preserved the last working application structure and API files..
