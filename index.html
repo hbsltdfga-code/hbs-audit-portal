@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HBS Compliance Manager v11.3</title>
+<title>HBS Compliance Manager v11.3.2</title>
 <style>
 :root{--blue:#123f6d;--blue2:#2369a7;--bg:#f4f7fb;--line:#d3dfed;--muted:#52677f;--danger:#8b1e1e;--ok:#ddf5e4;--warn:#fff1c9}
 *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;margin:0;background:var(--bg);color:#071b34}
@@ -57,7 +57,18 @@ input,select,textarea{background:#fff;border:1px solid #c2d2e3;transition:.15s e
 .stat,.mini-stat{box-shadow:0 4px 16px rgba(9,35,63,.06);background:linear-gradient(180deg,#fff,#f9fcff)}
 .stat b:first-child,.mini-stat b:first-child{color:#52677f;font-size:13px;text-transform:uppercase;letter-spacing:.03em}.stat b:last-child,.mini-stat b:last-child{color:#09233f}
 table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidden;display:table}th{background:#f0f6fc;color:#123f6d;font-size:13px;text-transform:uppercase;letter-spacing:.02em}td{background:#fff}tr:hover td{background:#fbfdff}
-#loginCard{max-width:520px;margin:38px auto;padding:26px;border-radius:22px}#loginCard h2{font-size:26px;margin-top:0}#loginCard:before{content:'Commercial Gas Compliance Platform';display:block;color:#52677f;font-weight:700;margin-bottom:4px}
+#loginCard{max-width:560px;margin:46px auto;padding:0;border-radius:24px;overflow:hidden;border:1px solid #d8e6f4;box-shadow:0 18px 48px rgba(9,35,63,.13)}
+#loginCard .login-top{background:linear-gradient(135deg,#09233f,#123f6d 60%,#2f80c7);color:#fff;padding:26px 28px 22px}
+#loginCard .login-logo{width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;margin-bottom:14px;letter-spacing:-.5px}
+#loginCard h2{font-size:30px;margin:0 0 6px;color:#fff;letter-spacing:-.4px}
+#loginCard .login-sub{opacity:.9;font-size:15px;line-height:1.45;max-width:420px}
+#loginCard .login-body{padding:24px 28px 22px;background:#fff}
+#loginCard .login-actions{display:flex;gap:10px;align-items:center;margin:18px 0 6px}
+#loginCard .login-actions button{padding:12px 18px}
+#loginCard .login-footer{display:flex;justify-content:space-between;gap:12px;align-items:center;border-top:1px solid #edf3f8;margin-top:18px;padding-top:14px;color:#52677f;font-size:12px}
+#loginCard .login-help{font-size:13px;color:#52677f;margin:10px 0 0}
+#loginCard:before{content:none}
+@media(max-width:620px){#loginCard{margin:22px 12px}#loginCard .login-top,#loginCard .login-body{padding:20px}#loginCard .login-footer{display:block}#loginCard .login-actions{display:block}#loginCard .login-actions button{width:100%;margin:4px 0}}
 .audit-hero{box-shadow:var(--shadow);border-radius:20px}.audit-step{border-radius:18px}.audit-step-head{background:linear-gradient(90deg,#f7fbff,#eef6ff)}.step-no{box-shadow:0 4px 12px rgba(18,63,109,.25)}
 .audit-question{box-shadow:0 5px 16px rgba(9,35,63,.05)}.audit-q-title{font-size:15px}.summary-bar{border-radius:18px;box-shadow:0 -10px 30px rgba(9,35,63,.13)}
 @media(max-width:760px){header{padding:20px 18px}main{padding:0 8px 18px}.section.card{margin:10px 8px;padding:14px}#nav{display:grid;grid-template-columns:1fr;gap:6px;width:100%;margin-top:10px}#nav button{width:100%;text-align:left}table{font-size:13px}th,td{padding:7px}.statgrid{grid-template-columns:1fr}.audit-step-body{padding:12px}.summary-bar{position:static}.grid{grid-template-columns:1fr}}
@@ -68,17 +79,27 @@ table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidde
 <header>
   <h1>HBS Compliance Manager</h1>
   <div>Commercial Gas Compliance Management System</div>
-  <div class="version">Development Release 6 · Version 11.3.1</div>
+  <div class="version">Development Release 6 · Version 11.3.2</div>
 </header>
 
 <section id="loginCard" class="card">
-  <h2>Portal Login</h2>
-  <div class="grid">
-    <label>Email / Name<br><input id="loginEmail" value="peter@hbs.local" autocomplete="username"></label>
-    <label>PIN<br><input id="loginPin" type="password" inputmode="numeric" autocomplete="current-password"></label>
+  <div class="login-top">
+    <div class="login-logo">HBS</div>
+    <h2>HBS Compliance Manager</h2>
+    <div class="login-sub">Commercial Gas Compliance Platform for audits, competency, training, tightness testing and technical knowledge.</div>
   </div>
-  <p><button onclick="login()">Login</button><button class="secondary" onclick="testLoginApi()">Test Login API</button></p>
-  <p id="loginMsg" class="muted">Use peter@hbs.local and PIN 3110.</p>
+  <div class="login-body">
+    <div class="grid">
+      <label>Email Address<br><input id="loginEmail" autocomplete="username" placeholder="name@hbs.local"></label>
+      <label>PIN<br><input id="loginPin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter PIN"></label>
+    </div>
+    <div class="login-actions"><button onclick="login()">Sign In</button></div>
+    <p id="loginMsg" class="login-help">Enter your HBS email address and PIN to access the Compliance Manager.</p>
+    <div class="login-footer">
+      <span>Forgotten PIN? Contact the Compliance Manager.</span>
+      <span>Version 11.3.2</span>
+    </div>
+  </div>
 </section>
 
 <section id="app" class="hide">
@@ -429,7 +450,7 @@ async function viewAuditDetail(id){try{let a=(window._audits||[]).find(x=>Number
 // v10.7.3: restored original audit-linked test banks from the earlier HBS workbook/portal workflow.
 const TRAINING_TESTS={
   post_audit:{
-    title:'Level 1 - Commercial Gas Safety Refresher',
+    title:'Level 1 Commercial Gas Safety Refresher',
     trigger:'Assigned automatically for Improvement Required audits from 75% to 84%.',
     passMark:80,
     auditScoreBand:'75% to 84%',
@@ -452,7 +473,7 @@ const TRAINING_TESTS={
     ]
   },
   gas_safety:{
-    title:'Level 2 - Advanced Commercial Gas Safety Competency Assessment',
+    title:'Level 2 Advanced Commercial Gas Safety Competency Assessment',
     trigger:'Assigned automatically for failed audits below 75% or any safety-critical/unsafe situation finding.',
     passMark:90,
     auditScoreBand:'Below 75% or safety-critical issue',
@@ -492,35 +513,11 @@ const TRAINING_TESTS={
 };
 
 
-const TRAINING_TYPE_LEVEL1='Level 1 - Commercial Gas Safety Refresher';
-const TRAINING_TYPE_LEVEL2='Level 2 - Advanced Commercial Gas Safety Competency Assessment';
-function canonicalTrainingType(type){
-  const raw=String(type||'').trim();
-  const t=raw.toLowerCase();
-  // Order matters: Level 1 contains the phrase "gas safety", so identify refresher records first.
-  if(t.includes('level 1')||t.includes('post-audit')||t.includes('post audit')||t.includes('refresher')||t.includes('toolbox')) return TRAINING_TYPE_LEVEL1;
-  if(t.includes('level 2')||t.includes('advanced')||t.includes('unsafe')||t.includes('competency assessment')||t.includes('competency')) return TRAINING_TYPE_LEVEL2;
-  return raw;
-}
 function trainingKeyForType(type){
-  const canonical=canonicalTrainingType(type);
-  if(canonical===TRAINING_TYPE_LEVEL1) return 'post_audit';
-  if(canonical===TRAINING_TYPE_LEVEL2) return 'gas_safety';
+  const t=String(type||'').toLowerCase();
+  if(t.includes('level 2')||t.includes('advanced')||t.includes('gas safety')||t.includes('unsafe')) return 'gas_safety';
+  if(t.includes('level 1')||t.includes('post-audit')||t.includes('post audit')||t.includes('refresher')||t.includes('toolbox')) return 'post_audit';
   return '';
-}
-function dedupeTrainingRecords(records){
-  const open=(records||[]).filter(x=>String(x.status||'Open').toLowerCase()!=='completed');
-  const seen=new Set();
-  const out=[];
-  open.forEach(x=>{
-    const canonical=canonicalTrainingType(x.training_type);
-    const audit=String(x.audit_ref||'').trim() || ('legacy-'+String(x.assigned_date||''));
-    const k=[String(x.engineer_name||'').toLowerCase(),canonical.toLowerCase(),audit].join('|');
-    if(seen.has(k)) return;
-    seen.add(k);
-    out.push({...x, training_type:canonical, original_training_type:x.training_type});
-  });
-  return out;
 }
 function trainingActionButton(x){
   const key=trainingKeyForType(x.training_type);
@@ -530,18 +527,16 @@ function trainingActionButton(x){
     btn+='<button onclick="startTrainingTest(\''+key+'\','+Number(x.id)+')">Take Test</button>';
   }
   if(isManager()){
-    btn+=(btn?' ':'')+'<button class="secondary" onclick="completeTraining('+Number(x.id)+')">Mark Complete</button>';
+    btn+=(btn?' ':'')+'<button class="secondary" onclick="completeTraining('+Number(x.id)+')">Complete</button>';
   }
   return btn || '<span class="muted">No action</span>';
 }
 function trainingRequiredCards(records){
-  const open=dedupeTrainingRecords(records);
+  const open=(records||[]).filter(x=>String(x.status||'Open').toLowerCase()!=='completed');
   if(!open.length) return '<div class="stat"><b>No audit-linked tests currently required</b><br><span class="muted">Tests will appear here automatically when an audit score or safety finding requires them.</span></div>';
   return open.map(x=>{
     const key=trainingKeyForType(x.training_type);
-    const reason=x.audit_ref?('Audit '+safe(x.audit_ref)):'Legacy open training record';
-    const engineer=isManager()?('<br><span class="muted"><b>Engineer:</b> '+safe(x.engineer_name)+'</span>'):'';
-    return '<div class="stat"><b>'+safe(x.training_type)+'</b>'+engineer+'<br><span class="muted"><b>Reason:</b> '+reason+' · Assigned: '+safe(x.assigned_date||'')+'</span><br><br>'+(key?'<button onclick="startTrainingTest(\''+key+'\','+Number(x.id)+')">Take Test</button>':'<span class="muted">No linked online test configured.</span>')+'</div>';
+    return '<div class="stat"><b>'+safe(x.training_type)+'</b><br><span class="muted">Audit: '+safe(x.audit_ref||'')+' · Assigned: '+safe(x.assigned_date||'')+'</span><br><br>'+(key?'<button onclick="startTrainingTest(\''+key+'\','+Number(x.id)+')">Take Test</button>':'<span class="muted">No linked online test configured.</span>')+'</div>';
   }).join('');
 }
 
@@ -557,9 +552,8 @@ async function loadTraining(){
   api('/api/toolbox-test?role='+user.role+'&engineer='+encodeURIComponent(user.name)).catch(e=>({results:[]}))
  ]);
  const records=t.training||[];
- const displayRecords=dedupeTrainingRecords(records);
- $('requiredTestCards').innerHTML=trainingRequiredCards(displayRecords);
- $('trRows').innerHTML=displayRecords.map(x=>'<tr><td>'+safe(x.id)+'</td><td>'+safe(x.engineer_name)+'</td><td>'+safe(x.training_type)+'</td><td>'+safe(x.audit_ref||'')+'</td><td>'+safe(x.assigned_date)+'</td><td>'+safe(x.status)+'</td><td>'+safe(x.completion_date)+'</td><td>'+trainingActionButton(x)+'</td></tr>').join('')||'<tr><td colspan="8">No assigned training records.</td></tr>';
+ $('requiredTestCards').innerHTML=trainingRequiredCards(records);
+ $('trRows').innerHTML=records.map(x=>'<tr><td>'+safe(x.id)+'</td><td>'+safe(x.engineer_name)+'</td><td>'+safe(x.training_type)+'</td><td>'+safe(x.audit_ref||'')+'</td><td>'+safe(x.assigned_date)+'</td><td>'+safe(x.status)+'</td><td>'+safe(x.completion_date)+'</td><td>'+trainingActionButton(x)+'</td></tr>').join('')||'<tr><td colspan="8">No assigned training records.</td></tr>';
  $('testRows').innerHTML=(tests.results||[]).map(r=>'<tr><td>'+safe(r.id)+'</td><td>'+safe(r.engineer_name)+'</td><td>'+safe(r.test_type)+'</td><td>'+safe(r.score)+'%</td><td>'+safe(r.result)+'</td><td>'+safe(r.status)+'</td><td>'+(isManager()?'<button onclick="signoffTest('+r.id+')">Sign Off</button>':'')+'</td></tr>').join('')||'<tr><td colspan="7">No test results recorded.</td></tr>';
  $('reaRows').innerHTML=(r.reaudits||[]).map(x=>'<tr><td>'+safe(x.audit_ref)+'</td><td>'+safe(x.engineer_name)+'</td><td>'+safe(x.due_date)+'</td><td>'+safe(x.status)+'</td></tr>').join('')||'<tr><td colspan="4">No open re-audits.</td></tr>';
 }
