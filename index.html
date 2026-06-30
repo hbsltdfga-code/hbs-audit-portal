@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HBS Compliance Manager v11.1</title>
+<title>HBS Compliance Manager v11.2</title>
 <style>
 :root{--blue:#123f6d;--blue2:#2369a7;--bg:#f4f7fb;--line:#d3dfed;--muted:#52677f;--danger:#8b1e1e;--ok:#ddf5e4;--warn:#fff1c9}
 *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;margin:0;background:var(--bg);color:#071b34}
@@ -32,13 +32,43 @@ table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border-bottom:1px
 .audit-photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:10px}
 .audit-photo-thumb{border:1px solid var(--line);border-radius:10px;background:#fff;padding:6px;text-align:center;font-size:12px;color:var(--muted)}
 .audit-photo-thumb img{width:100%;height:90px;object-fit:cover;border-radius:8px;margin-bottom:4px}
+
+
+/* v11.2 UI polish: consistent product shell, responsive cards, PDA/tablet friendly */
+:root{
+  --navy:#09233f;--brand:#123f6d;--brand2:#2369a7;--accent:#2f80c7;
+  --surface:#ffffff;--surface2:#f7fbff;--shadow:0 10px 30px rgba(9,35,63,.08);
+  --radius:16px;--radius-sm:10px;
+}
+body{background:linear-gradient(180deg,#eef5fc 0%,#f6f8fb 260px,#f4f7fb 100%);line-height:1.4}
+header{padding:28px 32px;background:linear-gradient(135deg,#09233f 0%,#123f6d 52%,#2f80c7 100%);box-shadow:0 8px 28px rgba(9,35,63,.22)}
+header h1{letter-spacing:-.3px}.version{display:inline-block;margin-top:8px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25)}
+main{max-width:1440px;margin:0 auto;padding:0 10px 24px}
+#app>.card:first-child{position:sticky;top:0;z-index:20;margin:0;border-radius:0;border-left:0;border-right:0;box-shadow:0 8px 24px rgba(9,35,63,.08)}
+#loginStatus{margin-right:12px;color:var(--navy)}
+#nav button{border-radius:999px;padding:9px 13px;background:#eef5fc;color:#123f6d;border:1px solid #cfe0f2;box-shadow:none}
+#nav button:hover{background:#123f6d;color:#fff;transform:translateY(-1px)}
+.card{border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid #dce8f4;background:var(--surface)}
+.section.card{margin-top:18px;padding:20px}
+h2{letter-spacing:-.2px;color:#09233f}h3{color:#123f6d;margin-top:18px}
+button{transition:.15s ease;border-radius:10px;box-shadow:0 3px 8px rgba(18,63,109,.14)}button:hover{filter:brightness(1.05);transform:translateY(-1px)}
+button.secondary{background:#62758a}button.danger{background:#a72e2e}
+input,select,textarea{background:#fff;border:1px solid #c2d2e3;transition:.15s ease}input:focus,select:focus,textarea:focus{outline:3px solid rgba(47,128,199,.16);border-color:#2f80c7}
+.stat,.mini-stat{box-shadow:0 4px 16px rgba(9,35,63,.06);background:linear-gradient(180deg,#fff,#f9fcff)}
+.stat b:first-child,.mini-stat b:first-child{color:#52677f;font-size:13px;text-transform:uppercase;letter-spacing:.03em}.stat b:last-child,.mini-stat b:last-child{color:#09233f}
+table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidden;display:table}th{background:#f0f6fc;color:#123f6d;font-size:13px;text-transform:uppercase;letter-spacing:.02em}td{background:#fff}tr:hover td{background:#fbfdff}
+#loginCard{max-width:520px;margin:38px auto;padding:26px;border-radius:22px}#loginCard h2{font-size:26px;margin-top:0}#loginCard:before{content:'Commercial Gas Compliance Platform';display:block;color:#52677f;font-weight:700;margin-bottom:4px}
+.audit-hero{box-shadow:var(--shadow);border-radius:20px}.audit-step{border-radius:18px}.audit-step-head{background:linear-gradient(90deg,#f7fbff,#eef6ff)}.step-no{box-shadow:0 4px 12px rgba(18,63,109,.25)}
+.audit-question{box-shadow:0 5px 16px rgba(9,35,63,.05)}.audit-q-title{font-size:15px}.summary-bar{border-radius:18px;box-shadow:0 -10px 30px rgba(9,35,63,.13)}
+@media(max-width:760px){header{padding:20px 18px}main{padding:0 8px 18px}.section.card{margin:10px 8px;padding:14px}#nav{display:grid;grid-template-columns:1fr;gap:6px;width:100%;margin-top:10px}#nav button{width:100%;text-align:left}table{font-size:13px}th,td{padding:7px}.statgrid{grid-template-columns:1fr}.audit-step-body{padding:12px}.summary-bar{position:static}.grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
 <header>
   <h1>HBS Compliance Manager</h1>
   <div>Commercial Gas Compliance Management System</div>
-  <div class="version">Development Release 5 · Version 11.1</div>
+  <div class="version">Development Release 6 · Version 11.2</div>
 </header>
 
 <section id="loginCard" class="card">
