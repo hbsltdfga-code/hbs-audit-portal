@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HBS Knowledge Centre Recovery</title>
+<title>HBS Knowledge Centre</title>
 <style>
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f7fb;color:#071b34}
 header{background:#123f6d;color:white;padding:20px}
-.card{background:white;margin:14px;padding:16px;border:1px solid #d3dfed;border-radius:10px}
+.card{background:white;margin:14px;padding:16px;border:1px solid #d3dfed;border-radius:10px;box-shadow:0 1px 4px #0001}
 button{background:#123f6d;color:white;border:0;border-radius:8px;padding:9px 12px;font-weight:700;margin:3px;cursor:pointer}
 button.secondary{background:#52677f}
 input,select{font:inherit;padding:9px;border:1px solid #b8c8d8;border-radius:8px}
@@ -22,9 +22,15 @@ th{background:#eef4fb}
 <body>
 <header>
   <h1>HBS Knowledge Centre</h1>
-  <div>Recovery page showing all current technical library records from D1/R2.</div>
+  <div>Technical reference area for IGEM Standards, Gas Safe guidance, manufacturer manuals and HBS documents.</div>
 </header>
+
 <section class="card">
+  <p>
+    <button onclick="location.href='/'">Back to Portal</button>
+    <button onclick="load()">Refresh</button>
+  </p>
+
   <div class="toolbar">
     <button onclick="setCat('')">All Documents</button>
     <button onclick="setCat('IGEM Standards')">IGEM Standards</button>
@@ -53,21 +59,44 @@ th{background:#eef4fb}
       </select>
     </label>
   </div>
-  <p><button onclick="load()">Search / Refresh</button></p>
+
+  <p><button onclick="load()">Search</button></p>
   <p id="msg" class="muted"></p>
+
   <div style="overflow-x:auto">
     <table>
-      <thead><tr><th>Title</th><th>Category</th><th>Reference</th><th>Keywords</th><th>Uploaded</th><th>File</th><th>Action</th></tr></thead>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Reference</th>
+          <th>Keywords</th>
+          <th>Uploaded</th>
+          <th>File</th>
+          <th>Action</th>
+        </tr>
+      </thead>
       <tbody id="rows"></tbody>
     </table>
   </div>
 </section>
+
 <script>
 const manufacturers=['ACV','Adveco','Andrews','AO Smith','Atag','Baxi','Buderus','Carrier','De Dietrich','Elco','Ferroli','Hamworthy','Hoval','Ideal','Intergas','Keston','Lochinvar','MHS','Nu-Way','Potterton','Powrmatic','Remeha','Riello','Robur','Stokvis','Strebel','Vaillant','Viessmann','Worcester Bosch','Wolf'];
+
 function safe(v){return v==null?'':String(v)}
 function setCat(cat){document.getElementById('category').value=cat;load()}
 function setManufacturer(m){document.getElementById('q').value=m;document.getElementById('category').value='Manufacturer Manuals';load()}
-async function api(url){const r=await fetch(url,{cache:'no-store'});const t=await r.text();let j;try{j=JSON.parse(t)}catch(e){throw new Error(t)}if(!r.ok||j.ok===false)throw new Error(j.error||'API error');return j}
+
+async function api(url){
+  const r=await fetch(url,{cache:'no-store'});
+  const t=await r.text();
+  let j;
+  try{j=JSON.parse(t)}catch(e){throw new Error(t)}
+  if(!r.ok||j.ok===false)throw new Error(j.error||'API error');
+  return j;
+}
+
 async function load(){
   try{
     const q=encodeURIComponent(document.getElementById('q').value||'');
@@ -88,10 +117,12 @@ async function load(){
     document.getElementById('msg').textContent=e.message;
   }
 }
+
 async function openDoc(id){
-  const j=await api('/api/library?id='+id);
+  const j=await api('/api/library?id='+id+'&open_by=Knowledge Centre');
   if(j.document && j.document.file_url) window.open(j.document.file_url,'_blank');
 }
+
 document.getElementById('manufacturerButtons').innerHTML=manufacturers.map(m=>'<button class="secondary" onclick="setManufacturer(\''+m.replace(/'/g,"\\'")+'\')">'+m+'</button>').join('');
 load();
 </script>
