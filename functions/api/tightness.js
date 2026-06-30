@@ -30,10 +30,10 @@ export async function onRequestGet({request,env}){
     const role=u.searchParams.get('role')||'engineer';
     const eng=u.searchParams.get('engineer')||'';
     let rows;
-    if(role==='manager' || role==='director'){
+    if(['manager','director','admin'].includes(String(role).toLowerCase())){
       rows=await env.DB.prepare('SELECT * FROM tightness_records ORDER BY id DESC LIMIT 500').all();
     }else{
-      rows=await env.DB.prepare('SELECT * FROM tightness_records WHERE lower(engineer_name)=lower(?) ORDER BY id DESC LIMIT 200').bind(eng).all();
+      rows=await env.DB.prepare('SELECT * FROM tightness_records WHERE lower(trim(engineer_name))=lower(trim(?)) ORDER BY id DESC LIMIT 200').bind(eng).all();
     }
     return Response.json({ok:true,records:rows.results||[]});
   }catch(e){return Response.json({ok:false,error:e.message},{status:500});}
@@ -45,6 +45,18 @@ export async function onRequestPost({request,env}){
     const b=await request.json();
     if(!b.site_name) return Response.json({ok:false,error:'Site name is required.'},{status:400});
     if(!Number(b.installation_volume||0)) return Response.json({ok:false,error:'Installation volume is required.'},{status:400});
+    const recent = await env.DB.prepare(`SELECT id FROM tightness_records
+      WHERE lower(trim(engineer_name))=lower(trim(?))
+        AND lower(trim(site_name))=lower(trim(?))
+        AND COALESCE(test_date,'')=COALESCE(?, '')
+        AND ABS(COALESCE(installation_volume,0)-?) < 0.000001
+        AND ABS(COALESCE(measured_drop,0)-?) < 0.000001
+        AND datetime(created_at) >= datetime('now','-2 minutes')
+      ORDER BY id DESC LIMIT 1`).bind(
+        b.engineer_name||'', b.site_name||'', b.test_date||new Date().toISOString().slice(0,10),
+        Number(b.installation_volume||0), Number(b.measured_drop||0)
+      ).first().catch(()=>null);
+    if(recent && recent.id) return Response.json({ok:true,id:recent.id,duplicate:true});
     const ins=await env.DB.prepare(`INSERT INTO tightness_records (engineer_name,role,site_name,client,audit_ref,test_date,area_tested,test_type,installation_volume,test_pressure,stabilisation_time,test_duration,measured_drop,permitted_leak_rate,calculated_leak_rate,outcome,notes,details_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(
       b.engineer_name||'',
       b.role||'',
