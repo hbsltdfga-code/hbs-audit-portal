@@ -38,7 +38,7 @@ table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border-bottom:1px
 <header>
   <h1>HBS Compliance Manager</h1>
   <div>Commercial Gas Compliance Management System</div>
-  <div class="version">Development Release 4 · Version 10.7.1</div>
+  <div class="version">Development Release 4 · Version 10.7.3</div>
 </header>
 
 <section id="loginCard" class="card">
@@ -104,7 +104,7 @@ async function api(url,opts){const r=await fetch(url,opts||{cache:'no-store'});c
 async function testLoginApi(){try{const j=await api('/api/login?user=peter@hbs.local&pin=3110');$('loginMsg').textContent='API OK: '+j.user.name+' / '+j.user.role}catch(e){$('loginMsg').textContent=e.message}}
 async function login(){try{const l=$('loginEmail').value.trim(),p=$('loginPin').value.trim();if(!l||!p){$('loginMsg').textContent='Enter email/name and PIN.';return}const j=await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:l,username:l,pin:p,password:p})});user=j.user;startApp()}catch(e){$('loginMsg').textContent=e.message}}
 function logout(){user=null;$('app').classList.add('hide');$('loginCard').classList.remove('hide');$('loginPin').value=''}
-function startApp(){$('loginCard').classList.add('hide');$('app').classList.remove('hide');$('loginStatus').textContent='Logged in: '+user.name+' ('+roleLabel(user.role)+')';buildNav();if(isManager()){show('dashboard');loadDashboard()}else{show('auditHistory');loadAuditHistory()}}
+function startApp(){$('loginCard').classList.add('hide');$('app').classList.remove('hide');$('loginStatus').textContent='Logged in: '+user.name+' ('+roleLabel(user.role)+')';buildNav();if(isManager()){show('dashboard');loadDashboard()}else{show('training');loadTraining()}}
 function buildNav(){
  const base=[
  ['Dashboard','dashboard',loadDashboard,'manager'],
@@ -395,39 +395,68 @@ async function loadAuditHistory(){
 async function viewAuditDetail(id){try{let a=(window._audits||[]).find(x=>Number(x.id)===Number(id));let photos=[];try{const full=await api('/api/audit?id='+id);if(full.audit)a={...a,...full.audit};photos=full.photos||[]}catch(e){}let d={};try{d=JSON.parse(a.audit_json||'{}')}catch(e){}const qs=d.questions||d.auditQuestions||[];const comb=d.combustion||{};const photoHtml=photos.length?photos.map(p=>'<a href="'+p.photo_url+'" target="_blank"><img class="photo-thumb" src="'+p.photo_url+'"></a>').join(''):'No photos attached.';$('auditDetail').innerHTML='<table><tr><th>Ref</th><td>'+safe(a.ref||'HBS-'+a.id)+'</td></tr><tr><th>Engineer</th><td>'+safe(a.engineer_name)+'</td></tr><tr><th>Site</th><td>'+safe(a.site_name)+'</td></tr><tr><th>Client</th><td>'+safe(a.client||d.client)+'</td></tr><tr><th>Auditor</th><td>'+safe(a.auditor||d.auditor)+'</td></tr><tr><th>Manufacturer / Model</th><td>'+safe(a.manufacturer)+' '+safe(a.model)+'</td></tr><tr><th>Score / Result</th><td>'+safe(a.score)+'% - '+safe(a.result)+'</td></tr><tr><th>Findings</th><td>'+safe(a.findings||d.findings)+'</td></tr><tr><th>Training / Re-audit</th><td>'+safe(a.training_required||d.training_required)+'</td></tr></table><h4>Combustion</h4><table><tr><th>CO ppm</th><td>'+safe(comb.co)+'</td><th>CO2 %</th><td>'+safe(comb.co2)+'</td></tr><tr><th>O2 %</th><td>'+safe(comb.o2)+'</td><th>Flue Temp</th><td>'+safe(comb.flue_temp)+'</td></tr><tr><th>Efficiency</th><td>'+safe(comb.efficiency)+'</td><th>Ratio</th><td>'+safe(comb.ratio)+'</td></tr></table><h4>Audit Questions</h4><table><thead><tr><th>Section</th><th>Question</th><th>Score / Response</th><th>Notes / Finding</th></tr></thead><tbody>'+(qs.length?qs.map(q=>'<tr><td>'+safe(q.section)+'</td><td>'+safe(q.question)+'</td><td>'+safe(q.score||q.response)+'</td><td>'+safe(q.notes||q.note||q.finding||q.findings||q.comment||q.comments||q.evidence)+'</td></tr>').join(''):'<tr><td colspan=4>No detailed question data stored.</td></tr>')+'</tbody></table><h4>Photos</h4>'+photoHtml+'<p><button class="secondary" onclick="document.getElementById(\'rawJson\').classList.toggle(\'hide\')">Show Raw Audit JSON</button></p><pre id="rawJson" class="hide">'+htmlSafe(JSON.stringify(d,null,2))+'</pre>'}catch(e){$('auditDetail').textContent=e.message}}
 
 
+
+// v10.7.3: restored original audit-linked test banks from the earlier HBS workbook/portal workflow.
 const TRAINING_TESTS={
   post_audit:{
-    title:'Post-Audit Refresher Test',
-    trigger:'Triggered by Improvement Required or Fail audit outcomes.',
+    title:'Level 1 Commercial Gas Safety Refresher',
+    trigger:'Assigned automatically for Improvement Required audits from 75% to 84%.',
     passMark:80,
+    auditScoreBand:'75% to 84%',
     questions:[
-      {q:'When an audit records missing combustion or pressure readings, what should the engineer do?',opts:['Leave the report blank','Record N/A without explanation','Record the actual readings or a clear reason why they could not be obtained','Only tell the client verbally'],a:2},
-      {q:'If burner pressure cannot be tested, what is the best audit record?',opts:['Do not mention it','Record inlet working pressure and explain why burner pressure was not available','Enter zero','Mark the appliance as passed without comment'],a:1},
-      {q:'A CP15 or service report should be completed with:',opts:['Enough detail to evidence all checks completed','Only the appliance make','Only the engineer signature','No findings unless the client asks'],a:0},
-      {q:'Where a reduced audit score is given, the notes should include:',opts:['Nothing if the engineer is experienced','A clear finding, evidence and corrective action','Only the score','Only the client name'],a:1},
-      {q:'Photographic evidence should be used when:',opts:['It supports audit findings or records plant condition','Never','Only for failed audits','Only when requested by Accounts'],a:0},
-      {q:'A re-audit is normally required when:',opts:['The engineer gets Excellent','There are repeated or safety-critical findings','The site is far away','The client asks for a copy'],a:1},
-      {q:'If ventilation requirements are unclear, the engineer should:',opts:['Ignore it','Use manufacturer instructions/standards and record the basis of assessment','Assume it is suitable','Only take a photo'],a:1},
-      {q:'An audit finding should be written so that:',opts:['Only the auditor understands it','The engineer, manager and client can understand the issue and action required','It avoids mentioning defects','It only gives a percentage'],a:1},
-      {q:'Training assigned after audit should be closed only when:',opts:['The engineer says they read it','The required learning/test/review is completed and signed off','The audit is deleted','The client is satisfied'],a:1},
-      {q:'If an engineer records N/A, the best practice is to:',opts:['Use N/A for any difficult checks','Explain why it is not applicable where necessary','Use it to improve the score','Never review it'],a:1}
+      {q:'Under GSIUR, who is responsible for leaving the gas installation safe after attending site?',a:'Gas Engineer',opts:['Client','Building Manager','Gas Engineer','Manufacturer']},
+      {q:'What is the correct action where an Immediately Dangerous situation is identified?',a:'Isolate or disconnect where possible and issue warning notice',opts:['Record only','Quote for repair','Isolate or disconnect where possible and issue warning notice','Leave running until next visit']},
+      {q:'Which unsafe classification applies where there is immediate danger to life or property?',a:'ID',opts:['Advisory','AR','ID','Service Required']},
+      {q:'Which unsafe classification applies where danger may occur if the situation continues?',a:'AR',opts:['AR','ID','Passed','Routine']},
+      {q:'What document should be issued where an unsafe gas situation is identified?',a:'Warning Notice',opts:['Invoice only','Warning Notice','Delivery note','Verbal advice only']},
+      {q:'What does a gas tightness test confirm?',a:'Integrity of the gas installation',opts:['Appliance efficiency','Water pressure','Integrity of the gas installation','Flue dilution rate only']},
+      {q:'When should ventilation be considered on commercial gas appliances?',a:'During service, audit, repair or safety inspection where relevant',opts:['Only on new installations','Never','During service, audit, repair or safety inspection where relevant','Only after a complaint']},
+      {q:'If mechanical ventilation serving gas appliances fails, what should normally happen?',a:'Gas appliances must be safely interlocked or isolated as required',opts:['Appliances continue running','Only reduce appliance output','Gas appliances must be safely interlocked or isolated as required','Open a window']},
+      {q:'Before combustion analysis, what should the engineer confirm?',a:'Appliance is operating correctly under suitable load',opts:['Only the case temperature','Appliance is operating correctly under suitable load','That the client is present','That the room is empty']},
+      {q:'Which instructions must be followed during servicing and maintenance?',a:'Manufacturer instructions',opts:['Manufacturer instructions','Previous engineer notes only','Client preference','Online forum advice']},
+      {q:'What should be verified when checking a commercial flue system?',a:'Route, integrity, termination, support and signs of leakage or distress',opts:['Colour only','Route, integrity, termination, support and signs of leakage or distress','Only external terminal paint','Nothing if appliance lights']},
+      {q:'What should be recorded for combustion analysis?',a:'Relevant combustion readings and whether they are acceptable against manufacturer data',opts:['Only temperature','Relevant combustion readings and whether they are acceptable against manufacturer data','Nothing if the appliance runs','Only a photograph']},
+      {q:'What should be checked where condensate is produced by a commercial boiler?',a:'Correct discharge route, trap condition and safe termination',opts:['Nothing','Correct discharge route, trap condition and safe termination','Only pipe colour','Only water pressure']},
+      {q:'What evidence should support audit findings where appropriate?',a:'Photographs and clear written notes',opts:['Photographs and clear written notes','Verbal explanation only','No evidence required','Timesheet only']},
+      {q:'If an engineer is unsure of a classification or safety decision, what should they do?',a:'Stop and contact technical support or compliance management',opts:['Guess','Ignore it','Stop and contact technical support or compliance management','Ask the client to decide']}
     ]
   },
   gas_safety:{
-    title:'Gas Safety / Unsafe Situations Test',
-    trigger:'Triggered by AR/ID/NCS concerns, unsafe situations or safety-critical audit findings.',
-    passMark:80,
+    title:'Level 2 Advanced Commercial Gas Safety Competency Assessment',
+    trigger:'Assigned automatically for failed audits below 75% or any safety-critical/unsafe situation finding.',
+    passMark:90,
+    auditScoreBand:'Below 75% or safety-critical issue',
     questions:[
-      {q:'If an immediately dangerous situation is identified, the engineer must:',opts:['Leave it running until the next visit','Follow unsafe situations procedure, make safe and issue the appropriate warning notice','Only email the office','Record N/A'],a:1},
-      {q:'NCS means:',opts:['Not Currently Safe','Not to Current Standards','No Client Signature','New Commissioning Sheet'],a:1},
-      {q:'AR means:',opts:['At Risk','Audit Required','Appliance Repaired','Annual Review'],a:0},
-      {q:'ID means:',opts:['Installation Due','Immediately Dangerous','Internal Defect','Inspection Done'],a:1},
-      {q:'Where a gas escape or smell of gas is reported, the priority is:',opts:['Complete paperwork first','Make safe and follow emergency procedures','Wait for a manager','Only take photos'],a:1},
-      {q:'A gas tightness/let-by test record should include:',opts:['Only pass/fail','Relevant pressures, times, volume/criteria where applicable and result','Only the date','Only the client name'],a:1},
-      {q:'Ventilation defects on commercial plant should be:',opts:['Ignored if the appliance lights','Assessed, classified where required and recorded with action','Left to the client without record','Only mentioned verbally'],a:1},
-      {q:'Flue condition and termination issues can become:',opts:['Aesthetic only','Safety-critical and must be assessed/classified correctly','Always NCS','Never reportable'],a:1},
-      {q:'Regulation 26(9) places duties around:',opts:['Ensuring appliances/installations are safe before use following work','Holiday booking','Vehicle checks','Invoice approval'],a:0},
-      {q:'Warning notices should be:',opts:['Issued where required and recorded clearly','Avoided to keep the client happy','Only used by managers','Deleted after the visit'],a:0}
+      {q:'Mechanical ventilation serving a commercial plantroom fails. What should happen?',a:'Gas appliances should be prevented from operating until ventilation is restored and proven',opts:['Continue operation at reduced rate','Open the plantroom door','Gas appliances should be prevented from operating until ventilation is restored and proven','Record only']},
+      {q:'Working pressure is 18.1 mbar and manufacturer minimum is 17 mbar. What is the correct approach?',a:'Continue only if appliance performance is correct and no adverse conditions exist, recording readings clearly',opts:['Classify ID immediately','Ignore because above 17 mbar','Continue only if appliance performance is correct and no adverse conditions exist, recording readings clearly','Increase pressure at the meter']},
+      {q:'A flue shows signs of leakage into the plantroom. What is the appropriate action?',a:'Assess as unsafe, isolate where necessary and issue warning notice',opts:['Tape the joint','Leave operational','Assess as unsafe, isolate where necessary and issue warning notice','Only photograph it']},
+      {q:'Combustion readings show significantly elevated CO and unstable flame picture. What should happen?',a:'Investigate, make safe and do not leave operating if unsafe',opts:['Record as passed','Increase gas rate','Investigate, make safe and do not leave operating if unsafe','Ignore if boiler is heating']},
+      {q:'What is the main purpose of proving and interlocking systems?',a:'To prevent gas flow or appliance operation unless required safety conditions are proven',opts:['To improve efficiency','To reduce paperwork','To prevent gas flow or appliance operation unless required safety conditions are proven','To increase inlet pressure']},
+      {q:'Manufacturer instructions conflict with a generic checklist. What takes priority?',a:'Manufacturer instructions and relevant standards',opts:['Generic checklist','Customer instruction','Manufacturer instructions and relevant standards','Previous engineer notes']},
+      {q:'A tightness test indicates pressure loss above permitted limits. What is correct?',a:'Do not leave the installation in unsafe operation; investigate and classify accordingly',opts:['Record as N/A','Do not leave the installation in unsafe operation; investigate and classify accordingly','Retest at lower pressure until it passes','Only tell reception']},
+      {q:'Burner pressure cannot be measured. What should be recorded?',a:'Reason it cannot be measured and alternative relevant readings such as inlet working pressure where appropriate',opts:['Leave blank','Write OK','Reason it cannot be measured and alternative relevant readings such as inlet working pressure where appropriate','Invent the value']},
+      {q:'A CP15 has missing combustion readings where readings were required. What should the audit reflect?',a:'Documentation and technical evidence failure requiring corrective action',opts:['No issue','Documentation and technical evidence failure requiring corrective action','Pass because service was done','Only housekeeping issue']},
+      {q:'A commercial boiler locks out repeatedly on flame failure after ignition. What should the engineer assess?',a:'Gas supply, ignition, flame detection, combustion setup and manufacturer fault guidance',opts:['Reset only','Gas supply, ignition, flame detection, combustion setup and manufacturer fault guidance','Change the thermostat','Ignore if it relights']},
+      {q:'A proving system fails to prove closed position before gas is enabled. What should happen?',a:'Do not permit operation until the proving fault is investigated and rectified',opts:['Bypass proving','Do not permit operation until the proving fault is investigated and rectified','Open valve manually','Leave running']},
+      {q:'A commercial appliance has no accessible test point for burner pressure. What is the correct audit expectation?',a:'Record why it cannot be tested and verify other required pressures and performance data where appropriate',opts:['Invent a burner pressure','Record why it cannot be tested and verify other required pressures and performance data where appropriate','Leave the form blank','Mark all readings N/A']},
+      {q:'If an engineer fails Level 2 twice, what should follow?',a:'Manager competency review and practical assessment',opts:['No further action','Automatic pass','Manager competency review and practical assessment','Delete the record']},
+      {q:'What evidence is strongest for a competency concern?',a:'Audit findings, photographs, readings, training record and re-audit outcome',opts:['Verbal memory only','Audit findings, photographs, readings, training record and re-audit outcome','A text message','No record needed']},
+      {q:'A gas train has pressure switches, proving valve and slam shut. What should be verified?',a:'Correct operation, settings where applicable and safe sequence of operation',opts:['Only paint condition','Correct operation, settings where applicable and safe sequence of operation','Only manufacturer name','Nothing if boiler runs']},
+      {q:'Before returning a commercial appliance to service after safety work, what is required?',a:'Complete relevant safety checks, functional checks, combustion checks and documentation',opts:['Switch on only','Complete relevant safety checks, functional checks and documentation','Ask client to monitor','Leave paperwork blank']},
+      {q:'A room-sealed fan flued appliance has a damaged case seal. What is the concern?',a:'Potential effect on combustion air/flue integrity requiring assessment and action',opts:['Cosmetic only','Potential effect on combustion air/flue integrity requiring assessment and action','No issue if warm','Only clean it']},
+      {q:'Repeated failure in gas pressure recording usually indicates what?',a:'Training and competency gap in technical recording and pressure verification',opts:['Nothing','Training and competency gap in technical recording and pressure verification','Client issue only','IT issue only']},
+      {q:'Why should photographs be linked to failed findings?',a:'They provide evidence and support technical review and training',opts:['For decoration','They provide evidence and support technical review and training','To fill space','Not necessary']},
+      {q:'If unsafe classification is uncertain, what should the engineer do?',a:'Make safe and seek competent technical/compliance support',opts:['Guess','Make safe and seek competent technical/compliance support','Leave site','Ask the customer to choose']},
+      {q:'What is the purpose of a re-audit after training?',a:'To verify that the engineer has corrected the competency gap in practice',opts:['To punish the engineer','To verify that the engineer has corrected the competency gap in practice','To close paperwork only','To replace ACS']},
+      {q:'Which evidence is strongest for restored competence?',a:'Passed assessment plus observed correct site performance or successful re-audit',opts:['Verbal promise','Passed assessment plus observed correct site performance or successful re-audit','One email','Timesheet']},
+      {q:'A boiler operates but flue termination is obstructed. What is the priority?',a:'Safety assessment and making the appliance/installation safe',opts:['Leave running','Safety assessment and making the appliance/installation safe','Only quote later','No action']},
+      {q:'Why check gas rates and burner input where required?',a:'To confirm correct appliance input and safe operation against manufacturer data',opts:['To fill the form','To confirm correct appliance input and safe operation against manufacturer data','Only for domestic appliances','Never required']},
+      {q:'What should be done with incomplete audit records?',a:'Correct them promptly and use as training evidence where failures occurred',opts:['Ignore','Correct them promptly and use as training evidence where failures occurred','Delete all audits','Tell engineer verbally only']},
+      {q:'What is the correct treatment of failed safety devices?',a:'Do not leave appliance operating unsafely; repair, isolate or classify as required',opts:['Bypass temporarily','Do not leave appliance operating unsafely; repair, isolate or classify as required','Note for next year','Reset only']},
+      {q:'What does competency evidence require in practical terms?',a:'Traceable records showing knowledge, practical ability and supervision where needed',opts:['One certificate only','Traceable records showing knowledge, practical ability and supervision where needed','No evidence','Only job title']},
+      {q:'A client pressures an engineer to leave unsafe equipment running. What should happen?',a:'Engineer must follow safety duties and company escalation, not client pressure',opts:['Agree with client','Engineer must follow safety duties and company escalation, not client pressure','Turn a blind eye','Ask reception']},
+      {q:'Why might manufacturer-specific training be needed after an audit?',a:'Because controls, combustion setup and fault diagnosis vary by appliance range',opts:['It is never useful','Because controls, combustion setup and fault diagnosis vary by appliance range','Only for new starters','To avoid paperwork']},
+      {q:'What is the correct closing action after Level 2 pass?',a:'Close training only when assessment and any required re-audit/practical sign-off are complete',opts:['Close immediately regardless','Close training only when assessment and any required re-audit/practical sign-off are complete','Delete the fail','No record needed']}
     ]
   }
 };
@@ -435,8 +464,8 @@ const TRAINING_TESTS={
 
 function trainingKeyForType(type){
   const t=String(type||'').toLowerCase();
-  if(t.includes('gas safety')||t.includes('unsafe')) return 'gas_safety';
-  if(t.includes('post-audit')||t.includes('refresher')||t.includes('toolbox')) return 'post_audit';
+  if(t.includes('level 2')||t.includes('advanced')||t.includes('gas safety')||t.includes('unsafe')) return 'gas_safety';
+  if(t.includes('level 1')||t.includes('post-audit')||t.includes('post audit')||t.includes('refresher')||t.includes('toolbox')) return 'post_audit';
   return '';
 }
 function trainingActionButton(x){
@@ -453,7 +482,7 @@ function trainingActionButton(x){
 }
 function trainingRequiredCards(records){
   const open=(records||[]).filter(x=>String(x.status||'Open').toLowerCase()!=='completed');
-  if(!open.length) return '<div class="stat"><b>No audit-linked tests currently required</b><br><span class="muted">Tests will appear here automatically when an audit outcome requires them.</span></div>';
+  if(!open.length) return '<div class="stat"><b>No audit-linked tests currently required</b><br><span class="muted">Tests will appear here automatically when an audit score or safety finding requires them.</span></div>';
   return open.map(x=>{
     const key=trainingKeyForType(x.training_type);
     return '<div class="stat"><b>'+safe(x.training_type)+'</b><br><span class="muted">Audit: '+safe(x.audit_ref||'')+' · Assigned: '+safe(x.assigned_date||'')+'</span><br><br>'+(key?'<button onclick="startTrainingTest(\''+key+'\','+Number(x.id)+')">Take Test</button>':'<span class="muted">No linked online test configured.</span>')+'</div>';
@@ -479,23 +508,32 @@ async function loadTraining(){
 }
 async function completeTraining(id){await api('/api/training',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed',manager_name:user.name})});loadTraining()}
 function startTrainingTest(key, trainingId){
+ window._activeTrainingId=trainingId||'';
  const t=TRAINING_TESTS[key];
  if(!t)return;
- const html='<div class="card"><h3>'+safe(t.title)+'</h3><p class="muted">'+safe(t.trigger)+'</p><p><b>Engineer:</b> '+safe(user.name)+' &nbsp; <b>Pass mark:</b> '+t.passMark+'%</p><table><thead><tr><th>No</th><th>Question</th><th>Answer</th></tr></thead><tbody>'+t.questions.map((q,i)=>'<tr><td>'+(i+1)+'</td><td>'+safe(q.q)+'</td><td><select class="testAnswer" data-i="'+i+'"><option value="">Select</option>'+q.opts.map((o,oi)=>'<option value="'+oi+'">'+safe(o)+'</option>').join('')+'</select></td></tr>').join('')+'</tbody></table><p><button onclick="submitTrainingTest(\''+key+'\')">Submit Test</button><button class="secondary" onclick="$(\'trainingTestPanel\').innerHTML=\'\'">Close</button></p><p id="testMsg" class="muted"></p></div>';
+ const html='<div class="card"><h3>'+safe(t.title)+'</h3><p class="muted">'+safe(t.trigger)+'</p><p><b>Engineer:</b> '+safe(user.name)+' &nbsp; <b>Pass mark:</b> '+t.passMark+'% &nbsp; <b>Questions:</b> '+t.questions.length+'</p><p class="muted"><b>Assigned because:</b> '+safe(t.auditScoreBand||t.trigger)+'</p><table><thead><tr><th>No</th><th>Question</th><th>Answer</th></tr></thead><tbody>'+t.questions.map((q,i)=>'<tr><td>'+(i+1)+'</td><td>'+safe(q.q)+'</td><td><select class="testAnswer" data-i="'+i+'"><option value="">Select</option>'+q.opts.map(o=>'<option value="'+safe(o).replace(/"/g,'&quot;')+'">'+safe(o)+'</option>').join('')+'</select></td></tr>').join('')+'</tbody></table><p><button onclick="submitTrainingTest(\''+key+'\')">Submit Test</button><button class="secondary" onclick="$(\'trainingTestPanel\').innerHTML=\'\'">Close</button></p><p id="testMsg" class="muted"></p></div>';
  $('trainingTestPanel').innerHTML=html;
  $('trainingTestPanel').scrollIntoView({behavior:'smooth',block:'start'});
 }
+
 async function submitTrainingTest(key){
  const t=TRAINING_TESTS[key];
- const answers=[...document.querySelectorAll('#trainingTestPanel .testAnswer')].map(x=>Number(x.value));
- if(answers.some(x=>Number.isNaN(x))){$('testMsg').textContent='Please answer every question before submitting.';return;}
+ const selects=[...document.querySelectorAll('#trainingTestPanel .testAnswer')];
+ const answers=selects.map(x=>x.value);
+ if(answers.some(x=>!x)){$('testMsg').textContent='Please answer every question before submitting.';return;}
  let correct=0;
- t.questions.forEach((q,i)=>{if(answers[i]===q.a)correct++});
+ const detailed=t.questions.map((q,i)=>{const ok=answers[i]===q.a;if(ok)correct++;return{question:q.q,selected:answers[i],correct:q.a,pass:ok}});
  const score=Math.round((correct/t.questions.length)*100);
  const result=score>=t.passMark?'Pass':'Fail';
- const payload={engineer_name:user.name,test_type:t.title,score,result,status:result==='Pass'?'Pending Manager Review':'Repeat Required',answers_json:JSON.stringify({key,training_id:trainingId||'',answers,correct,total:t.questions.length,submitted_at:new Date().toISOString()}),manager_name:isManager()?user.name:'',manager_notes:''};
- try{await api('/api/toolbox-test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});$('testMsg').textContent='Test submitted. Score '+score+'% - '+result+'.';setTimeout(loadTraining,800)}catch(e){$('testMsg').textContent='Score '+score+'% - '+result+'. Save failed: '+e.message}
+ const trainingId=window._activeTrainingId||'';
+ const payload={engineer_name:user.name,test_type:t.title,score,result,status:result==='Pass'?'Pending Manager Review':'Repeat Required',answers_json:JSON.stringify({key,training_id:trainingId,answers:detailed,correct,total:t.questions.length,pass_mark:t.passMark,submitted_at:new Date().toISOString()}),manager_name:isManager()?user.name:'',manager_notes:''};
+ try{
+   await api('/api/toolbox-test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+   $('testMsg').textContent='Test submitted. Score '+score+'% - '+result+'.';
+   setTimeout(loadTraining,800);
+ }catch(e){$('testMsg').textContent='Score '+score+'% - '+result+'. Save failed: '+e.message}
 }
+
 async function loadCompetency(){setHtml('competency','<h2>Engineer Performance & Competency</h2><p class="muted">This section is generated from audit results, training status and re-audit outcomes only. It is not an engineer profile or HR record.</p><table><thead><tr><th>Engineer</th><th>Audits</th><th>Average</th><th>Fails</th><th>Open Training</th><th>Status</th><th>Action</th></tr></thead><tbody id="compRows"></tbody></table>');const j=await api('/api/competency');$('compRows').innerHTML=(j.engineers||[]).filter(e=>isEngineerName(e.engineer)).map(e=>'<tr><td>'+safe(e.engineer)+'</td><td>'+safe(e.audits)+'</td><td>'+safe(e.average_score)+'%</td><td>'+safe(e.fails)+'</td><td>'+safe(e.open_training)+'</td><td>'+safe(e.status)+'</td><td>'+safe(e.recommended_action)+'</td></tr>').join('')}
 async function loadToolbox(){setHtml('toolbox','<h2>Toolbox Tests</h2><p><button onclick="loadToolbox()">Refresh</button></p><table><thead><tr><th>ID</th><th>Engineer</th><th>Test</th><th>Score</th><th>Result</th><th>Status</th><th>Action</th></tr></thead><tbody id="tbRows"></tbody></table>');const j=await api('/api/toolbox-test?role='+user.role+'&engineer='+encodeURIComponent(user.name));$('tbRows').innerHTML=(j.results||[]).map(r=>'<tr><td>'+safe(r.id)+'</td><td>'+safe(r.engineer_name)+'</td><td>'+safe(r.test_type)+'</td><td>'+safe(r.score)+'</td><td>'+safe(r.result)+'</td><td>'+safe(r.status)+'</td><td>'+(isManager()?'<button onclick="signoffTest('+r.id+')">Complete</button>':'')+'</td></tr>').join('')}
 async function signoffTest(id){await api('/api/toolbox-test',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed',manager_name:user.name})});loadToolbox()}
