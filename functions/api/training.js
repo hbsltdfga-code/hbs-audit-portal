@@ -18,17 +18,15 @@ async function ensure(env){
 }
 function parseJson(r){try{return r.audit_json?JSON.parse(r.audit_json):{}}catch(e){return{}}}
 function refFor(a){return a.audit_ref||a.ref||(a.id?`HBS-${a.id}`:'')}
+function isCriticalClassification(v){
+ const cls=norm(v).toUpperCase();
+ return ['ID','IMMEDIATE DANGER','IMMEDIATELY DANGEROUS','GAS ESCAPE','UNSAFE SITUATION'].includes(cls);
+}
 function hasSafetyCriticalIssue(a){
  const j=parseJson(a);
- const cls=norm(j.classification||j.safety_classification||j.defect_classification||a.classification||a.safety_classification||a.defect_classification).toUpperCase();
- if(['ID','IMMEDIATE DANGER','GAS ESCAPE','UNSAFE SITUATION'].includes(cls))return true;
+ if(isCriticalClassification(j.classification||j.safety_classification||j.defect_classification||a.classification||a.safety_classification||a.defect_classification))return true;
  const qs=Array.isArray(j.questions)?j.questions:[];
- return qs.some(q=>{
-   const qcls=norm(q.classification||q.defect_classification||q.safety_classification||'').toUpperCase();
-   if(['ID','IMMEDIATE DANGER','GAS ESCAPE','UNSAFE SITUATION'].includes(qcls))return true;
-   const text=lower([q.classification,q.defect_classification,q.safety_classification,q.finding,q.findings,q.note,q.notes,q.corrective_action].filter(Boolean).join(' '));
-   return text.includes('immediate danger')||text.includes('immediately dangerous')||text.includes('gas escape')||text.includes('unsafe situation');
- });
+ return qs.some(q=>isCriticalClassification(q.classification||q.defect_classification||q.safety_classification||''));
 }
 function assignmentForAudit(a){const score=Number(a.score||0);const result=norm(a.result);const critical=hasSafetyCriticalIssue(a);if(critical)return{type:LEVEL2,notes:'Safety-critical audit finding requiring Level 2 assessment.'};if(score<75||result==='Fail')return{type:LEVEL2,notes:'Audit score below 75% requiring Level 2 assessment.'};if(score>=75&&score<85)return{type:LEVEL1,notes:'Improvement Required audit outcome requiring Level 1 refresher.'};return null}
 async function normaliseExisting(env){

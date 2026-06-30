@@ -3,17 +3,15 @@ async function cols(env,table){try{return((await env.DB.prepare(`PRAGMA table_in
 async function ensureColumn(env,table,name,type){const c=await cols(env,table);if(!c.includes(name)){try{await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN ${name} ${type}`).run()}catch(e){}}}
 async function ensure(env){await env.DB.prepare(`CREATE TABLE IF NOT EXISTS reaudits (id INTEGER PRIMARY KEY AUTOINCREMENT,audit_id INTEGER,audit_ref TEXT,engineer_name TEXT,due_date TEXT,completed_date TEXT,status TEXT DEFAULT 'Open',created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();await ensureColumn(env,'reaudits','audit_id','INTEGER');await ensureColumn(env,'reaudits','audit_ref','TEXT');await ensureColumn(env,'reaudits','created_at','DATETIME DEFAULT CURRENT_TIMESTAMP')}
 function parseJson(r){try{return r.audit_json?JSON.parse(r.audit_json):{}}catch(e){return{}}}function refFor(a){return a.audit_ref||a.ref||(a.id?`HBS-${a.id}`:'')}
+function isCriticalClassification(v){
+ const cls=norm(v).toUpperCase();
+ return ['ID','IMMEDIATE DANGER','IMMEDIATELY DANGEROUS','GAS ESCAPE','UNSAFE SITUATION'].includes(cls);
+}
 function safety(a){
  const j=parseJson(a);
- const cls=norm(j.classification||j.safety_classification||j.defect_classification||a.classification||a.safety_classification||a.defect_classification).toUpperCase();
- if(['ID','IMMEDIATE DANGER','GAS ESCAPE','UNSAFE SITUATION'].includes(cls))return true;
+ if(isCriticalClassification(j.classification||j.safety_classification||j.defect_classification||a.classification||a.safety_classification||a.defect_classification))return true;
  const qs=Array.isArray(j.questions)?j.questions:[];
- return qs.some(q=>{
-   const qcls=norm(q.classification||q.defect_classification||q.safety_classification||'').toUpperCase();
-   if(['ID','IMMEDIATE DANGER','GAS ESCAPE','UNSAFE SITUATION'].includes(qcls))return true;
-   const text=lower([q.classification,q.defect_classification,q.safety_classification,q.finding,q.findings,q.note,q.notes,q.corrective_action].filter(Boolean).join(' '));
-   return text.includes('immediate danger')||text.includes('immediately dangerous')||text.includes('gas escape')||text.includes('unsafe situation');
- });
+ return qs.some(q=>isCriticalClassification(q.classification||q.defect_classification||q.safety_classification||''));
 }
 
 async function cleanupLegacyReaudits(env){

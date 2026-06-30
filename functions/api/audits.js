@@ -18,16 +18,16 @@ async function ensureReaudits(env){
  await ensureColumn(env,'reaudits','audit_ref','TEXT');
  await ensureColumn(env,'reaudits','created_at','DATETIME DEFAULT CURRENT_TIMESTAMP');
 }
+function isCriticalClassification(v){
+ const cls=norm(v).toUpperCase();
+ return ['ID','IMMEDIATE DANGER','IMMEDIATELY DANGEROUS','GAS ESCAPE','UNSAFE SITUATION'].includes(cls);
+}
 function hasSafetyCriticalIssue(b){
- const cls=norm(b.classification||b.safety_classification||b.defect_classification||'').toUpperCase();
- if(['ID','IMMEDIATE DANGER','GAS ESCAPE','UNSAFE SITUATION'].includes(cls))return true;
+ // Version 13 decision engine: only explicit safety classifications trigger Level 2.
+ // NCS is ignored. AR is manager review only and does not automatically assign Level 2.
+ if(isCriticalClassification(b.classification||b.safety_classification||b.defect_classification||''))return true;
  const qs=Array.isArray(b.questions)?b.questions:[];
- return qs.some(q=>{
-   const qcls=norm(q.classification||q.defect_classification||q.safety_classification||'').toUpperCase();
-   if(['ID','IMMEDIATE DANGER','GAS ESCAPE','UNSAFE SITUATION'].includes(qcls))return true;
-   const text=lower([q.classification,q.defect_classification,q.safety_classification,q.finding,q.findings,q.note,q.notes,q.corrective_action].filter(Boolean).join(' '));
-   return text.includes('immediate danger')||text.includes('immediately dangerous')||text.includes('gas escape')||text.includes('unsafe situation');
- });
+ return qs.some(q=>isCriticalClassification(q.classification||q.defect_classification||q.safety_classification||''));
 }
 function trainingFor(score,result,safetyCritical){score=Number(score||0);result=norm(result);if(safetyCritical)return{type:LEVEL2,notes:'Safety-critical audit finding requiring Level 2 assessment.'};if(score<75||result==='Fail')return{type:LEVEL2,notes:'Audit score below 75% requiring Level 2 assessment.'};if(score>=75&&score<85)return{type:LEVEL1,notes:'Improvement Required audit outcome requiring Level 1 refresher.'};return null}
 async function insertTrainingIfMissing(env,engineer,ref,assigned,due,type,manager,notes){
