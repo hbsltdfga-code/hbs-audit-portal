@@ -9,6 +9,6 @@ Required root contents:
 - functions/
 - wrangler.toml
 - package.json
-
+.
 Delete old root JS files and legacy HTML files before upload.
 Known login: peter@hbs.local / 3110
