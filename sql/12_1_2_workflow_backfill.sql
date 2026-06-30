@@ -1,0 +1,3 @@
+-- v12.1.2 workflow backfill note
+-- Backfill is performed safely by functions/api/training.js and functions/api/reaudits.js when those APIs are opened.
+-- This file is retained for release traceability.
