@@ -1,4 +1,4 @@
-// HBS Compliance Manager - Tightness Test Centre v11.2.1
+// HBS Compliance Manager - Tightness Test Centre v12.2.2
 // Professional responsive full calculator with IGEM table-based timing, saveable records and PDA/tablet layout fix.
 // Includes pipework entries, rotary/turbine flange + meter length calculation, meter/manual volumes and fittings/manual allowances.
 
@@ -346,8 +346,10 @@ async function saveTightness(){
     if(!r.site_name) throw new Error('Enter a site name before saving.');
     if(!r.installation_volume || r.installation_volume <= 0) throw new Error('Enter pipework, meter or manual installation volume before saving.');
     const u = ttUser();
+    const engineerName = String(r.engineer_name || u.name || '').trim();
+    if(!ttVal('ttEngineer') && engineerName){ const e=ttEl('ttEngineer'); if(e)e.value=engineerName; }
     const body = {
-      engineer_name: r.engineer_name || u.name, role: u.role, site_name: r.site_name, client: r.client, audit_ref: r.audit_ref,
+      engineer_name: engineerName, current_user_name: u.name || '', role: u.role, site_name: r.site_name, client: r.client, audit_ref: r.audit_ref,
       test_date: r.test_date, area_tested: r.area_tested || r.test_area, test_type: r.standard, installation_volume: r.installation_volume,
       test_pressure: r.test_pressure, stabilisation_time: r.stabilisation_time, test_duration: r.test_duration, measured_drop: r.measured_drop,
       permitted_leak_rate: r.mplr, calculated_leak_rate: r.permitted_drop, outcome: r.outcome,
