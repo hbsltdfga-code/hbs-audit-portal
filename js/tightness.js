@@ -16,6 +16,8 @@ const HBS_PIPE_DATA = {
   'Manual': {'Manual':0}
 };
 
+let HBS_TT_SAVE_IN_PROGRESS = false;
+
 const HBS_METER_STD = {
   'None': 0,
   'U6': 0.006,
@@ -337,6 +339,8 @@ function clearTightnessForm(){
 }
 
 async function saveTightness(){
+  if(HBS_TT_SAVE_IN_PROGRESS){ ttEl('ttMsg').textContent='Save already in progress...'; return; }
+  HBS_TT_SAVE_IN_PROGRESS = true;
   try{
     const r = updateTightnessCalculation();
     if(!r.site_name) throw new Error('Enter a site name before saving.');
@@ -350,23 +354,30 @@ async function saveTightness(){
       notes: ttEl('ttReport')?.textContent || '', details_json: JSON.stringify(r)
     };
     const j = await api('/api/tightness',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    ttEl('ttMsg').textContent = 'Saved tightness test record ID ' + j.id;
+    ttEl('ttMsg').textContent = (j.duplicate ? 'Duplicate save prevented. Existing record ID ' : 'Saved tightness test record ID ') + j.id;
     await loadTightnessRecords();
   } catch(e){ ttEl('ttMsg').textContent = e.message; }
+  finally{ HBS_TT_SAVE_IN_PROGRESS = false; }
 }
 
 async function loadTightnessRecords(){
   try{
     const u = ttUser();
-    const j = await api(`/api/tightness?role=${encodeURIComponent(u.role||'engineer')}&engineer=${encodeURIComponent(u.name||'')}`);
-    window._tightnessRecords = j.records || [];
-    const rows = window._tightnessRecords.map(r => {
+    const role = String(u.role || 'engineer').toLowerCase();
+    const name = String(u.name || ttVal('ttEngineer') || '').trim();
+    const j = await api(`/api/tightness?role=${encodeURIComponent(role)}&engineer=${encodeURIComponent(name)}`);
+    const records = j.records || [];
+    window._tightnessRecords = records;
+    const rows = records.map(r => {
       let d={}; try{d=JSON.parse(r.details_json||'{}')}catch(e){}
       return `<tr><td>${ttSafe(r.id)}</td><td>${ttSafe(r.test_date)}</td><td>${ttSafe(r.engineer_name)}</td><td>${ttSafe(r.site_name)}</td><td>${ttSafe(d.gas_type||'')}</td><td>${Number(r.installation_volume||0).toFixed(6)}</td><td>${ttSafe(r.stabilisation_time)}</td><td>${ttSafe(r.test_duration)}</td><td>${Number(r.measured_drop||0).toFixed(3)}</td><td>${ttSafe(r.outcome)}</td><td><button onclick="viewTightnessDetail(${Number(r.id)})">View</button></td></tr>`;
     }).join('');
-    ttEl('ttRows').innerHTML = rows || '<tr><td colspan="11">No saved tightness test records.</td></tr>';
+    let empty = 'No saved tightness test records.';
+    if(name && !['manager','director','admin'].includes(role)) empty += ` Records are filtered for ${ttSafe(name)}.`;
+    ttEl('ttRows').innerHTML = rows || `<tr><td colspan="11">${empty}</td></tr>`;
   } catch(e){ ttEl('ttRows').innerHTML = `<tr><td colspan="11">${ttSafe(e.message)}</td></tr>`; }
 }
+
 
 function viewTightnessDetail(id){
   const r=(window._tightnessRecords||[]).find(x=>Number(x.id)===Number(id));
