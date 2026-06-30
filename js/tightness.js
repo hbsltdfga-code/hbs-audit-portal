@@ -1,5 +1,5 @@
-// HBS Compliance Manager - Tightness Test Centre v10.4.3
-// Full pipework calculator restored, with IGEM table-based timing, saveable records and corrected non-overlapping layout.
+// HBS Compliance Manager - Tightness Test Centre v10.4.4
+// Professional PDA-friendly full calculator with IGEM table-based timing, saveable records and clean stage layout.
 // Includes pipework entries, rotary/turbine flange + meter length calculation, meter/manual volumes and fittings/manual allowances.
 
 const HBS_TT_GASES = {
@@ -48,12 +48,11 @@ function ttPipeRowHtml(i){
     <td class="ttNo">${i}</td>
     <td><select class="input ttMat">${ttMaterialOptions()}</select></td>
     <td><select class="input ttSize"></select></td>
-    <td><input class="input ttLen" type="number" step="0.01" value="0"></td>
-    <td><input class="input ttManualDia" type="number" step="0.1" value="0" title="Only used when Material is Manual"></td>
+    <td><input class="input ttLen" type="number" step="0.01" value="0" placeholder="0.00"></td>
     <td class="calc tt-calc-cell ttDiaOut">0.0</td>
     <td class="calc tt-calc-cell ttPerMOut">0.000000</td>
     <td class="calc tt-calc-cell ttVolOut">0.000000</td>
-    <td><button type="button" class="danger" onclick="ttRemovePipeRow(this)">X</button></td>
+    <td><button type="button" class="danger tt-mini" onclick="ttRemovePipeRow(this)">Remove</button></td>
   </tr>`;
 }
 
@@ -61,98 +60,117 @@ async function loadTightness(){
   const u = ttUser();
   setHtml('tightness', `
     <h2>Tightness Test Centre</h2>
-    <p class="muted">Full commercial gas tightness calculator with visible pipework entries, meter volume calculation and IGEM table-based timing. Final judgement remains with the competent engineer using the controlled IGEM document.</p>
+    <p class="muted">Professional commercial gas tightness test calculator using HBS pipework entries, meter volume calculation and IGEM table-based timing. The competent engineer remains responsible for confirming the final judgement against the controlled IGEM document.</p>
 
     <style>
-      #tightness .tt-help{background:#e9f7ef;border:1px solid #97d7ad;border-left:6px solid #1f8a3b;border-radius:8px;padding:12px;margin:12px 0;color:#073b18;}
-      #tightness .tt-section{border:1px solid #cfe0f2;border-radius:10px;padding:14px;margin:14px 0;background:#fff;clear:both;}
-      #tightness .tt-section h3{margin-top:0;}
-      #tightness .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;align-items:end;}
-      #tightness label.tt-entry{display:block;background:#e7f6e7;border:1px solid #83c683;border-radius:8px;padding:10px;font-weight:600;min-height:68px;box-sizing:border-box;}
-      #tightness label.tt-entry input,#tightness label.tt-entry select,#tightness .tt-engineer-input{width:100%;box-sizing:border-box;margin-top:6px;background:#f7fff7;border:1px solid #70b570;border-radius:6px;padding:8px;}
-      #tightness .tt-calc-cell{background:#f4f8fc;white-space:nowrap;}
-      #tightness .tt-table-wrap{width:100%;overflow-x:auto;border:1px solid #d6e3f2;border-radius:8px;background:#fff;margin:10px 0;}
-      #tightness .tt-table-wrap table{min-width:1080px;margin:0;}
-      #tightness .tt-table-wrap th,#tightness .tt-table-wrap td{vertical-align:top;white-space:nowrap;}
-      #tightness .tt-table-wrap input,#tightness .tt-table-wrap select{min-width:120px;box-sizing:border-box;}
-      #tightness .tt-table-wrap .ttLen,#tightness .tt-table-wrap .ttManualDia{background:#e7f6e7;border:1px solid #70b570;}
-      #tightness .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:12px 0;clear:both;}
-      #tightness .stat{min-height:68px;box-sizing:border-box;overflow-wrap:anywhere;}
-      #tightness .tt-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
-      #tightness #ttReport{white-space:pre-wrap;max-height:360px;overflow:auto;background:#f8fbff;border:1px solid #d6e3f2;border-radius:8px;padding:12px;}
-      @media(max-width:800px){#tightness .grid{grid-template-columns:1fr;}#tightness .tt-table-wrap table{min-width:920px;}}
+      #tightness{--hbs-blue:#0b3d70;--hbs-mid:#14558f;--hbs-line:#d6e3f2;--hbs-bg:#f6f9fd;--hbs-card:#ffffff;--hbs-muted:#52657a;}
+      #tightness .tt-layout{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;align-items:start;}
+      #tightness .tt-card{background:var(--hbs-card);border:1px solid var(--hbs-line);border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.04);padding:14px;box-sizing:border-box;overflow:hidden;}
+      #tightness .tt-card h3{display:flex;gap:10px;align-items:center;margin:0 0 4px 0;font-size:18px;}
+      #tightness .tt-sub{margin:0 0 12px 0;color:var(--hbs-muted);font-size:13px;}
+      #tightness .tt-step{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--hbs-blue);color:white;font-weight:700;flex:0 0 auto;}
+      #tightness .span-12{grid-column:span 12}.span-8{grid-column:span 8}.span-6{grid-column:span 6}.span-4{grid-column:span 4}.span-3{grid-column:span 3}
+      #tightness .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;align-items:end;}
+      #tightness label{display:block;font-weight:600;color:#10233d;font-size:13px;}
+      #tightness label input,#tightness label select,#tightness label textarea{width:100%;box-sizing:border-box;margin-top:6px;background:#fff;border:1px solid #bfd0e3;border-radius:8px;padding:9px;font-size:14px;min-height:38px;}
+      #tightness label input:focus,#tightness label select:focus,#tightness label textarea:focus{outline:none;border-color:var(--hbs-mid);box-shadow:0 0 0 3px rgba(20,85,143,.14);}
+      #tightness .tt-table-wrap{width:100%;overflow-x:auto;border:1px solid var(--hbs-line);border-radius:10px;background:#fff;margin:10px 0;}
+      #tightness .tt-table-wrap table{min-width:920px;margin:0;border-collapse:collapse;}
+      #tightness .tt-table-wrap th{background:#edf4fb;color:#10233d;font-size:12px;text-align:left;padding:9px;white-space:nowrap;}
+      #tightness .tt-table-wrap td{padding:8px;border-top:1px solid #edf2f7;vertical-align:middle;white-space:nowrap;}
+      #tightness .tt-table-wrap input,#tightness .tt-table-wrap select{min-width:115px;box-sizing:border-box;border:1px solid #bfd0e3;border-radius:7px;padding:7px;background:#fff;}
+      #tightness .tt-table-wrap .ttLen{min-width:90px;}
+      #tightness .tt-calc-cell{background:#f4f8fc;color:#0b2f55;font-weight:600;}
+      #tightness .tt-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0;}
+      #tightness .stat{background:#f8fbff;border:1px solid var(--hbs-line);border-radius:12px;min-height:70px;box-sizing:border-box;padding:12px;overflow-wrap:anywhere;}
+      #tightness .stat b:first-child{font-size:12px;color:#33465c;text-transform:uppercase;letter-spacing:.02em;}
+      #tightness .stat b:last-child{font-size:18px;color:#0b2f55;}
+      #tightness .tt-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+      #tightness .tt-mini{padding:6px 9px;font-size:12px;}
+      #tightness #ttReport{white-space:pre-wrap;max-height:300px;overflow:auto;background:#f8fbff;border:1px solid var(--hbs-line);border-radius:10px;padding:12px;font-size:12px;}
+      #tightness .tt-outcome-pass{border-color:#9bd7af;background:#eefaf2;color:#0f6a2b;}
+      #tightness .tt-outcome-fail{border-color:#efb1b1;background:#fff4f4;color:#9a1f1f;}
+      #tightness .tt-note{background:#f5f8fc;border-left:5px solid var(--hbs-mid);padding:10px 12px;border-radius:8px;color:#33465c;margin:10px 0;}
+      @media(max-width:1100px){#tightness .span-8,#tightness .span-6,#tightness .span-4,#tightness .span-3{grid-column:span 12;}#tightness .tt-layout{grid-template-columns:1fr;}#tightness .tt-table-wrap table{min-width:850px;}}
+      @media(max-width:700px){#tightness .grid{grid-template-columns:1fr;}#tightness .tt-card{padding:12px;border-radius:10px;}#tightness .tt-actions button{width:100%;}.tt-table-wrap{font-size:12px;}}
     </style>
 
-    <div class="tt-help"><b>Green engineer entry areas:</b> All green fields are for the engineer to complete or confirm. Blue/white calculation areas are automatically calculated by the system.</div>
+    <div class="tt-layout">
+      <div class="tt-card span-12"><h3><span class="tt-step">1</span> Site and Test Details</h3><p class="tt-sub">Complete the core test details before saving the record.</p>
+        <div class="grid">
+          <label>Site Name<input id="ttSite" placeholder="Site name"></label>
+          <label>Client<input id="ttClient" placeholder="Client"></label>
+          <label>Engineer<input id="ttEngineer" value="${ttSafe(u.name||'')}"></label>
+          <label>Date<input id="ttDate" type="date" value="${new Date().toISOString().slice(0,10)}"></label>
+          <label>Job / Audit Ref<input id="ttRef" placeholder="Optional"></label>
+          <label>Area Tested<input id="ttAreaTested" placeholder="e.g. Boiler room, kitchen gas line"></label>
+          <label>Gas Type<select id="ttGas"><option>Natural Gas</option><option>Propane</option><option>Butane</option></select></label>
+          <label>Procedure<select id="ttStandard"><option value="auto">Auto based on IV</option><option>TPCP1A</option><option>TPCP1</option></select></label>
+          <label>Installation Type<select id="ttInstallType"><option>Existing</option><option>New</option></select></label>
+          <label>Test Area<select id="ttArea"><option value="A">Type A - New / inadequately ventilated</option><option value="B">Type B - Existing rooms under 60m³</option><option value="C">Type C - Room over 60m³ + pipe volume</option><option value="D">Type D - Underground</option></select></label>
+          <label>Room Volume m³<input id="ttRoomVol" type="number" step="0.001" value="60"></label>
+          <label>Gauge Resolution<select id="ttGauge"><option value="0.01">Electronic gauge - 2 decimal place</option><option value="0.1">Electronic gauge - 1 decimal place</option><option value="1">Electronic gauge - 0 decimal place</option><option value="0.5">Water gauge</option><option value="0.1">High S.G gauge</option></select></label>
+        </div>
+      </div>
 
-    <div class="tt-section"><h3>1. Site and Test Details</h3>
-    <div class="grid">
-      <label class="tt-entry">Site Name<br><input id="ttSite" placeholder="Site name"></label>
-      <label class="tt-entry">Client<br><input id="ttClient" placeholder="Client"></label>
-      <label class="tt-entry">Engineer<br><input id="ttEngineer" value="${ttSafe(u.name||'')}"></label>
-      <label class="tt-entry">Date<br><input id="ttDate" type="date" value="${new Date().toISOString().slice(0,10)}"></label>
-      <label class="tt-entry">Job / Audit Ref<br><input id="ttRef" placeholder="Optional"></label>
-      <label class="tt-entry">Area Tested<br><input id="ttAreaTested" placeholder="e.g. Boiler room, kitchen gas line"></label>
-      <label class="tt-entry">Gas Type<br><select id="ttGas"><option>Natural Gas</option><option>Propane</option><option>Butane</option></select></label>
-      <label class="tt-entry">Procedure<br><select id="ttStandard"><option value="auto">Auto based on IV</option><option>TPCP1A</option><option>TPCP1</option></select></label>
-      <label class="tt-entry">Installation Type<br><select id="ttInstallType"><option>Existing</option><option>New</option></select></label>
-      <label class="tt-entry">Test Area<br><select id="ttArea"><option value="A">Type A - New / inadequately ventilated</option><option value="B">Type B - Existing rooms under 60m³</option><option value="C">Type C - Room over 60m³ + pipe volume</option><option value="D">Type D - Underground</option></select></label>
-      <label class="tt-entry">Room Volume m³<br><input id="ttRoomVol" type="number" step="0.001" value="60"></label>
-      <label class="tt-entry">Gauge Resolution<br><select id="ttGauge"><option value="0.01">Electronic gauge - 2 decimal place</option><option value="0.1">Electronic gauge - 1 decimal place</option><option value="1">Electronic gauge - 0 decimal place</option><option value="0.5">Water gauge</option><option value="0.1">High S.G gauge</option></select></label>
-      <label class="tt-entry">Test Pressure mbar<br><input id="ttPressure" type="number" step="0.1" value="21"></label>
-      <label class="tt-entry">Measured Pressure Drop mbar<br><input id="ttMeasuredDrop" type="number" step="0.001" value="0"></label>
-    </div></div>
+      <div class="tt-card span-8"><h3><span class="tt-step">2</span> Pipework Data</h3><p class="tt-sub">Add each pipe section. Volumes are calculated from material, size and length.</p>
+        <div class="tt-table-wrap"><table><thead><tr><th>No.</th><th>Material</th><th>Size</th><th>Length m</th><th>Used ID mm</th><th>m³/m</th><th>Volume m³</th><th>Remove</th></tr></thead><tbody id="ttPipeBody">
+          ${ttPipeRowHtml(1)}${ttPipeRowHtml(2)}${ttPipeRowHtml(3)}
+        </tbody></table></div>
+        <p><button onclick="ttAddPipeRow()">+ Add Pipework Section</button></p>
+      </div>
 
-    <div class="tt-section"><h3>2. Pipework Sections</h3>
-    <p class="notice card"><b>Engineer entry:</b> Add each pipe section. Use Manual material where the exact pipe is not listed and enter the internal diameter.</p>
-    <div class="tt-table-wrap"><table><thead><tr><th>No.</th><th>Material</th><th>Size</th><th>Length m</th><th>Manual ID mm</th><th>Used ID mm</th><th>m³/m</th><th>Volume m³</th><th>Remove</th></tr></thead><tbody id="ttPipeBody">
-      ${ttPipeRowHtml(1)}${ttPipeRowHtml(2)}${ttPipeRowHtml(3)}
-    </tbody></table></div>
-    <p><button onclick="ttAddPipeRow()">+ Add Pipework Section</button></p></div>
+      <div class="tt-card span-4"><h3><span class="tt-step">3</span> Meter & Additional Volumes</h3><p class="tt-sub">Rotary and turbine meters calculate from flange internal diameter and meter length. Use manufacturer volume where published.</p>
+        <div class="grid">
+          <label>Meter Type<select id="ttMeterType"><option>None</option><option>Diaphragm / Standard Meter</option><option>Rotary</option><option>Turbine</option><option>Other / Manual</option></select></label>
+          <label>Standard Meter Volume<select id="ttMeterStd">${ttMeterOptions()}</select></label>
+          <label>Flange Internal Diameter mm<input id="ttMeterFlangeDia" type="number" step="0.1" value="0"></label>
+          <label>Meter Length mm<input id="ttMeterLength" type="number" step="1" value="0"></label>
+          <label>Manufacturer Meter Volume m³<input id="ttMeterManual" type="number" step="0.000001" value="0"></label>
+          <label>Additional Installation Volume m³<input id="ttManualIV" type="number" step="0.000001" value="0"></label>
+          <label>Fittings Allowance<select id="ttFittingsMode"><option value="10">Apply 10% of pipework volume</option><option value="manual">Manual fittings volume</option><option value="0">No fittings allowance</option></select></label>
+          <label>Manual Fittings Volume m³<input id="ttManualFittings" type="number" step="0.000001" value="0"></label>
+        </div>
+      </div>
 
-    <div class="tt-section"><h3>3. Meter, Fittings and Manual Volumes</h3>
-    <div class="grid">
-      <label class="tt-entry">Meter Type<br><select id="ttMeterType"><option>None</option><option>Diaphragm / Standard Meter</option><option>Rotary</option><option>Turbine</option><option>Other / Manual</option></select></label>
-      <label class="tt-entry">Standard Meter Volume<br><select id="ttMeterStd">${ttMeterOptions()}</select></label>
-      <label class="tt-entry">Rotary/Turbine Flange Internal Diameter mm<br><input id="ttMeterFlangeDia" type="number" step="0.1" value="0"></label>
-      <label class="tt-entry">Rotary/Turbine Meter Length mm<br><input id="ttMeterLength" type="number" step="1" value="0"></label>
-      <label class="tt-entry">Manual / Manufacturer Meter Volume m³<br><input id="ttMeterManual" type="number" step="0.000001" value="0"></label>
-      <label class="tt-entry">Additional Manual Installation Volume m³<br><input id="ttManualIV" type="number" step="0.000001" value="0"></label>
-      <label class="tt-entry">Fittings Allowance<br><select id="ttFittingsMode"><option value="10">Apply 10% of pipework volume</option><option value="manual">Manual fittings volume</option><option value="0">No fittings allowance</option></select></label>
-      <label class="tt-entry">Manual Fittings Volume m³<br><input id="ttManualFittings" type="number" step="0.000001" value="0"></label>
-    </div></div>
+      <div class="tt-card span-8"><h3><span class="tt-step">4</span> IGEM Calculation</h3><p class="tt-sub">Calculated automatically from installation volume, gas type, area, pressure gauge resolution and test conditions.</p>
+        <div class="tt-summary">
+          <div class="stat"><b>Pipework Volume</b><br><b id="ttPipeVolOut">0.000000 m³</b></div>
+          <div class="stat"><b>Meter Volume</b><br><b id="ttMeterVolOut">0.000000 m³</b></div>
+          <div class="stat"><b>Fittings Volume</b><br><b id="ttFittingsVolOut">0.000000 m³</b></div>
+          <div class="stat"><b>Manual Additions</b><br><b id="ttManualIVOut">0.000000 m³</b></div>
+          <div class="stat"><b>Total IV</b><br><b id="ttIVOut">0.000000 m³</b></div>
+          <div class="stat"><b>Standard</b><br><b id="ttStdOut">TPCP1A</b></div>
+          <div class="stat"><b>Stabilisation</b><br><b id="ttStabOut">6 minutes</b></div>
+          <div class="stat"><b>Test Duration</b><br><b id="ttDurOut">2 minutes</b></div>
+          <div class="stat"><b>Total Time</b><br><b id="ttTotalOut">8 minutes</b></div>
+          <div class="stat"><b>Permitted Drop</b><br><b id="ttDropOut">0.000 mbar</b></div>
+        </div>
+      </div>
 
-    <div class="tt-section"><h3>4. Calculated Results</h3>
-    <div class="statgrid">
-      <div class="stat"><b>Pipework Volume</b><br><b id="ttPipeVolOut">0.000000 m³</b></div>
-      <div class="stat"><b>Meter Volume</b><br><b id="ttMeterVolOut">0.000000 m³</b></div>
-      <div class="stat"><b>Fittings Volume</b><br><b id="ttFittingsVolOut">0.000000 m³</b></div>
-      <div class="stat"><b>Manual Additions</b><br><b id="ttManualIVOut">0.000000 m³</b></div>
-      <div class="stat"><b>Total Installation Volume</b><br><b id="ttIVOut">0.000000 m³</b></div>
-      <div class="stat"><b>Selected Standard</b><br><b id="ttStdOut">TPCP1A</b></div>
-      <div class="stat"><b>Stabilisation</b><br><b id="ttStabOut">6 minutes</b></div>
-      <div class="stat"><b>Test Duration</b><br><b id="ttDurOut">2 minutes</b></div>
-      <div class="stat"><b>Total Time</b><br><b id="ttTotalOut">8 minutes</b></div>
-      <div class="stat"><b>Permitted Drop</b><br><b id="ttDropOut">0.000 mbar</b></div>
-      <div class="stat"><b>Outcome</b><br><b id="ttOutcomeOut">CHECK</b></div>
+      <div class="tt-card span-4"><h3><span class="tt-step">5</span> Test Record</h3><p class="tt-sub">Enter measured results and save the completed test.</p>
+        <div class="grid">
+          <label>Test Pressure mbar<input id="ttPressure" type="number" step="0.1" value="21"></label>
+          <label>Measured Pressure Drop mbar<input id="ttMeasuredDrop" type="number" step="0.001" value="0"></label>
+        </div>
+        <div id="ttOutcomeCard" class="stat" style="margin-top:12px"><b>Outcome</b><br><b id="ttOutcomeOut">CHECK</b></div>
+        <p class="tt-actions">
+          <button onclick="updateTightnessCalculation()">Calculate</button>
+          <button onclick="saveTightness()">Save Test Record</button>
+          <button class="secondary" onclick="clearTightnessForm()">Clear Form</button>
+          <button class="secondary" onclick="window.print()">Print / PDF</button>
+        </p>
+        <p id="ttMsg" class="muted"></p>
+      </div>
+
+      <div class="tt-card span-12"><h3>Generated Report</h3><pre id="ttReport"></pre></div>
+
+      <div class="tt-card span-12"><h3>Saved Tightness Records</h3>
+        <p><button class="secondary" onclick="loadTightnessRecords()">Refresh Records</button></p>
+        <div class="tt-table-wrap"><table><thead><tr><th>ID</th><th>Date</th><th>Engineer</th><th>Site</th><th>Gas</th><th>IV</th><th>Stab</th><th>Duration</th><th>Drop</th><th>Result</th><th>Action</th></tr></thead><tbody id="ttRows"></tbody></table></div>
+        <h3>Selected Record</h3><div id="ttDetail" class="muted">Select a record to review details.</div>
+      </div>
     </div>
-
-    <p class="tt-actions">
-      <button onclick="updateTightnessCalculation()">Calculate Times</button>
-      <button onclick="saveTightness()">Save Test Record</button>
-      <button class="secondary" onclick="clearTightnessForm()">Clear Form</button>
-      <button class="secondary" onclick="loadTightnessRecords()">Refresh Records</button>
-      <button class="secondary" onclick="window.print()">Print / PDF</button>
-    </p>
-    <p id="ttMsg" class="muted"></p></div>
-
-    <div class="tt-section"><h3>Generated Report</h3>
-    <pre id="ttReport"></pre></div>
-
-    <div class="tt-section"><h3>Saved Tightness Records</h3>
-    <div class="tt-table-wrap"><table><thead><tr><th>ID</th><th>Date</th><th>Engineer</th><th>Site</th><th>Gas</th><th>IV</th><th>Stab</th><th>Duration</th><th>Drop</th><th>Result</th><th>Action</th></tr></thead><tbody id="ttRows"></tbody></table></div>
-    <h3>Selected Record</h3>
-    <div id="ttDetail" class="muted">Select a record to review details.</div></div>
   `);
   ttInitialisePipeRows();
   document.querySelectorAll('#tightness input,#tightness select').forEach(el => { el.addEventListener('input', updateTightnessCalculation); el.addEventListener('change', updateTightnessCalculation); });
@@ -170,7 +188,6 @@ function ttBindPipeRow(tr){
   mat.addEventListener('change',()=>ttFillSizes(tr));
   size.addEventListener('change',updateTightnessCalculation);
   tr.querySelector('.ttLen').addEventListener('input',updateTightnessCalculation);
-  tr.querySelector('.ttManualDia').addEventListener('input',updateTightnessCalculation);
   ttFillSizes(tr);
 }
 function ttFillSizes(tr){
@@ -203,8 +220,8 @@ function ttGetPipeRows(){
     const material = tr.querySelector('.ttMat').value;
     const size = tr.querySelector('.ttSize').value;
     const length = parseFloat(tr.querySelector('.ttLen').value)||0;
-    const manualDia = parseFloat(tr.querySelector('.ttManualDia').value)||0;
-    const idmm = material === 'Manual' ? manualDia : ((HBS_PIPE_DATA[material]||{})[size]||0);
+    const manualDia = 0;
+    const idmm = ((HBS_PIPE_DATA[material]||{})[size]||0);
     const volumePerM = ttPerM(idmm);
     const volume = volumePerM * length;
     pipeVol += volume;
@@ -298,6 +315,8 @@ function updateTightnessCalculation(){
   ttSet('ttTotalOut', `${r.total_test_time} minutes`);
   ttSet('ttDropOut', `${r.permitted_drop.toFixed(3)} mbar`);
   ttSet('ttOutcomeOut', r.outcome);
+  const oc = ttEl('ttOutcomeCard');
+  if(oc){ oc.classList.remove('tt-outcome-pass','tt-outcome-fail'); if(r.outcome==='PASS') oc.classList.add('tt-outcome-pass'); if(String(r.outcome).startsWith('FAIL')) oc.classList.add('tt-outcome-fail'); }
 
   const report = `HBS Commercial Gas Tightness Test Record\nSite: ${r.site_name}\nClient: ${r.client}\nJob / Audit Ref: ${r.audit_ref}\nEngineer: ${r.engineer_name}\nDate: ${r.test_date}\nArea Tested: ${r.area_tested}\nGas Type: ${r.gas_type}\nInstallation Type: ${r.installation_type}\nTest Area: ${r.test_area}\nStandard: ${r.standard}\n\nPipework Volume: ${r.pipework_volume.toFixed(6)} m³\nMeter Volume: ${r.meter.volume.toFixed(6)} m³ (${r.meter.source})\nFittings Volume: ${r.fittings_volume.toFixed(6)} m³\nManual Additional IV: ${r.manual_installation_volume.toFixed(6)} m³\nTotal Installation Volume: ${r.installation_volume.toFixed(6)} m³\n\nRoom Volume: ${r.room_volume.toFixed(3)} m³\nGauge Resolution: ${r.gauge_resolution} mbar\nTest Pressure: ${r.test_pressure} mbar\nStabilisation Time: ${r.stabilisation_time} minutes\nTest Duration: ${r.test_duration} minutes\nTotal Time: ${r.total_test_time} minutes\nPermitted Drop: ${r.permitted_drop.toFixed(3)} mbar\nMeasured Drop: ${r.measured_drop.toFixed(3)} mbar\nOutcome: ${r.outcome}\nSource: ${r.source_reference}`;
   const out = ttEl('ttReport'); if(out) out.textContent = report;
@@ -307,7 +326,7 @@ function updateTightnessCalculation(){
 function clearTightnessForm(){
   ['ttSite','ttClient','ttRef','ttAreaTested'].forEach(id=>{const e=ttEl(id);if(e)e.value='';});
   ['ttMeasuredDrop','ttMeterFlangeDia','ttMeterLength','ttMeterManual','ttManualIV','ttManualFittings'].forEach(id=>{const e=ttEl(id);if(e)e.value='0';});
-  document.querySelectorAll('#ttPipeBody .ttLen,#ttPipeBody .ttManualDia').forEach(e=>e.value='0');
+  document.querySelectorAll('#ttPipeBody .ttLen').forEach(e=>e.value='0');
   updateTightnessCalculation();
 }
 
