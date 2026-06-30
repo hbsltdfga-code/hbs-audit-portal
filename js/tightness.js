@@ -1,5 +1,5 @@
-// HBS Compliance Manager - Tightness Test Centre v10.4.4
-// Professional PDA-friendly full calculator with IGEM table-based timing, saveable records and clean stage layout.
+// HBS Compliance Manager - Tightness Test Centre v11.2.1
+// Professional responsive full calculator with IGEM table-based timing, saveable records and PDA/tablet layout fix.
 // Includes pipework entries, rotary/turbine flange + meter length calculation, meter/manual volumes and fittings/manual allowances.
 
 const HBS_TT_GASES = {
@@ -69,17 +69,23 @@ async function loadTightness(){
       #tightness .tt-card h3{display:flex;gap:10px;align-items:center;margin:0 0 4px 0;font-size:18px;}
       #tightness .tt-sub{margin:0 0 12px 0;color:var(--hbs-muted);font-size:13px;}
       #tightness .tt-step{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--hbs-blue);color:white;font-weight:700;flex:0 0 auto;}
-      #tightness .span-12{grid-column:span 12}.span-8{grid-column:span 8}.span-6{grid-column:span 6}.span-4{grid-column:span 4}.span-3{grid-column:span 3}
+      #tightness .span-12{grid-column:span 12}.span-8{grid-column:span 12}.span-6{grid-column:span 6}.span-4{grid-column:span 12}.span-3{grid-column:span 3}
       #tightness .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;align-items:end;}
       #tightness label{display:block;font-weight:600;color:#10233d;font-size:13px;}
       #tightness label input,#tightness label select,#tightness label textarea{width:100%;box-sizing:border-box;margin-top:6px;background:#fff;border:1px solid #bfd0e3;border-radius:8px;padding:9px;font-size:14px;min-height:38px;}
       #tightness label input:focus,#tightness label select:focus,#tightness label textarea:focus{outline:none;border-color:var(--hbs-mid);box-shadow:0 0 0 3px rgba(20,85,143,.14);}
-      #tightness .tt-table-wrap{width:100%;overflow-x:auto;border:1px solid var(--hbs-line);border-radius:10px;background:#fff;margin:10px 0;}
-      #tightness .tt-table-wrap table{min-width:920px;margin:0;border-collapse:collapse;}
+      #tightness .tt-table-wrap{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;border:1px solid var(--hbs-line);border-radius:10px;background:#fff;margin:10px 0;box-sizing:border-box;}
+      #tightness .tt-table-wrap table{width:100%;min-width:760px;margin:0;border-collapse:collapse;table-layout:auto;}
       #tightness .tt-table-wrap th{background:#edf4fb;color:#10233d;font-size:12px;text-align:left;padding:9px;white-space:nowrap;}
       #tightness .tt-table-wrap td{padding:8px;border-top:1px solid #edf2f7;vertical-align:middle;white-space:nowrap;}
-      #tightness .tt-table-wrap input,#tightness .tt-table-wrap select{min-width:115px;box-sizing:border-box;border:1px solid #bfd0e3;border-radius:7px;padding:7px;background:#fff;}
-      #tightness .tt-table-wrap .ttLen{min-width:90px;}
+      #tightness .tt-table-wrap th:nth-child(1),#tightness .tt-table-wrap td:nth-child(1){width:48px;}
+      #tightness .tt-table-wrap th:nth-child(2),#tightness .tt-table-wrap td:nth-child(2){width:150px;}
+      #tightness .tt-table-wrap th:nth-child(3),#tightness .tt-table-wrap td:nth-child(3){width:130px;}
+      #tightness .tt-table-wrap th:nth-child(4),#tightness .tt-table-wrap td:nth-child(4){width:130px;}
+      #tightness .tt-table-wrap th:nth-child(5),#tightness .tt-table-wrap td:nth-child(5),#tightness .tt-table-wrap th:nth-child(6),#tightness .tt-table-wrap td:nth-child(6),#tightness .tt-table-wrap th:nth-child(7),#tightness .tt-table-wrap td:nth-child(7){width:110px;}
+      #tightness .tt-table-wrap th:nth-child(8),#tightness .tt-table-wrap td:nth-child(8){width:90px;}
+      #tightness .tt-table-wrap input,#tightness .tt-table-wrap select{width:100%;min-width:88px;box-sizing:border-box;border:1px solid #bfd0e3;border-radius:7px;padding:7px;background:#fff;}
+      #tightness .tt-table-wrap .ttLen{min-width:80px;}
       #tightness .tt-calc-cell{background:#f4f8fc;color:#0b2f55;font-weight:600;}
       #tightness .tt-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0;}
       #tightness .stat{background:#f8fbff;border:1px solid var(--hbs-line);border-radius:12px;min-height:70px;box-sizing:border-box;padding:12px;overflow-wrap:anywhere;}
@@ -91,7 +97,7 @@ async function loadTightness(){
       #tightness .tt-outcome-pass{border-color:#9bd7af;background:#eefaf2;color:#0f6a2b;}
       #tightness .tt-outcome-fail{border-color:#efb1b1;background:#fff4f4;color:#9a1f1f;}
       #tightness .tt-note{background:#f5f8fc;border-left:5px solid var(--hbs-mid);padding:10px 12px;border-radius:8px;color:#33465c;margin:10px 0;}
-      @media(max-width:1100px){#tightness .span-8,#tightness .span-6,#tightness .span-4,#tightness .span-3{grid-column:span 12;}#tightness .tt-layout{grid-template-columns:1fr;}#tightness .tt-table-wrap table{min-width:850px;}}
+      @media(max-width:1100px){#tightness .span-8,#tightness .span-6,#tightness .span-4,#tightness .span-3{grid-column:span 12;}#tightness .tt-layout{grid-template-columns:1fr;}#tightness .tt-table-wrap table{min-width:720px;}}
       @media(max-width:700px){#tightness .grid{grid-template-columns:1fr;}#tightness .tt-card{padding:12px;border-radius:10px;}#tightness .tt-actions button{width:100%;}.tt-table-wrap{font-size:12px;}}
     </style>
 
