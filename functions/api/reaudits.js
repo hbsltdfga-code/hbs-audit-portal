@@ -3,7 +3,18 @@ async function cols(env,table){try{return((await env.DB.prepare(`PRAGMA table_in
 async function ensureColumn(env,table,name,type){const c=await cols(env,table);if(!c.includes(name)){try{await env.DB.prepare(`ALTER TABLE ${table} ADD COLUMN ${name} ${type}`).run()}catch(e){}}}
 async function ensure(env){await env.DB.prepare(`CREATE TABLE IF NOT EXISTS reaudits (id INTEGER PRIMARY KEY AUTOINCREMENT,audit_id INTEGER,audit_ref TEXT,engineer_name TEXT,due_date TEXT,completed_date TEXT,status TEXT DEFAULT 'Open',created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();await ensureColumn(env,'reaudits','audit_id','INTEGER');await ensureColumn(env,'reaudits','audit_ref','TEXT');await ensureColumn(env,'reaudits','created_at','DATETIME DEFAULT CURRENT_TIMESTAMP')}
 function parseJson(r){try{return r.audit_json?JSON.parse(r.audit_json):{}}catch(e){return{}}}function refFor(a){return a.audit_ref||a.ref||(a.id?`HBS-${a.id}`:'')}
-function safety(a){const j=parseJson(a);const cls=norm(j.classification||j.safety_classification||a.classification||a.safety_classification).toUpperCase();if(['ID','AR'].includes(cls))return true;const qs=Array.isArray(j.questions)?j.questions:[];return qs.some(q=>{const sec=lower(q.section),question=lower(q.question),response=lower(q.response||q.response_value||q.score||q.assessment);const crit=sec.includes('safety')||question.includes('ventilation')||question.includes('flue')||question.includes('tightness')||question.includes('isolation')||question.includes('defects classified');return crit&&(response.includes('fail')||response==='0')})}
+function safety(a){
+ const j=parseJson(a);
+ const cls=norm(j.classification||j.safety_classification||a.classification||a.safety_classification).toUpperCase();
+ if(['ID','AR'].includes(cls))return true;
+ const qs=Array.isArray(j.questions)?j.questions:[];
+ return qs.some(q=>{
+   const response=lower(q.response||q.response_value||q.score||q.assessment);
+   if(!(response.includes('fail')||response==='0'))return false;
+   const text=lower([q.finding,q.findings,q.note,q.notes,q.corrective_action,q.evidence,q.technical_reference,q.question].filter(Boolean).join(' '));
+   return text.includes('immediately dangerous')||text.includes(' at risk')||text.includes(' ar ')||text.includes(' id ')||text.includes('unsafe')||text.includes('gas leak')||text.includes('smell of gas');
+ });
+}
 
 async function cleanupLegacyReaudits(env){
  await env.DB.prepare(`UPDATE reaudits SET audit_ref='HBS-'||audit_id WHERE COALESCE(audit_ref,'')='' AND audit_id IS NOT NULL`).run().catch(()=>{});
