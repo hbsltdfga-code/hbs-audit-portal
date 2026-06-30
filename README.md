@@ -2,7 +2,7 @@
 
 Replace the whole GitHub repository with this package.
 
-Required root contents:-
+Required root contents:
 - index.html
 - css/
 - js/
