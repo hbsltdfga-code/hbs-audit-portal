@@ -138,7 +138,7 @@ async function loadAuditHistory(){
    window._audits=j.audits||[];
    renderAuditHistoryRows();
  }catch(e){
-   $('histRows').innerHTML='<tr><td colspan=10>'+e.message+'</td></tr>';
+   $('histRows').innerHTML='<tr><td colspan="10">'+e.message+'</td></tr>';
  }
 }
 
@@ -169,37 +169,44 @@ function parseAuditJson(a){
  return d && typeof d==='object' ? d : {};
 }
 
-function deepFind(obj, names){
+function valFrom(obj,names){
  if(!obj || typeof obj!=='object') return '';
- const lowerNames=names.map(n=>n.toLowerCase());
+ const wanted=names.map(n=>String(n).toLowerCase());
  for(const k of Object.keys(obj)){
-   if(lowerNames.includes(k.toLowerCase()) && obj[k]!==undefined && obj[k]!==null && String(obj[k]).trim()!=='') return obj[k];
+   if(wanted.includes(String(k).toLowerCase()) && obj[k]!==undefined && obj[k]!==null && String(obj[k]).trim()!=='') return obj[k];
  }
+ return '';
+}
+
+function deepFind(obj,names){
+ if(!obj || typeof obj!=='object') return '';
+ const direct=valFrom(obj,names);
+ if(direct!=='' && direct!==undefined && direct!==null) return direct;
  for(const k of Object.keys(obj)){
    const v=obj[k];
    if(v && typeof v==='object'){
-     const f=deepFind(v,names);
-     if(f!=='' && f!==undefined && f!==null) return f;
+     const found=deepFind(v,names);
+     if(found!=='' && found!==undefined && found!==null) return found;
    }
  }
  return '';
 }
 
 function collectQuestionRows(d){
- const direct=d.questions||d.auditQuestions||d.audit_questions||d.responses||d.question_results||[];
+ const direct=d.questions||d.auditQuestions||d.audit_questions||d.responses||d.question_results||d.auditResults||[];
  if(Array.isArray(direct) && direct.length){
    return direct.map((q,i)=>({
      section:q.section||q.category||q.group||'',
-     question:q.question||q.text||q.label||q.item||'',
-     response:q.response||q.answer||q.result||q.status||q.score||q.value||'',
-     finding:q.finding||q.findings||q.notes||q.note||q.comment||q.comments||q.evidence||''
+     question:q.question||q.text||q.label||q.item||q.audit_question||'',
+     response:q.response||q.answer||q.result||q.status||q.score||q.value||q.selectedValue||'',
+     finding:q.finding||q.findings||q.notes||q.note||q.comment||q.comments||q.evidence||q.manager_comment||''
    })).filter(q=>q.question||q.response||q.finding);
  }
  const arrays=[];
  function walk(o){
    if(!o||typeof o!=='object') return;
    if(Array.isArray(o)){
-     if(o.some(x=>x&&typeof x==='object'&&(x.question||x.text||x.response||x.answer||x.finding||x.notes))) arrays.push(o);
+     if(o.some(x=>x&&typeof x==='object'&&(x.question||x.text||x.response||x.answer||x.finding||x.notes||x.score))) arrays.push(o);
      o.forEach(walk);
    }else Object.values(o).forEach(walk);
  }
@@ -207,7 +214,7 @@ function collectQuestionRows(d){
  let best=arrays.sort((a,b)=>b.length-a.length)[0]||[];
  return best.map((q,i)=>({
    section:q.section||q.category||q.group||'',
-   question:q.question||q.text||q.label||q.item||'',
+   question:q.question||q.text||q.label||q.item||q.audit_question||'',
    response:q.response||q.answer||q.result||q.status||q.score||q.value||'',
    finding:q.finding||q.findings||q.notes||q.note||q.comment||q.comments||q.evidence||''
  })).filter(q=>q.question||q.response||q.finding);
