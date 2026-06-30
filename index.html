@@ -82,7 +82,7 @@ table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidde
 <header>
   <h1>HBS Compliance Manager</h1>
   <div>Commercial Gas Compliance Management System</div>
-  <div class="version">Development Release 7 · Version 12.0</div>
+  <div class="version">Development Release 7 · Version 12.2</div>
 </header>
 
 <section id="loginCard" class="card">
@@ -140,7 +140,7 @@ const AUDIT_QUESTIONS=[
 ['Technical Competence','Condensate, safety devices and interlocks checked'],
 ['Technical Competence','Manufacturer instructions followed'],
 ['Documentation & Handover','Service/audit records completed correctly'],
-['Documentation & Handover','Defects classified correctly: ID / AR / NCS'],
+['Documentation & Handover','Defects classified correctly: ID / AR'],
 ['Documentation & Handover','Client recommendations and warning notices recorded'],
 ['Documentation & Handover','Photographic evidence taken where appropriate'],
 ['Documentation & Handover','Work area left safe and operational status confirmed']
@@ -244,7 +244,7 @@ async function loadConductAudit(){
       <div class="audit-step-head"><span class="step-no">5</span><div><h3>Overall Findings & Required Action</h3><span class="muted">Final management summary and training/re-audit requirement</span></div></div>
       <div class="audit-step-body">
         <label>Overall Findings / Actions<br><textarea id="aFindings" placeholder="Summarise the main audit findings and any immediate corrective actions."></textarea></label>
-        <label>Training / Re-audit<br><textarea id="aTraining">Post-audit refresher training / toolbox talk required. Re-audit to be completed within 30 days.</textarea></label>
+        <label>Training / Re-audit<br><textarea id="aTraining">No further action required.</textarea></label>
       </div>
     </div>
 
@@ -431,7 +431,7 @@ async function saveAudit(){
     result:c.result,
     required_action:c.action,
     findings:$('aFindings').value,
-    training_required:$('aTraining').value,
+    training_required: workflowActionText(c.score,c.result,{questions}),
     combustion:{co:$('co').value,co2:$('co2').value,o2:$('o2').value,flue_temp:$('flue').value,efficiency:$('eff').value,ratio:$('ratio').value,inlet_pressure:$('inlet').value},
     photos: await auditPhotosToData(),
     questions
@@ -443,10 +443,30 @@ async function saveAudit(){
  }catch(e){$('auditMsg').textContent=e.message}
 }
 
+
+function isCriticalClassification(v){
+ const cls=String(v||'').trim().toUpperCase();
+ return ['ID','IMMEDIATE DANGER','IMMEDIATELY DANGEROUS','GAS ESCAPE','UNSAFE SITUATION'].includes(cls);
+}
+function hasCriticalAuditFinding(d){
+ // Version 13 decision engine: NCS is removed from workflow decisions.
+ // AR is manager review only. Level 2 is triggered only by explicit ID, Gas Escape or Unsafe Situation classification.
+ if(isCriticalClassification(d.classification||d.safety_classification||d.defect_classification))return true;
+ const qs=Array.isArray(d.questions)?d.questions:[];
+ return qs.some(q=>isCriticalClassification(q.classification||q.defect_classification||q.safety_classification));
+}
+function workflowActionText(score,result,d){
+ score=Number(score||0); result=String(result||'');
+ if(hasCriticalAuditFinding(d||{})) return 'Level 2 Advanced Competency Assessment required due to safety-critical finding. Manager review and re-audit required.';
+ if(score<75||result==='Fail') return 'Level 2 Advanced Competency Assessment required. Manager review and re-audit within 30 days.';
+ if(score>=75&&score<85) return 'Level 1 Commercial Gas Safety Refresher required. Re-audit within 30 days.';
+ return 'No further action required.';
+}
+
 async function loadAuditHistory(){
  setHtml('auditHistory','<h2>Audit History</h2><p><button onclick="loadAuditHistory()">Refresh</button></p><table><thead><tr><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Score</th><th>Result</th><th>Action</th></tr></thead><tbody id="histRows"></tbody></table><h3>Selected Audit Detail</h3><div id="auditDetail">Select an audit.</div>');
  try{const j=await api('/api/audits?role='+user.role+'&engineer='+encodeURIComponent(user.name));window._audits=j.audits||[];$('histRows').innerHTML=window._audits.map(a=>'<tr><td>'+safe(a.ref||'HBS-'+a.id)+'</td><td>'+safe(a.audit_date||a.created_at)+'</td><td>'+safe(a.engineer_name)+'</td><td>'+safe(a.site_name)+'</td><td>'+safe(a.score)+'</td><td>'+safe(a.result)+'</td><td><button onclick="viewAuditDetail('+a.id+')">Review</button></td></tr>').join('')}catch(e){$('histRows').innerHTML='<tr><td colspan=7>'+e.message+'</td></tr>'}}
-async function viewAuditDetail(id){try{let a=(window._audits||[]).find(x=>Number(x.id)===Number(id));let photos=[];try{const full=await api('/api/audit?id='+id);if(full.audit)a={...a,...full.audit};photos=full.photos||[]}catch(e){}let d={};try{d=JSON.parse(a.audit_json||'{}')}catch(e){}const qs=d.questions||d.auditQuestions||[];const comb=d.combustion||{};const photoHtml=photos.length?photos.map(p=>'<a href="'+p.photo_url+'" target="_blank"><img class="photo-thumb" src="'+p.photo_url+'"></a>').join(''):'No photos attached.';$('auditDetail').innerHTML='<table><tr><th>Ref</th><td>'+safe(a.ref||'HBS-'+a.id)+'</td></tr><tr><th>Engineer</th><td>'+safe(a.engineer_name)+'</td></tr><tr><th>Site</th><td>'+safe(a.site_name)+'</td></tr><tr><th>Client</th><td>'+safe(a.client||d.client)+'</td></tr><tr><th>Auditor</th><td>'+safe(a.auditor||d.auditor)+'</td></tr><tr><th>Manufacturer / Model</th><td>'+safe(a.manufacturer)+' '+safe(a.model)+'</td></tr><tr><th>Score / Result</th><td>'+safe(a.score)+'% - '+safe(a.result)+'</td></tr><tr><th>Findings</th><td>'+safe(a.findings||d.findings)+'</td></tr><tr><th>Training / Re-audit</th><td>'+safe(a.training_required||d.training_required)+'</td></tr></table><h4>Combustion</h4><table><tr><th>CO ppm</th><td>'+safe(comb.co)+'</td><th>CO2 %</th><td>'+safe(comb.co2)+'</td></tr><tr><th>O2 %</th><td>'+safe(comb.o2)+'</td><th>Flue Temp</th><td>'+safe(comb.flue_temp)+'</td></tr><tr><th>Efficiency</th><td>'+safe(comb.efficiency)+'</td><th>Ratio</th><td>'+safe(comb.ratio)+'</td></tr></table><h4>Audit Questions</h4><table><thead><tr><th>Section</th><th>Question</th><th>Score / Response</th><th>Notes / Finding</th></tr></thead><tbody>'+(qs.length?qs.map(q=>'<tr><td>'+safe(q.section)+'</td><td>'+safe(q.question)+'</td><td>'+safe(q.score||q.response)+'</td><td>'+safe(q.notes||q.note||q.finding||q.findings||q.comment||q.comments||q.evidence)+'</td></tr>').join(''):'<tr><td colspan=4>No detailed question data stored.</td></tr>')+'</tbody></table><h4>Photos</h4>'+photoHtml+'<p><button class="secondary" onclick="document.getElementById(\'rawJson\').classList.toggle(\'hide\')">Show Raw Audit JSON</button></p><pre id="rawJson" class="hide">'+htmlSafe(JSON.stringify(d,null,2))+'</pre>'}catch(e){$('auditDetail').textContent=e.message}}
+async function viewAuditDetail(id){try{let a=(window._audits||[]).find(x=>Number(x.id)===Number(id));let photos=[];try{const full=await api('/api/audit?id='+id);if(full.audit)a={...a,...full.audit};photos=full.photos||[]}catch(e){}let d={};try{d=JSON.parse(a.audit_json||'{}')}catch(e){}const qs=d.questions||d.auditQuestions||[];const comb=d.combustion||{};const photoHtml=photos.length?photos.map(p=>'<a href="'+p.photo_url+'" target="_blank"><img class="photo-thumb" src="'+p.photo_url+'"></a>').join(''):'No photos attached.';$('auditDetail').innerHTML='<table><tr><th>Ref</th><td>'+safe(a.ref||'HBS-'+a.id)+'</td></tr><tr><th>Engineer</th><td>'+safe(a.engineer_name)+'</td></tr><tr><th>Site</th><td>'+safe(a.site_name)+'</td></tr><tr><th>Client</th><td>'+safe(a.client||d.client)+'</td></tr><tr><th>Auditor</th><td>'+safe(a.auditor||d.auditor)+'</td></tr><tr><th>Manufacturer / Model</th><td>'+safe(a.manufacturer)+' '+safe(a.model)+'</td></tr><tr><th>Score / Result</th><td>'+safe(a.score)+'% - '+safe(a.result)+'</td></tr><tr><th>Findings</th><td>'+safe(a.findings||d.findings)+'</td></tr><tr><th>Training / Re-audit</th><td>'+safe(workflowActionText(a.score||d.score,a.result||d.result,d))+'</td></tr></table><h4>Combustion</h4><table><tr><th>CO ppm</th><td>'+safe(comb.co)+'</td><th>CO2 %</th><td>'+safe(comb.co2)+'</td></tr><tr><th>O2 %</th><td>'+safe(comb.o2)+'</td><th>Flue Temp</th><td>'+safe(comb.flue_temp)+'</td></tr><tr><th>Efficiency</th><td>'+safe(comb.efficiency)+'</td><th>Ratio</th><td>'+safe(comb.ratio)+'</td></tr></table><h4>Audit Questions</h4><table><thead><tr><th>Section</th><th>Question</th><th>Score / Response</th><th>Notes / Finding</th></tr></thead><tbody>'+(qs.length?qs.map(q=>'<tr><td>'+safe(q.section)+'</td><td>'+safe(q.question)+'</td><td>'+safe(q.score||q.response)+'</td><td>'+safe(q.notes||q.note||q.finding||q.findings||q.comment||q.comments||q.evidence)+'</td></tr>').join(''):'<tr><td colspan=4>No detailed question data stored.</td></tr>')+'</tbody></table><h4>Photos</h4>'+photoHtml+'<p><button class="secondary" onclick="document.getElementById(\'rawJson\').classList.toggle(\'hide\')">Show Raw Audit JSON</button></p><pre id="rawJson" class="hide">'+htmlSafe(JSON.stringify(d,null,2))+'</pre>'}catch(e){$('auditDetail').textContent=e.message}}
 
 
 
