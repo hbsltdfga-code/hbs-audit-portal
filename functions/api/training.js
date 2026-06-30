@@ -1,59 +1,18 @@
 const LEVEL1='Level 1 - Commercial Gas Safety Refresher';
 const LEVEL2='Level 2 - Advanced Commercial Gas Safety Competency Assessment';
-
-function canonicalTrainingType(type){
-  const raw=String(type||'').trim();
-  const t=raw.toLowerCase();
-  // Order matters: Level 1 contains "gas safety", so identify refresher/toolbox wording first.
-  if(t.includes('level 1')||t.includes('post-audit')||t.includes('post audit')||t.includes('refresher')||t.includes('toolbox')) return LEVEL1;
-  if(t.includes('level 2')||t.includes('advanced')||t.includes('unsafe')||t.includes('competency assessment')||t.includes('competency')) return LEVEL2;
-  return raw;
+function norm(v){return String(v||'').trim()}function lower(v){return norm(v).toLowerCase()}
+function addDays(dateStr,days){const d=dateStr?new Date(dateStr):new Date(); if(Number.isNaN(d.getTime())) return new Date(Date.now()+days*86400000).toISOString().slice(0,10); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10)}
+async function ensure(env){await env.DB.prepare(`CREATE TABLE IF NOT EXISTS training_records (id INTEGER PRIMARY KEY AUTOINCREMENT,engineer_name TEXT,training_type TEXT,assigned_date TEXT,completion_date TEXT,status TEXT DEFAULT 'Open',audit_ref TEXT,manager_name TEXT,manager_notes TEXT,created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();await env.DB.prepare(`CREATE TABLE IF NOT EXISTS reaudits (id INTEGER PRIMARY KEY AUTOINCREMENT,audit_ref TEXT,engineer_name TEXT,due_date TEXT,completed_date TEXT,status TEXT DEFAULT 'Open',created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run()}
+function parseJson(r){try{return r.audit_json?JSON.parse(r.audit_json):{}}catch(e){return {}}}
+function refFor(a){return a.audit_ref||a.ref||(a.id?`HBS-${a.id}`:'')}
+function hasSafetyCriticalIssue(a){const j=parseJson(a);const cls=norm(j.classification||j.safety_classification||a.classification||a.safety_classification).toUpperCase(); if(['ID','AR'].includes(cls)) return true; const qs=Array.isArray(j.questions)?j.questions:[]; return qs.some(q=>{const sec=lower(q.section), question=lower(q.question), response=lower(q.response||q.response_value||q.score||q.assessment); const safety=sec.includes('safety')||question.includes('ventilation')||question.includes('flue')||question.includes('tightness')||question.includes('isolation')||question.includes('defects classified'); return safety&&(response.includes('fail')||response==='0')})}
+function assignmentForAudit(a){const score=Number(a.score||0); const result=norm(a.result); const critical=hasSafetyCriticalIssue(a); if(critical||score<75||result==='Fail') return {type:LEVEL2,notes:critical?'Safety-critical audit finding requiring Level 2 assessment.':'Audit score below 75% requiring Level 2 assessment.'}; if(score>=75&&score<85) return {type:LEVEL1,notes:'Improvement Required audit outcome requiring Level 1 refresher.'}; return null}
+async function normaliseExisting(env){
+ await env.DB.prepare(`UPDATE training_records SET training_type=? WHERE training_type LIKE '%Post-audit refresher%' OR training_type LIKE '%Toolbox%' OR training_type LIKE '%Level 1 Commercial%' OR training_type='Post-Audit Refresher Test'`).bind(LEVEL1).run().catch(()=>{});
+ await env.DB.prepare(`UPDATE training_records SET training_type=? WHERE training_type LIKE '%Level 2%' OR training_type LIKE '%Unsafe%' OR training_type LIKE '%Advanced%'`).bind(LEVEL2).run().catch(()=>{});
 }
-
-async function ensure(env){
-  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS training_records (id INTEGER PRIMARY KEY AUTOINCREMENT,engineer_name TEXT,training_type TEXT,assigned_date TEXT,completion_date TEXT,status TEXT DEFAULT 'Open',audit_ref TEXT,manager_name TEXT,manager_notes TEXT,created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();
-}
-
-async function normaliseLegacyRows(env){
-  // One-way safe data cleanup: convert historic v10 wording to the two official test names.
-  await env.DB.prepare(`UPDATE training_records SET training_type=? WHERE lower(training_type) LIKE '%post-audit%' OR lower(training_type) LIKE '%post audit%' OR lower(training_type) LIKE '%refresher%' OR lower(training_type) LIKE '%toolbox%' OR lower(training_type) LIKE '%level 1%'`).bind(LEVEL1).run();
-  await env.DB.prepare(`UPDATE training_records SET training_type=? WHERE lower(training_type) LIKE '%level 2%' OR lower(training_type) LIKE '%advanced%' OR lower(training_type) LIKE '%unsafe%' OR lower(training_type) LIKE '%competency%'`).bind(LEVEL2).run();
-}
-
-function dedupeOpenRows(rows){
-  const seen=new Set();
-  const out=[];
-  for(const r of rows||[]){
-    r.training_type=canonicalTrainingType(r.training_type);
-    if(String(r.status||'Open').toLowerCase()==='completed') { out.push(r); continue; }
-    const audit=String(r.audit_ref||'').trim() || ('legacy-'+String(r.assigned_date||''));
-    const key=[String(r.engineer_name||'').toLowerCase(),r.training_type.toLowerCase(),audit].join('|');
-    if(seen.has(key)) continue;
-    seen.add(key);
-    out.push(r);
-  }
-  return out;
-}
-
-export async function onRequestGet({request,env}){
-  try{
-    await ensure(env);
-    await normaliseLegacyRows(env);
-    const u=new URL(request.url),role=u.searchParams.get('role')||'engineer',eng=u.searchParams.get('engineer')||'';
-    let rows;
-    if(role==='manager') rows=await env.DB.prepare('SELECT * FROM training_records ORDER BY id DESC').all();
-    else if(role==='senior_engineer') rows={results:[]};
-    else rows=await env.DB.prepare('SELECT * FROM training_records WHERE lower(engineer_name)=lower(?) ORDER BY id DESC').bind(eng).all();
-    return Response.json({ok:true,training:dedupeOpenRows(rows.results||[])});
-  }catch(e){return Response.json({ok:false,error:e.message},{status:500})}
-}
-
-export async function onRequestPut({request,env}){
-  try{
-    await ensure(env);
-    const b=await request.json();
-    const done=b.status==='Completed'?new Date().toISOString().slice(0,10):'';
-    await env.DB.prepare('UPDATE training_records SET status=?, completion_date=?, manager_name=?, manager_notes=? WHERE id=?').bind(b.status||'Completed',done,b.manager_name||'',b.manager_notes||'',Number(b.id)).run();
-    return Response.json({ok:true,id:b.id})
-  }catch(e){return Response.json({ok:false,error:e.message},{status:500})}
-}
+async function insertTrainingIfMissing(env,a,ass){const engineer=a.engineer_name||''; const ref=refFor(a); if(!engineer||!ref||!ass) return; const existing=await env.DB.prepare(`SELECT id FROM training_records WHERE lower(engineer_name)=lower(?) AND audit_ref=? AND training_type=? AND lower(COALESCE(status,'Open')) NOT IN ('completed','closed','signed off','approved') LIMIT 1`).bind(engineer,ref,ass.type).first().catch(()=>null); if(!existing){await env.DB.prepare('INSERT INTO training_records (engineer_name,training_type,assigned_date,status,audit_ref,manager_name,manager_notes) VALUES (?,?,?,?,?,?,?)').bind(engineer,ass.type,a.audit_date||new Date().toISOString().slice(0,10),'Open',ref,a.auditor||'',ass.notes).run()}}
+async function insertReauditIfMissing(env,a){const engineer=a.engineer_name||''; const ref=refFor(a); if(!engineer||!ref) return; const existing=await env.DB.prepare(`SELECT id FROM reaudits WHERE lower(engineer_name)=lower(?) AND audit_ref=? AND lower(COALESCE(status,'Open')) NOT IN ('completed','closed') LIMIT 1`).bind(engineer,ref).first().catch(()=>null); if(!existing){await env.DB.prepare('INSERT INTO reaudits (audit_ref,engineer_name,due_date,status) VALUES (?,?,?,?)').bind(ref,engineer,addDays(a.audit_date||a.created_at,30),'Open').run()}}
+async function backfillFromAudits(env){await normaliseExisting(env); const rows=await env.DB.prepare('SELECT * FROM audits ORDER BY id DESC').all().catch(()=>({results:[]})); for(const a of rows.results||[]){const ass=assignmentForAudit(a); if(ass){await insertTrainingIfMissing(env,a,ass); await insertReauditIfMissing(env,a)}}}
+export async function onRequestGet({request,env}){try{await ensure(env);await backfillFromAudits(env);const u=new URL(request.url),role=u.searchParams.get('role')||'engineer',eng=u.searchParams.get('engineer')||'';let rows;if(role==='manager')rows=await env.DB.prepare('SELECT * FROM training_records ORDER BY id DESC').all();else if(role==='senior_engineer')rows={results:[]};else rows=await env.DB.prepare('SELECT * FROM training_records WHERE lower(engineer_name)=lower(?) ORDER BY id DESC').bind(eng).all();return Response.json({ok:true,training:rows.results||[]})}catch(e){return Response.json({ok:false,error:e.message},{status:500})}}
+export async function onRequestPut({request,env}){try{await ensure(env);const b=await request.json();const done=b.status==='Completed'?new Date().toISOString().slice(0,10):'';await env.DB.prepare('UPDATE training_records SET status=?, completion_date=?, manager_name=?, manager_notes=? WHERE id=?').bind(b.status||'Completed',done,b.manager_name||'',b.manager_notes||'',Number(b.id)).run();return Response.json({ok:true,id:b.id})}catch(e){return Response.json({ok:false,error:e.message},{status:500})}}

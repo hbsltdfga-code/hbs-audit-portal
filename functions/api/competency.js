@@ -12,7 +12,7 @@ function safetyCritical(a){
  const j=parseJson(a); const qs=Array.isArray(j.questions)?j.questions:[];
  const cls=norm(j.classification||j.safety_classification||a.classification||a.safety_classification).toUpperCase();
  if(['ID','AR'].includes(cls)) return true;
- return qs.some(q=>{const sec=lower(q.section), question=lower(q.question), resp=lower(q.response||q.score||q.assessment||q.response_value); const safety=sec.includes('safety')||question.includes('ventilation')||question.includes('flue')||question.includes('tightness')||question.includes('isolation')||question.includes('defects classified'); return safety&&(resp.includes('fail')||resp==='0'||resp.includes('improvement'));});
+ return qs.some(q=>{const sec=lower(q.section), question=lower(q.question), resp=lower(q.response||q.score||q.assessment||q.response_value); const safety=sec.includes('safety')||question.includes('ventilation')||question.includes('flue')||question.includes('tightness')||question.includes('isolation')||question.includes('defects classified'); return safety&&(resp.includes('fail')||resp==='0');});
 }
 function weaknessFromQuestions(audits){
  const counts={};
@@ -49,8 +49,8 @@ export async function onRequestGet({request,env}){
     let status='No Audit Record', recommended_action='Schedule first audit';
     if(avg>=95&&!openTraining.length&&!openReaudits.length&&!fails&&!critical){status='Excellent';recommended_action='Continue routine audit cycle / consider mentoring'}
     else if(avg>=85&&!openTraining.length&&!openReaudits.length&&!fails&&!critical){status='Competent';recommended_action='Continue routine audit cycle'}
-    else if(avg>=75||openTraining.length||openReaudits.length){status='Improvement Required';recommended_action='Complete open training and re-audit'}
-    if(avg>0&&avg<75||fails||critical){status='Immediate Action';recommended_action='Level 2 competency review and manager sign-off required'}
+    else if(avg>=75||openTraining.length||openReaudits.length){status='Improvement Required';recommended_action='Level 1 refresher training/test and re-audit required'}
+    if((avg>0&&avg<75)||fails||critical){status='Immediate Action';recommended_action='Level 2 competency assessment and manager sign-off required'}
     const competency_score=Math.max(0,Math.min(100,avg-(openTraining.length*3)-(openReaudits.length*3)-(fails*5)-(critical?10:0)));
     return {engineer,audits:ea.length,average_score:avg,competency_score,fails,open_training:openTraining.length,open_reaudits:openReaudits.length,tests:ex.length,pending_tests:pendingTests,safety_critical:critical,status,recommended_action,latest_audit:latest?{ref:latest.ref,date:latest.audit_date,site:latest.site_name,score:latest.score,result:latest.result}:null,weaknesses:weaknessFromQuestions(ea)};
   });
