@@ -33,7 +33,28 @@ const HBS_METER_STD = {
   'Other': 0
 };
 
-function ttUser(){ return window.HBS?.user || window.user || {name:'',role:'engineer'}; }
+function ttUser(){
+  if (window.HBS && window.HBS.user) return window.HBS.user;
+  if (window.user) return window.user;
+  try{
+    const keys=['currentUser','hbsUser','HBS_USER','user','loggedInUser','authUser'];
+    for(const k of keys){
+      const raw=localStorage.getItem(k)||sessionStorage.getItem(k);
+      if(raw){ const v=JSON.parse(raw); if(v && (v.name||v.email||v.username)) return v; }
+    }
+  }catch(e){}
+  try{
+    const status=(document.getElementById('loginStatus')?.textContent||'').trim();
+    // Expected text: "Logged in: Mark Fuller (Senior Engineer)"
+    const m=status.match(/Logged in:\s*(.*?)\s*\((.*?)\)/i);
+    if(m){
+      const roleText=String(m[2]||'engineer').toLowerCase().replace(/\s+/g,'_');
+      return {name:String(m[1]||'').trim(), role:roleText};
+    }
+  }catch(e){}
+  const eng=(document.getElementById('ttEngineer')?.value||'').trim();
+  return {name:eng, role:'engineer'};
+}
 function ttEl(id){ return document.getElementById(id); }
 function ttVal(id){ return ttEl(id)?.value || ''; }
 function ttNum(id){ const v=parseFloat(ttVal(id)); return Number.isFinite(v)?v:0; }
