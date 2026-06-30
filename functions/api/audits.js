@@ -22,12 +22,14 @@ function isCriticalClassification(v){
  const cls=norm(v).toUpperCase();
  return ['ID','IMMEDIATE DANGER','IMMEDIATELY DANGEROUS','GAS ESCAPE','UNSAFE SITUATION'].includes(cls);
 }
+function containsCriticalText(v){const t=norm(v).toUpperCase();return t.includes('GAS ESCAPE')||t.includes('IMMEDIATE DANGER')||t.includes('IMMEDIATELY DANGEROUS')||t.includes('UNSAFE SITUATION')}
 function hasSafetyCriticalIssue(b){
  // Version 13 decision engine: only explicit safety classifications trigger Level 2.
  // NCS is ignored. AR is manager review only and does not automatically assign Level 2.
  if(isCriticalClassification(b.classification||b.safety_classification||b.defect_classification||''))return true;
+ if(containsCriticalText(b.findings||b.training_required||''))return true;
  const qs=Array.isArray(b.questions)?b.questions:[];
- return qs.some(q=>isCriticalClassification(q.classification||q.defect_classification||q.safety_classification||''));
+ return qs.some(q=>isCriticalClassification(q.classification||q.defect_classification||q.safety_classification||'') || containsCriticalText(q.finding||q.findings||q.note||q.notes||q.comment||q.comments||''));
 }
 function trainingFor(score,result,safetyCritical){score=Number(score||0);result=norm(result);if(safetyCritical)return{type:LEVEL2,notes:'Safety-critical audit finding requiring Level 2 assessment.'};if(score<75||result==='Fail')return{type:LEVEL2,notes:'Audit score below 75% requiring Level 2 assessment.'};if(score>=75&&score<85)return{type:LEVEL1,notes:'Improvement Required audit outcome requiring Level 1 refresher.'};return null}
 async function insertTrainingIfMissing(env,engineer,ref,assigned,due,type,manager,notes){

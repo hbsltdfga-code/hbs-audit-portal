@@ -7,11 +7,13 @@ function isCriticalClassification(v){
  const cls=norm(v).toUpperCase();
  return ['ID','IMMEDIATE DANGER','IMMEDIATELY DANGEROUS','GAS ESCAPE','UNSAFE SITUATION'].includes(cls);
 }
+function containsCriticalText(v){const t=norm(v).toUpperCase();return t.includes('GAS ESCAPE')||t.includes('IMMEDIATE DANGER')||t.includes('IMMEDIATELY DANGEROUS')||t.includes('UNSAFE SITUATION')}
 function safety(a){
  const j=parseJson(a);
  if(isCriticalClassification(j.classification||j.safety_classification||j.defect_classification||a.classification||a.safety_classification||a.defect_classification))return true;
+ if(containsCriticalText(j.findings||j.training_required||a.findings||a.training_required||''))return true;
  const qs=Array.isArray(j.questions)?j.questions:[];
- return qs.some(q=>isCriticalClassification(q.classification||q.defect_classification||q.safety_classification||''));
+ return qs.some(q=>isCriticalClassification(q.classification||q.defect_classification||q.safety_classification||'') || containsCriticalText(q.finding||q.findings||q.note||q.notes||q.comment||q.comments||''));
 }
 
 async function cleanupLegacyReaudits(env){
