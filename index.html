@@ -22,7 +22,7 @@ table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border-bottom:1px
 <header>
   <h1>HBS Compliance Manager</h1>
   <div>Commercial Gas Compliance Management System</div>
-  <div class="version">Development Release 1 · Version 10.0</div>
+  <div class="version">Development Release 1 · Version 10.0 Navigation Fix</div>
 </header>
 
 <section id="loginCard" class="card">
@@ -91,23 +91,29 @@ function logout(){user=null;$('app').classList.add('hide');$('loginCard').classL
 function startApp(){$('loginCard').classList.add('hide');$('app').classList.remove('hide');$('loginStatus').textContent='Logged in: '+user.name+' ('+roleLabel(user.role)+')';buildNav();if(isManager()){show('dashboard');loadDashboard()}else{show('auditHistory');loadAuditHistory()}}
 function buildNav(){
  const base=[
- ['Dashboard','dashboard',loadDashboard,'manager'],
- ['Conduct Audit','conductAudit',loadConductAudit,'audit'],
- ['Audit History','auditHistory',loadAuditHistory,'all'],
- ['Training Centre','training',loadTraining,'all'],
- ['Competency Centre','competency',loadCompetency,'manager'],
- ['Toolbox Tests','toolbox',loadToolbox,'all'],
- ['Tightness Test Centre','tightness',loadTightness,'all'],
- ['Knowledge Centre','knowledge',loadKnowledge,'all'],
- ['Users','users',loadUsers,'manager'],
- ['Record Management','records',loadRecords,'manager'],
- ['Backup','backup',loadBackup,'manager'],
- ['Logout','logout',logout,'all']
+ ['Dashboard','dashboard',loadDashboard],
+ ['Conduct Audit','conductAudit',loadConductAudit],
+ ['Audit History','auditHistory',loadAuditHistory],
+ ['Training Centre','training',loadTraining],
+ ['Competency Centre','competency',loadCompetency],
+ ['Toolbox Tests','toolbox',loadToolbox],
+ ['Tightness Test Centre','tightness',loadTightness],
+ ['Knowledge Centre','knowledge',loadKnowledge],
+ ['Users','users',loadUsers],
+ ['Record Management','records',loadRecords],
+ ['Backup','backup',loadBackup],
+ ['Logout','logout',logout]
  ];
  $('nav').innerHTML='';
- base.forEach(([label,id,fn,perm])=>{if(perm==='manager'&&!isManager())return;if(perm==='audit'&&!(isManager()||isSenior()))return;const b=document.createElement('button');b.textContent=label;b.onclick=()=>{if(id==='logout')fn();else{show(id);fn()}};$('nav').appendChild(b)})
+ base.forEach(([label,id,fn])=>{
+   if((id==='users'||id==='records'||id==='backup'||id==='dashboard'||id==='competency') && !isManager()) return;
+   if(id==='conductAudit' && !(isManager()||isSenior())) return;
+   const b=document.createElement('button');
+   b.textContent=label;
+   b.onclick=()=>{if(id==='logout')fn();else{show(id);fn()}};
+   $('nav').appendChild(b);
+ });
 }
-async function loadEngineersInto(ids){const j=await api('/api/users');const eng=(j.users||[]).filter(u=>isEngineerName(u.name));ids.forEach(id=>{if($(id))$(id).innerHTML=eng.map(u=>'<option>'+u.name+'</option>').join('')});return eng}
 
 async function loadDashboard(){
  setHtml('dashboard','<h2>Manager Dashboard / Audit Register</h2><p><button onclick="loadDashboard()">Refresh</button></p><div class="statgrid"><div class="stat"><b>Total Audits</b><br><b id="stTotal">0</b></div><div class="stat"><b>Average Score</b><br><b id="stAvg">0%</b></div><div class="stat"><b>Pass Rate</b><br><b id="stPassRate">0%</b></div><div class="stat"><b>Excellent</b><br><b id="stExcellent">0</b></div><div class="stat"><b>Pass</b><br><b id="stPass">0</b></div><div class="stat"><b>Improvement Required</b><br><b id="stImprovement">0</b></div><div class="stat"><b>Fail</b><br><b id="stFail">0</b></div><div class="stat"><b>Open Training / Re-audits</b><br><b id="stOpen">0 / 0</b></div></div><h3>Engineer League Table</h3><table><thead><tr><th>Rank</th><th>Engineer</th><th>Audits</th><th>Avg Score</th><th>Excellent</th><th>Improvement</th><th>Fails</th></tr></thead><tbody id="leagueRows"></tbody></table><h3>Audit Register</h3><table><thead><tr><th>Ref</th><th>Date</th><th>Engineer</th><th>Site</th><th>Manufacturer</th><th>Model</th><th>Score</th><th>Result</th><th>Action</th></tr></thead><tbody id="auditRows"></tbody></table><p id="dashMsg" class="muted"></p>');
@@ -147,6 +153,16 @@ async function loadRecords(){setHtml('records','<h2>Record Management</h2><p cla
 async function deleteRecord(){if(!confirm('Delete selected record?'))return;const j=await api('/api/admin-delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({role:user.role,type:$('delType').value,id:$('delId').value,manager:user.name})});$('delMsg').textContent=j.message||'Deleted'}
 async function loadBackup(){setHtml('backup','<h2>Backup</h2><p><button onclick="downloadBackup()">Download JSON Backup</button></p><pre id="backupOut"></pre>')}
 async function downloadBackup(){const j=await api('/api/backup');const text=JSON.stringify(j.backup||j,null,2);$('backupOut').textContent=text.slice(0,5000);const blob=new Blob([text],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hbs-compliance-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click()}
+
+function ensureFullNavigation(){
+  if(!user || !$('nav')) return;
+  const existing = $('nav').textContent || '';
+  if(existing.includes('Knowledge Centre') && existing.includes('Tightness Test Centre')) return;
+  buildNav();
+}
+setTimeout(ensureFullNavigation, 500);
+setTimeout(ensureFullNavigation, 1500);
+
 $('loginPin').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 </script>
 </body>
