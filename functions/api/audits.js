@@ -19,14 +19,14 @@ async function ensureReaudits(env){
  await ensureColumn(env,'reaudits','created_at','DATETIME DEFAULT CURRENT_TIMESTAMP');
 }
 function hasSafetyCriticalIssue(b){
- const cls=norm(b.classification||b.safety_classification||'').toUpperCase();
- if(['ID','AR'].includes(cls))return true;
+ const cls=norm(b.classification||b.safety_classification||b.defect_classification||'').toUpperCase();
+ if(['ID','IMMEDIATE DANGER','GAS ESCAPE','UNSAFE SITUATION'].includes(cls))return true;
  const qs=Array.isArray(b.questions)?b.questions:[];
  return qs.some(q=>{
-   const response=lower(q.response||q.response_value||q.score||q.assessment);
-   if(!(response.includes('fail')||response==='0'))return false;
-   const text=lower([q.finding,q.findings,q.note,q.notes,q.corrective_action,q.evidence,q.technical_reference,q.question].filter(Boolean).join(' '));
-   return text.includes('immediately dangerous')||text.includes(' at risk')||text.includes(' ar ')||text.includes(' id ')||text.includes('unsafe')||text.includes('gas leak')||text.includes('smell of gas');
+   const qcls=norm(q.classification||q.defect_classification||q.safety_classification||'').toUpperCase();
+   if(['ID','IMMEDIATE DANGER','GAS ESCAPE','UNSAFE SITUATION'].includes(qcls))return true;
+   const text=lower([q.classification,q.defect_classification,q.safety_classification,q.finding,q.findings,q.note,q.notes,q.corrective_action].filter(Boolean).join(' '));
+   return text.includes('immediate danger')||text.includes('immediately dangerous')||text.includes('gas escape')||text.includes('unsafe situation');
  });
 }
 function trainingFor(score,result,safetyCritical){score=Number(score||0);result=norm(result);if(safetyCritical)return{type:LEVEL2,notes:'Safety-critical audit finding requiring Level 2 assessment.'};if(score<75||result==='Fail')return{type:LEVEL2,notes:'Audit score below 75% requiring Level 2 assessment.'};if(score>=75&&score<85)return{type:LEVEL1,notes:'Improvement Required audit outcome requiring Level 1 refresher.'};return null}

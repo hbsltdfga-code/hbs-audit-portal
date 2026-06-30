@@ -18,7 +18,18 @@ async function ensure(env){
 }
 function parseJson(r){try{return r.audit_json?JSON.parse(r.audit_json):{}}catch(e){return{}}}
 function refFor(a){return a.audit_ref||a.ref||(a.id?`HBS-${a.id}`:'')}
-function hasSafetyCriticalIssue(a){const j=parseJson(a);const cls=norm(j.classification||j.safety_classification||a.classification||a.safety_classification).toUpperCase();if(['ID','AR'].includes(cls))return true;const qs=Array.isArray(j.questions)?j.questions:[];return qs.some(q=>{const sec=lower(q.section),question=lower(q.question),response=lower(q.response||q.response_value||q.score||q.assessment);const safety=sec.includes('safety')||question.includes('ventilation')||question.includes('flue')||question.includes('tightness')||question.includes('isolation')||question.includes('defects classified');return safety&&(response.includes('fail')||response==='0')})}
+function hasSafetyCriticalIssue(a){
+ const j=parseJson(a);
+ const cls=norm(j.classification||j.safety_classification||j.defect_classification||a.classification||a.safety_classification||a.defect_classification).toUpperCase();
+ if(['ID','IMMEDIATE DANGER','GAS ESCAPE','UNSAFE SITUATION'].includes(cls))return true;
+ const qs=Array.isArray(j.questions)?j.questions:[];
+ return qs.some(q=>{
+   const qcls=norm(q.classification||q.defect_classification||q.safety_classification||'').toUpperCase();
+   if(['ID','IMMEDIATE DANGER','GAS ESCAPE','UNSAFE SITUATION'].includes(qcls))return true;
+   const text=lower([q.classification,q.defect_classification,q.safety_classification,q.finding,q.findings,q.note,q.notes,q.corrective_action].filter(Boolean).join(' '));
+   return text.includes('immediate danger')||text.includes('immediately dangerous')||text.includes('gas escape')||text.includes('unsafe situation');
+ });
+}
 function assignmentForAudit(a){const score=Number(a.score||0);const result=norm(a.result);const critical=hasSafetyCriticalIssue(a);if(critical)return{type:LEVEL2,notes:'Safety-critical audit finding requiring Level 2 assessment.'};if(score<75||result==='Fail')return{type:LEVEL2,notes:'Audit score below 75% requiring Level 2 assessment.'};if(score>=75&&score<85)return{type:LEVEL1,notes:'Improvement Required audit outcome requiring Level 1 refresher.'};return null}
 async function normaliseExisting(env){
  await env.DB.prepare(`UPDATE training_records SET training_type=? WHERE training_type LIKE '%Post-audit refresher%' OR training_type LIKE '%Toolbox%' OR training_type LIKE '%Level 1 Commercial%' OR training_type='Post-Audit Refresher Test'`).bind(LEVEL1).run().catch(()=>{});

@@ -5,14 +5,14 @@ async function ensure(env){await env.DB.prepare(`CREATE TABLE IF NOT EXISTS reau
 function parseJson(r){try{return r.audit_json?JSON.parse(r.audit_json):{}}catch(e){return{}}}function refFor(a){return a.audit_ref||a.ref||(a.id?`HBS-${a.id}`:'')}
 function safety(a){
  const j=parseJson(a);
- const cls=norm(j.classification||j.safety_classification||a.classification||a.safety_classification).toUpperCase();
- if(['ID','AR'].includes(cls))return true;
+ const cls=norm(j.classification||j.safety_classification||j.defect_classification||a.classification||a.safety_classification||a.defect_classification).toUpperCase();
+ if(['ID','IMMEDIATE DANGER','GAS ESCAPE','UNSAFE SITUATION'].includes(cls))return true;
  const qs=Array.isArray(j.questions)?j.questions:[];
  return qs.some(q=>{
-   const response=lower(q.response||q.response_value||q.score||q.assessment);
-   if(!(response.includes('fail')||response==='0'))return false;
-   const text=lower([q.finding,q.findings,q.note,q.notes,q.corrective_action,q.evidence,q.technical_reference,q.question].filter(Boolean).join(' '));
-   return text.includes('immediately dangerous')||text.includes(' at risk')||text.includes(' ar ')||text.includes(' id ')||text.includes('unsafe')||text.includes('gas leak')||text.includes('smell of gas');
+   const qcls=norm(q.classification||q.defect_classification||q.safety_classification||'').toUpperCase();
+   if(['ID','IMMEDIATE DANGER','GAS ESCAPE','UNSAFE SITUATION'].includes(qcls))return true;
+   const text=lower([q.classification,q.defect_classification,q.safety_classification,q.finding,q.findings,q.note,q.notes,q.corrective_action].filter(Boolean).join(' '));
+   return text.includes('immediate danger')||text.includes('immediately dangerous')||text.includes('gas escape')||text.includes('unsafe situation');
  });
 }
 
