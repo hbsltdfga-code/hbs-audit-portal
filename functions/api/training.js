@@ -26,6 +26,25 @@ async function normaliseExisting(env){
 }
 async function insertTrainingIfMissing(env,a,ass){const engineer=a.engineer_name||'';const ref=refFor(a);if(!engineer||!ref||!ass)return;const assigned=a.audit_date||new Date().toISOString().slice(0,10);const due=addDays(assigned,30);const existing=await env.DB.prepare(`SELECT id FROM training_records WHERE lower(engineer_name)=lower(?) AND COALESCE(audit_ref,'')=? AND training_type=? AND lower(COALESCE(status,'Open')) NOT IN ('completed','closed','signed off','approved') LIMIT 1`).bind(engineer,ref,ass.type).first().catch(()=>null);if(!existing){await env.DB.prepare('INSERT INTO training_records (engineer_name,training_type,assigned_date,due_date,status,audit_ref,manager_name,manager_notes) VALUES (?,?,?,?,?,?,?,?)').bind(engineer,ass.type,assigned,due,'Open',ref,a.auditor||'',ass.notes).run()}}
 async function insertReauditIfMissing(env,a){const engineer=a.engineer_name||'';const ref=refFor(a);if(!engineer||!ref)return;const existing=await env.DB.prepare(`SELECT id FROM reaudits WHERE lower(engineer_name)=lower(?) AND (COALESCE(audit_ref,'')=? OR audit_id=?) AND lower(COALESCE(status,'Open')) NOT IN ('completed','closed') LIMIT 1`).bind(engineer,ref,Number(a.id||0)).first().catch(()=>null);if(!existing){await env.DB.prepare('INSERT INTO reaudits (audit_id,audit_ref,engineer_name,due_date,status) VALUES (?,?,?,?,?)').bind(Number(a.id||0),ref,engineer,addDays(a.audit_date||a.created_at,30),'Open').run()}}
-async function backfillFromAudits(env){await ensure(env);await normaliseExisting(env);const rows=await env.DB.prepare('SELECT * FROM audits ORDER BY id DESC').all().catch(()=>({results:[]}));for(const a of rows.results||[]){const ass=assignmentForAudit(a);if(ass){await insertTrainingIfMissing(env,a,ass);await insertReauditIfMissing(env,a)}}}
+
+async function cleanupLegacyUnlinked(env){
+ // Remove legacy open training rows that are not linked to an audit.
+ // Historic completed records are preserved.
+ await env.DB.prepare(`DELETE FROM training_records WHERE COALESCE(audit_ref,'')='' AND lower(COALESCE(status,'Open')) NOT IN ('completed','closed','signed off','approved')`).run().catch(()=>{});
+ // If duplicates exist for the same engineer/audit/test, keep the newest open record only.
+ await env.DB.prepare(`DELETE FROM training_records WHERE id IN (
+   SELECT t.id FROM training_records t
+   JOIN training_records newer
+     ON lower(COALESCE(t.engineer_name,''))=lower(COALESCE(newer.engineer_name,''))
+    AND COALESCE(t.audit_ref,'')=COALESCE(newer.audit_ref,'')
+    AND COALESCE(t.training_type,'')=COALESCE(newer.training_type,'')
+    AND newer.id>t.id
+   WHERE COALESCE(t.audit_ref,'')<>''
+     AND lower(COALESCE(t.status,'Open')) NOT IN ('completed','closed','signed off','approved')
+     AND lower(COALESCE(newer.status,'Open')) NOT IN ('completed','closed','signed off','approved')
+ )`).run().catch(()=>{});
+}
+
+async function backfillFromAudits(env){await ensure(env);await normaliseExisting(env);const rows=await env.DB.prepare('SELECT * FROM audits ORDER BY id DESC').all().catch(()=>({results:[]}));for(const a of rows.results||[]){const ass=assignmentForAudit(a);if(ass){await insertTrainingIfMissing(env,a,ass);await insertReauditIfMissing(env,a)}}await cleanupLegacyUnlinked(env)}
 export async function onRequestGet({request,env}){try{await ensure(env);await backfillFromAudits(env);const u=new URL(request.url),role=u.searchParams.get('role')||'engineer',eng=u.searchParams.get('engineer')||'';let rows;if(role==='manager')rows=await env.DB.prepare('SELECT * FROM training_records ORDER BY id DESC').all();else rows=await env.DB.prepare('SELECT * FROM training_records WHERE lower(engineer_name)=lower(?) ORDER BY id DESC').bind(eng).all();return Response.json({ok:true,training:rows.results||[]})}catch(e){return Response.json({ok:false,error:e.message},{status:500})}}
 export async function onRequestPut({request,env}){try{await ensure(env);const b=await request.json();const done=b.status==='Completed'?new Date().toISOString().slice(0,10):'';await env.DB.prepare('UPDATE training_records SET status=?, completion_date=?, manager_name=?, manager_notes=? WHERE id=?').bind(b.status||'Completed',done,b.manager_name||'',b.manager_notes||'',Number(b.id)).run();return Response.json({ok:true,id:b.id})}catch(e){return Response.json({ok:false,error:e.message},{status:500})}}
