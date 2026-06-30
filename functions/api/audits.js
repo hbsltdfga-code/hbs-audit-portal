@@ -22,7 +22,7 @@ function isCriticalClassification(v){
  const cls=norm(v).toUpperCase();
  return ['ID','IMMEDIATE DANGER','IMMEDIATELY DANGEROUS','GAS ESCAPE','UNSAFE SITUATION'].includes(cls);
 }
-function containsCriticalText(v){const t=norm(v).toUpperCase();return t.includes('GAS ESCAPE')||t.includes('IMMEDIATE DANGER')||t.includes('IMMEDIATELY DANGEROUS')||t.includes('UNSAFE SITUATION')}
+function containsCriticalText(v){const t=norm(v).toUpperCase();return t.includes('GAS ESCAPE')||t.includes('GAS LEAK')||t.includes('SMELL OF GAS')||t.includes('IMMEDIATE DANGER')||t.includes('IMMEDIATELY DANGEROUS')||t.includes('UNSAFE SITUATION')}
 function hasSafetyCriticalIssue(b){
  // Version 13 decision engine: only explicit safety classifications trigger Level 2.
  // NCS is ignored. AR is manager review only and does not automatically assign Level 2.

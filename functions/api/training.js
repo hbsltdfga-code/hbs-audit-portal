@@ -22,7 +22,7 @@ function isCriticalClassification(v){
  const cls=norm(v).toUpperCase();
  return ['ID','IMMEDIATE DANGER','IMMEDIATELY DANGEROUS','GAS ESCAPE','UNSAFE SITUATION'].includes(cls);
 }
-function containsCriticalText(v){const t=norm(v).toUpperCase();return t.includes('GAS ESCAPE')||t.includes('IMMEDIATE DANGER')||t.includes('IMMEDIATELY DANGEROUS')||t.includes('UNSAFE SITUATION')}
+function containsCriticalText(v){const t=norm(v).toUpperCase();return t.includes('GAS ESCAPE')||t.includes('GAS LEAK')||t.includes('SMELL OF GAS')||t.includes('IMMEDIATE DANGER')||t.includes('IMMEDIATELY DANGEROUS')||t.includes('UNSAFE SITUATION')}
 function hasSafetyCriticalIssue(a){
  const j=parseJson(a);
  if(isCriticalClassification(j.classification||j.safety_classification||j.defect_classification||a.classification||a.safety_classification||a.defect_classification))return true;
