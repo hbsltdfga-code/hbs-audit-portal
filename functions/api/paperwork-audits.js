@@ -11,7 +11,21 @@ async function ensure(env){
     details_json TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`).run();
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS compliance_actions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source TEXT, source_id INTEGER, engineer_name TEXT, audit_ref TEXT, title TEXT, detail TEXT,
+    priority TEXT DEFAULT 'medium', status TEXT DEFAULT 'Open', assigned_to TEXT, due_date TEXT,
+    created_by TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`).run();
 }
+function parseCp15Actions(b,id){
+  const qs=Array.isArray(b.questions)?b.questions:[];
+  const checks=[['CP15 Local Tightness Test','local tightness'],['CP15 Combustion Readings','combustion'],['CP15 Gas Pressure','working pressure'],['CP15 Gas Rate','gas rate']];
+  const out=[];
+  for(const [title,needle] of checks){const q=qs.find(x=>String(x.question||'').toLowerCase().includes(needle));if(q&&['fail','improve'].includes(String(q.response_value||'').toLowerCase()))out.push({title,detail:(q.finding||q.corrective_action||q.question||title),priority:String(q.response_value).toLowerCase()==='fail'?'high':'medium'});}
+  return out;
+}
+
 export async function onRequestGet({request,env}){
   try{
     await ensure(env);
@@ -33,6 +47,11 @@ export async function onRequestPost({request,env}){
     const ins=await env.DB.prepare(`INSERT INTO paperwork_audits (engineer_name,site_name,job_ref,audit_date,auditor,score,outcome,details_json) VALUES (?,?,?,?,?,?,?,?)`).bind(
       b.engineer_name||'', b.site_name||'', b.job_ref||'', b.audit_date||new Date().toISOString().slice(0,10), b.auditor||'', Number(b.score||0), b.outcome||'', JSON.stringify(details)
     ).run();
-    return Response.json({ok:true,id:ins.meta?.last_row_id});
+    const newId=ins.meta?.last_row_id;
+    for(const a of parseCp15Actions(b,newId)){
+      await env.DB.prepare(`INSERT INTO compliance_actions (source,source_id,engineer_name,audit_ref,title,detail,priority,status,assigned_to,due_date,created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
+        .bind('paperwork_audit',Number(newId||0),b.engineer_name||'',b.job_ref||'',a.title,a.detail,a.priority,'Open',b.engineer_name||'',b.audit_date||new Date().toISOString().slice(0,10),b.auditor||'').run();
+    }
+    return Response.json({ok:true,id:newId});
   }catch(e){return Response.json({ok:false,error:e.message},{status:500});}
 }

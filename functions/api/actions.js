@@ -12,6 +12,13 @@ function addAction(list,a){
   })
 }
 async function q(env,sql,binds=[]){try{let s=env.DB.prepare(sql);if(binds.length)s=s.bind(...binds);return (await s.all()).results||[]}catch(e){return []}}
+
+async function ensureActions(env){try{await env.DB.prepare(`CREATE TABLE IF NOT EXISTS compliance_actions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT, source_id INTEGER, engineer_name TEXT, audit_ref TEXT, title TEXT, detail TEXT,
+  priority TEXT DEFAULT 'medium', status TEXT DEFAULT 'Open', assigned_to TEXT, due_date TEXT,
+  created_by TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`).run()}catch(e){}}
+
 async function tableExists(env,name){try{const r=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").bind(name).first();return !!r}catch(e){return false}}
 export async function onRequestGet({request,env}){
   try{
@@ -19,7 +26,11 @@ export async function onRequestGet({request,env}){
     const role=lower(u.searchParams.get('role')||'engineer');
     const engineer=norm(u.searchParams.get('engineer')||'');
     const all=isPrivileged(role);
+    await ensureActions(env);
     const actions=[];
+    const storedSql=all?`SELECT * FROM compliance_actions WHERE lower(COALESCE(status,'Open')) NOT IN ('completed','closed') ORDER BY CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END, due_date ASC LIMIT 300`:`SELECT * FROM compliance_actions WHERE lower(engineer_name)=lower(?) AND lower(COALESCE(status,'Open')) NOT IN ('completed','closed') ORDER BY due_date ASC LIMIT 100`;
+    const stored=await q(env,storedSql,all?[]:[engineer]);
+    stored.forEach(r=>addAction(actions,{source:r.source||'compliance_action',id:r.id,type:r.title||'Compliance Action',priority:r.priority||'medium',engineer_name:r.engineer_name,audit_ref:r.audit_ref,due_date:r.due_date,status:r.status,title:r.title,detail:r.detail,action:'Update Action',created_at:r.created_at}));
 
     const trainingSql=all?
       `SELECT * FROM training_records WHERE lower(COALESCE(status,'Open')) NOT IN ('completed','closed','signed off','approved') ORDER BY COALESCE(due_date,assigned_date,created_at) ASC LIMIT 200`:
@@ -58,5 +69,19 @@ export async function onRequestGet({request,env}){
     actions.sort((a,b)=>(priorityRank[a.priority]||9)-(priorityRank[b.priority]||9) || String(a.due_date||'9999').localeCompare(String(b.due_date||'9999')));
     const summary={total:actions.length,high:actions.filter(a=>a.priority==='high').length,training:training.length,reaudits:reaudits.length,safety:actions.filter(a=>a.source==='audit').length,paperwork:actions.filter(a=>a.source==='paperwork').length};
     return Response.json({ok:true,summary,actions});
+  }catch(e){return Response.json({ok:false,error:e.message},{status:500})}
+}
+
+
+export async function onRequestPut({request,env}){
+  try{
+    await ensureActions(env);
+    const b=await request.json();
+    if(!isPrivileged(b.role||b.current_role))return Response.json({ok:false,error:'Manager or Senior Engineer access required.'},{status:403});
+    if(!b.id)return Response.json({ok:false,error:'Action id is required.'},{status:400});
+    const status=norm(b.status||'In Progress');
+    const detail=norm(b.detail||b.manager_notes||'');
+    await env.DB.prepare(`UPDATE compliance_actions SET status=?, detail=CASE WHEN ?<>'' THEN ? ELSE detail END, updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(status,detail,detail,Number(b.id)).run();
+    return Response.json({ok:true});
   }catch(e){return Response.json({ok:false,error:e.message},{status:500})}
 }
