@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HBS Compliance Manager v14.0</title>
+<title>HBS Compliance Manager v14.2</title>
 <style>
 :root{--blue:#123f6d;--blue2:#2369a7;--bg:#f4f7fb;--line:#d3dfed;--muted:#52677f;--danger:#8b1e1e;--ok:#ddf5e4;--warn:#fff1c9}
 *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;margin:0;background:var(--bg);color:#071b34}
@@ -84,13 +84,16 @@ table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidde
 .prof-dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:14px 0}.prof-card{background:#fff;border:1px solid #dce8f4;border-radius:16px;padding:16px;box-shadow:0 6px 20px rgba(9,35,63,.06)}.prof-card h3{margin:0 0 6px}.prof-kpi{font-size:28px;font-weight:900;color:#09233f}.paper-score{font-size:24px;font-weight:900;color:#123f6d}.paper-section{border:1px solid #dce8f4;border-radius:14px;padding:12px;margin:12px 0;background:#fbfdff}.paper-section h3{margin-top:0}
 @media(max-width:760px){.nav-group{display:flex;flex-direction:column;align-items:stretch;width:100%;}.nav-title{padding:4px 8px}.nav-group button{width:100%;}}
 
+
+/* v14.2 Performance Engine */
+.performance-grade{display:inline-block;border-radius:999px;padding:5px 10px;font-weight:800;font-size:12px;background:#e8f7ee;color:#17643a}.performance-grade.silver{background:#eef5ff;color:#123f6d}.performance-grade.bronze{background:#fff5d6;color:#805300}.performance-grade.improve{background:#fff0f0;color:#8b1e1e}.restore-panel{border:1px dashed #b8c8d8;border-radius:14px;background:#fbfdff;padding:14px;margin-top:14px}.print-only{display:none}@media print{header,#nav,.toolbar,button,.no-print{display:none!important}.card,.section{box-shadow:none!important;border:0!important;margin:0!important}.print-only{display:block!important}body{background:#fff!important}}
 </style>
 </head>
 <body>
 <header>
   <h1>HBS Compliance Manager</h1>
   <div>Commercial Gas Compliance Management System</div>
-  <div class="version">Professional Edition · Version 14.0</div>
+  <div class="version">Professional Edition · Version 14.2</div>
 </header>
 
 <section id="loginCard" class="card">
@@ -108,7 +111,7 @@ table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidde
     <p id="loginMsg" class="login-help">Enter your HBS email address and PIN to access the Compliance Manager.</p>
     <div class="login-footer">
       <span>Forgotten PIN? Contact the Compliance Manager.</span>
-      <span>Version 14.0</span>
+      <span>Version 14.2</span>
     </div>
   </div>
 </section>
@@ -175,7 +178,7 @@ function buildNav(){
     ['New Audit','conductAudit',loadConductAudit,'audit'],
     ['Audit History','auditHistory',loadAuditHistory,'all'],
     ['Paperwork Audits','paperwork',loadPaperworkAudits,'manager'],
-    ['Engineer Performance','competency',loadCompetency,'manager']
+    ['Engineer Performance','competency',loadPerformance,'manager']
   ]],
   ['Competency', [
     ['Training Centre','training',loadTraining,'all'],
@@ -715,6 +718,52 @@ async function submitTrainingTest(key){
 function compEsc(v){return (v===undefined||v===null?'':String(v)).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}
 function compStatusClass(status){status=String(status||'').toLowerCase();if(status.includes('immediate'))return 'dash-red';if(status.includes('improvement')||status.includes('action'))return 'dash-amber';if(status.includes('excellent')||status.includes('competent'))return 'dash-green';return 'dash-blue'}
 function compBadge(status){const cls=compStatusClass(status).replace('dash-','');return '<span class="dash-pill '+(cls==='red'?'red':cls==='amber'?'amber':'green')+'">'+compEsc(status||'Unknown')+'</span>'}
+
+async function loadPerformance(){
+ setHtml('competency','<h2>Engineer Performance Engine</h2><p class="muted">Loading Engineer Performance Index...</p>');
+ try{
+  const j=await api('/api/performance?role='+encodeURIComponent(user.role)+'&engineer='+encodeURIComponent(user.name));
+  const engineers=(j.engineers||[]).filter(e=>isEngineerName(e.engineer_name||e.engineer));
+  const avg=engineers.length?Math.round(engineers.reduce((s,e)=>s+Number(e.overall_score||0),0)/engineers.length):0;
+  const gold=engineers.filter(e=>Number(e.overall_score||0)>=95).length;
+  const action=engineers.filter(e=>Number(e.overall_score||0)<85 || Number(e.open_actions||0)>0).length;
+  setHtml('competency',`
+    <h2>Engineer Performance Engine</h2>
+    <p class="muted">The Engineer Performance Index combines technical audits, paperwork audits, tightness records, training and open compliance actions.</p>
+    <div class="prof-dashboard">
+      <div class="prof-card"><h3>Company EPI</h3><div class="prof-kpi">${avg}%</div><p class="muted">Average overall performance</p></div>
+      <div class="prof-card"><h3>Gold Performers</h3><div class="prof-kpi">${gold}</div><p class="muted">95% or above</p></div>
+      <div class="prof-card"><h3>Requiring Action</h3><div class="prof-kpi">${action}</div><p class="muted">Below target or open actions</p></div>
+      <div class="prof-card"><h3>Engineers</h3><div class="prof-kpi">${engineers.length}</div><p class="muted">Included in performance table</p></div>
+    </div>
+    <h3>Performance League Table</h3>
+    <table><thead><tr><th>Rank</th><th>Engineer</th><th>Overall</th><th>Technical</th><th>Paperwork</th><th>Tightness</th><th>Training</th><th>Compliance</th><th>Award</th><th>Trend</th><th>Action</th></tr></thead><tbody id="perfRows"></tbody></table>
+    <div id="performanceDetail" class="card"><h3>Engineer Detail</h3><p class="muted">Select an engineer to view the scoring breakdown and timeline.</p></div>`);
+  $('perfRows').innerHTML=engineers.map((e,i)=>{
+    const score=Number(e.overall_score||0); const award=e.award||score>=95?'Gold':score>=90?'Silver':score>=85?'Bronze':'Improvement';
+    const cls=award==='Gold'?'':award==='Silver'?'silver':award==='Bronze'?'bronze':'improve';
+    const eng=safe(e.engineer_name||e.engineer);
+    return `<tr><td>${i+1}</td><td><b>${eng}</b></td><td>${safe(e.overall_score)}%</td><td>${safe(e.technical_score)}%</td><td>${safe(e.paperwork_score)}%</td><td>${safe(e.tightness_score)}%</td><td>${safe(e.training_score)}%</td><td>${safe(e.compliance_score)}%</td><td><span class="performance-grade ${cls}">${award}</span></td><td>${safe(e.trend||'Stable')}</td><td><button onclick="viewPerformance('${eng.replace(/'/g,'&#39;')}')">Review</button></td></tr>`
+  }).join('')||'<tr><td colspan="11">No performance data found. Run refresh after audits/paperwork records exist.</td></tr>';
+ }catch(e){setHtml('competency','<h2>Engineer Performance Engine</h2><p class="muted">'+safe(e.message)+'</p>')}
+}
+async function viewPerformance(engineer){
+ try{
+  const j=await api('/api/performance?engineer='+encodeURIComponent(engineer)+'&role='+encodeURIComponent(user.role));
+  const p=j.profile||{}; const t=j.timeline||[];
+  $('performanceDetail').innerHTML=`<h3>${safe(engineer)} - Performance Record</h3>
+    <div class="prof-dashboard">
+      <div class="prof-card"><h3>Overall EPI</h3><div class="prof-kpi">${safe(p.overall_score||0)}%</div><p class="muted">${safe(p.award||'')}</p></div>
+      <div class="prof-card"><h3>Technical</h3><div class="prof-kpi">${safe(p.technical_score||0)}%</div><p class="muted">Gas audit average</p></div>
+      <div class="prof-card"><h3>Paperwork</h3><div class="prof-kpi">${safe(p.paperwork_score||0)}%</div><p class="muted">Documentation quality</p></div>
+      <div class="prof-card"><h3>Open Actions</h3><div class="prof-kpi">${safe(p.open_actions||0)}</div><p class="muted">Training / re-audit actions</p></div>
+    </div>
+    <h4>Scoring Basis</h4><p class="muted">Technical 50%, Paperwork 20%, Tightness 10%, Training 10%, Compliance 10%.</p>
+    <h4>Timeline</h4>${t.length?'<table><thead><tr><th>Date</th><th>Type</th><th>Detail</th><th>Score</th></tr></thead><tbody>'+t.map(x=>`<tr><td>${safe(x.date)}</td><td>${safe(x.type)}</td><td>${safe(x.detail)}</td><td>${safe(x.score||'')}</td></tr>`).join('')+'</tbody></table>':'<p class="muted">No timeline records.</p>'}`;
+  $('performanceDetail').scrollIntoView({behavior:'smooth',block:'start'});
+ }catch(e){$('performanceDetail').innerHTML='<p class="muted">'+safe(e.message)+'</p>'}
+}
+
 async function loadCompetency(){
  setHtml('competency','<h2>Engineer Performance & Competency</h2><p class="muted">Loading competency matrix...</p>');
  try{
@@ -936,8 +985,11 @@ async function uploadKnowledgeDocument(){
 async function loadUsers(){show('users');setHtml('users','<h2>Administration</h2><p><button onclick="loadUsers()">Users</button> <button onclick="loadRecords()">Record Management</button> <button onclick="loadBackup()">Backup</button></p><p class="muted">User access only. No engineer profiles, qualifications, ACS expiry, LPG, OFTEC, G3, driving licence, medical restriction or regional allocation records are held in this system.</p><h3>Users & Permissions</h3><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Title</th><th>PIN</th></tr></thead><tbody id="uRows"></tbody></table>');const j=await api('/api/users');$('uRows').innerHTML=(j.users||[]).map(u=>'<tr><td>'+safe(u.name)+'</td><td>'+safe(u.email)+'</td><td>'+safe(u.role)+'</td><td>'+safe(u.title)+'</td><td>'+safe(u.pin)+'</td></tr>').join('')}
 async function loadRecords(){show('records');setHtml('records','<h2>Record Management</h2><p><button onclick="loadUsers()">Back to Administration</button><button onclick="loadBackup()">Backup</button></p><p class="notice card"><b>Manager only:</b> Delete old/test records. Take a backup first.</p><div class="grid"><label>Record Type<br><select id="delType"><option value="audit">Audit</option><option value="training">Training</option><option value="reaudit">Re-audit</option><option value="toolbox">Toolbox/Test Result</option><option value="tightness">Tightness Test</option><option value="library">Knowledge Library Document</option></select></label><label>Record ID<br><input id="delId" placeholder="Enter numeric ID"></label></div><p><button class="danger" onclick="deleteRecord()">Delete Selected Record</button></p><p id="delMsg" class="muted"></p>')}
 async function deleteRecord(){if(!isManager()){alert('Manager access only.');return}if(!$('delId').value){alert('Enter a record ID.');return}if(!confirm('Delete selected record? This cannot be undone unless you have a backup.'))return;try{const j=await api('/api/admin-delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({role:user.role,type:$('delType').value,id:$('delId').value,manager:user.name})});$('delMsg').textContent=j.message||'Deleted'}catch(e){$('delMsg').textContent=e.message}}
-async function loadBackup(){show('backup');setHtml('backup','<h2>Backup</h2><p><button onclick="loadUsers()">Back to Administration</button><button onclick="loadRecords()">Record Management</button></p><p class="muted">Download a JSON backup before deleting test records or making major changes.</p><p><button onclick="downloadBackup()">Download JSON Backup</button></p><pre id="backupOut"></pre>')}
-async function downloadBackup(){try{const j=await api('/api/backup');const text=JSON.stringify(j.backup||j,null,2);$('backupOut').textContent=text.slice(0,5000);const blob=new Blob([text],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hbs-compliance-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click()}catch(e){$('backupOut').textContent=e.message}}
+async function loadBackup(){show('backup');setHtml('backup',`<h2>Backup & Restore</h2><p><button onclick="loadUsers()">Back to Administration</button><button onclick="loadRecords()">Record Management</button></p><p class="muted">Download a JSON backup before deleting records or making major changes. Restore is manager-only and supports dry-run preview.</p><div class="prof-dashboard"><div class="prof-card"><h3>Export Backup</h3><p>Export audits, training, re-audits, toolbox tests, tightness records, paperwork audits, users and knowledge metadata.</p><button onclick="downloadBackup()">Download JSON Backup</button></div><div class="prof-card"><h3>Restore JSON Backup</h3><p>Import a previous backup using dry-run preview before committing changes.</p><input id="restoreFile" type="file" accept="application/json,.json"><br><label><input type="checkbox" id="restoreOverwrite"> Overwrite matching IDs</label><p><button onclick="previewRestore()">Preview Restore</button><button class="danger" onclick="confirmRestore()">Confirm Restore</button></p></div></div><div class="restore-panel"><h3>Backup / Restore Output</h3><pre id="backupOut"></pre></div>`)}
+async function downloadBackup(){try{const j=await api('/api/backup?role='+encodeURIComponent(user.role)+'&manager='+encodeURIComponent(user.name));const text=JSON.stringify(j.backup||j,null,2);$('backupOut').textContent=text.slice(0,8000);const blob=new Blob([text],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hbs-compliance-backup-v14.2-'+new Date().toISOString().slice(0,10)+'.json';a.click()}catch(e){$('backupOut').textContent=e.message}}
+async function readRestoreFile(){const f=$('restoreFile')?.files?.[0];if(!f)throw new Error('Select a JSON backup file first.');return JSON.parse(await f.text())}
+async function previewRestore(){try{const payload=await readRestoreFile();const j=await api('/api/restore?dryRun=1',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({role:user.role,manager:user.name,overwrite:$('restoreOverwrite')?.checked,backup:payload})});$('backupOut').textContent=JSON.stringify(j,null,2)}catch(e){$('backupOut').textContent=e.message}}
+async function confirmRestore(){try{if(!confirm('Restore selected JSON backup? Take a fresh backup first.'))return;const payload=await readRestoreFile();const j=await api('/api/restore',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({role:user.role,manager:user.name,overwrite:$('restoreOverwrite')?.checked,backup:payload})});$('backupOut').textContent=JSON.stringify(j,null,2)}catch(e){$('backupOut').textContent=e.message}}
 $('loginPin').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 </script>
 <script src="js/tightness.js?v=10.5.4"></script>
