@@ -10,6 +10,7 @@ header{background:#123f6d;color:white;padding:20px}
 .card{background:white;margin:14px;padding:16px;border:1px solid #d3dfed;border-radius:10px;box-shadow:0 1px 4px #0001}
 button{background:#123f6d;color:white;border:0;border-radius:8px;padding:9px 12px;font-weight:700;margin:3px;cursor:pointer}
 button.secondary{background:#52677f}
+button.danger{background:#b3262e}
 input,select{font:inherit;padding:9px;border:1px solid #b8c8d8;border-radius:8px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
 .toolbar{display:flex;gap:5px;flex-wrap:wrap}
@@ -99,6 +100,30 @@ async function api(url){
   return j;
 }
 
+
+async function apiDelete(url){
+  const r=await fetch(url,{method:'DELETE',cache:'no-store'});
+  const t=await r.text();
+  let j;
+  try{j=JSON.parse(t)}catch(e){throw new Error(t)}
+  if(!r.ok||j.ok===false)throw new Error(j.error||'API error');
+  return j;
+}
+
+function currentUser(){
+  try{return JSON.parse(localStorage.getItem('currentUser')||sessionStorage.getItem('currentUser')||'{}')}catch(e){return {}}
+}
+
+async function deleteDoc(id,title){
+  if(!confirm('Delete document?\n\n'+(title||'Selected document')+'\n\nThis removes the R2 file and marks the document as deleted in the library.')) return;
+  try{
+    const u=currentUser();
+    await apiDelete('/api/library?id='+encodeURIComponent(id)+'&role='+encodeURIComponent(u.role||'manager')+'&deleted_by='+encodeURIComponent(u.name||'Knowledge Centre'));
+    document.getElementById('msg').textContent='Document deleted.';
+    await load();
+  }catch(e){document.getElementById('msg').textContent=e.message;}
+}
+
 async function load(){
   try{
     const q=encodeURIComponent(document.getElementById('q').value||'');
@@ -113,7 +138,7 @@ async function load(){
       '<td>'+safe(d.keywords)+'</td>'+
       '<td>'+safe(d.created_at)+'</td>'+
       '<td>'+safe(d.file_name)+'</td>'+
-      '<td><button onclick="openDoc('+d.id+')">Open</button></td>'+
+      '<td><button onclick="openDoc('+d.id+')">Open</button> <button class="danger" onclick="deleteDoc('+d.id+', \''+safe(d.title).replace(/'/g,\"\\'\")+'\')">Delete</button></td>'+
       '</tr>').join('');
   }catch(e){
     document.getElementById('msg').textContent=e.message;
