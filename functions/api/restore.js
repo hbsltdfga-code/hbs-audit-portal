@@ -1,4 +1,4 @@
-const TABLES=['users','audits','audit_photos','training_records','reaudits','toolbox_results','technical_library','tightness_records','paperwork_audits','engineer_performance','user_activity_log'];
+const TABLES=['users','audits','audit_photos','training_records','reaudits','toolbox_results','technical_library','tightness_records','paperwork_audits','engineer_performance'];
 function safeTable(t){if(!TABLES.includes(t))throw new Error('Unsupported table: '+t);return t}
 async function cols(env,t){try{return((await env.DB.prepare(`PRAGMA table_info(${safeTable(t)})`).all()).results||[]).map(c=>c.name)}catch(e){return[]}}
 async function ensureRestoreLog(env){await env.DB.prepare(`CREATE TABLE IF NOT EXISTS restore_log (id INTEGER PRIMARY KEY AUTOINCREMENT,restored_by TEXT,backup_version TEXT,mode TEXT,summary_json TEXT,created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run()}

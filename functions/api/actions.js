@@ -52,12 +52,6 @@ export async function onRequestGet({request,env}){
         `SELECT * FROM paperwork_audits WHERE lower(engineer_name)=lower(?) ORDER BY id DESC LIMIT 50`;
       const papers=await q(env,pSql,all?[]:[engineer]);
       papers.filter(p=>Number(p.score||100)<85).forEach(p=>addAction(actions,{source:'paperwork',id:p.id,type:'Paperwork Review',priority:Number(p.score||0)<75?'high':'medium',engineer_name:p.engineer_name,audit_ref:p.job_ref||p.audit_ref||'',due_date:p.audit_date||p.created_at,status:'Review',title:'Paperwork Compliance Review',detail:`Paperwork score ${p.score||0}% requires review.`,action:'Open Paperwork Audits',created_at:p.created_at}));
-      papers.forEach(p=>{
-        const d=parseJson(p.details_json);
-        const intel=d.cp15_intelligence||{};
-        const flags=Array.isArray(intel.flags)?intel.flags:[];
-        flags.filter(f=>['critical','major'].includes(lower(f.severity))).forEach(f=>addAction(actions,{source:'cp15_intelligence',id:p.id,type:'CP15 Intelligence',priority:lower(f.severity)==='critical'?'high':'medium',engineer_name:p.engineer_name,audit_ref:p.job_ref||p.audit_ref||'',due_date:p.audit_date||p.created_at,status:'Review',title:f.title||'CP15 Paperwork Issue',detail:f.finding||f.action||'CP15 paperwork issue identified by intelligence checks.',action:'Open Paperwork Audits',created_at:p.created_at}));
-      });
     }
 
     const priorityRank={high:1,medium:2,normal:3,low:4};
