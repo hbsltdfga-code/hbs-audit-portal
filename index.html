@@ -90,7 +90,7 @@ table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidde
 <header>
   <h1>HBS Compliance Manager</h1>
   <div>Commercial Gas Compliance Management System</div>
-  <div class="version">Professional Edition · Version 14.0.1</div>
+  <div class="version">Professional Edition · Version 14.1.1</div>
 </header>
 
 <section id="loginCard" class="card">
@@ -117,6 +117,7 @@ table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidde
   <div class="card"><div class="toolbar"><b id="loginStatus"></b><span id="nav"></span></div></div>
   <main>
     <section id="dashboard" class="card section hide"></section>
+    <section id="actions" class="card section hide"></section>
     <section id="conductAudit" class="card section hide"></section>
     <section id="auditHistory" class="card section hide"></section>
     <section id="paperwork" class="card section hide"></section>
@@ -134,7 +135,7 @@ table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidde
 <script>
 // v10.5.4: embedded Base64 tightness calculator removed; native module loaded from js/tightness.js
 let user=null;
-const SECTIONS=['dashboard','conductAudit','auditHistory','paperwork','training','competency','toolbox','tightness','knowledge','users','records','backup'];
+const SECTIONS=['dashboard','actions','conductAudit','auditHistory','paperwork','training','competency','toolbox','tightness','knowledge','users','records','backup'];
 const NON_ENGINEERS=['Peter Taylor','Eward Richards','Lucy Coppage','Russell Haines'];
 const MANUFACTURERS=['ACV','Adveco','Andrews','AO Smith','Atag','Baxi','Buderus','Carrier','De Dietrich','Elco','Ferroli','Hamworthy','Hoval','Ideal','Intergas','Keston','Lochinvar','MHS','Nu-Way','Potterton','Powrmatic','Remeha','Riello','Robur','Stokvis','Strebel','Vaillant','Viessmann','Worcester Bosch','Wolf','Other'];
 const AUDIT_QUESTIONS=[
@@ -170,7 +171,7 @@ function logout(){user=null;$('app').classList.add('hide');$('loginCard').classL
 function startApp(){$('loginCard').classList.add('hide');$('app').classList.remove('hide');$('loginStatus').textContent='Logged in: '+user.name+' ('+roleLabel(user.role)+')';buildNav();if(isManager()){show('dashboard');loadDashboard()}else{show('training');loadTraining()}}
 function buildNav(){
  const groups=[
-  ['Dashboard', [['Dashboard','dashboard',loadDashboard,'all']]],
+  ['Dashboard', [['Dashboard','dashboard',loadDashboard,'all'],['Action Centre','actions',loadActionCentre,'all']]],
   ['Compliance', [
     ['New Audit','conductAudit',loadConductAudit,'audit'],
     ['Audit History','auditHistory',loadAuditHistory,'all'],
@@ -198,8 +199,25 @@ function buildNav(){
 }
 async function loadEngineersInto(ids){const j=await api('/api/users');const eng=(j.users||[]).filter(u=>isEngineerName(u.name));ids.forEach(id=>{if($(id))$(id).innerHTML=eng.map(u=>'<option>'+u.name+'</option>').join('')});return eng}
 
+
+async function loadActionCentre(){
+ setHtml('actions','<h2>Compliance Action Centre</h2><p class="muted">One queue for open training, re-audits, safety classifications and paperwork actions.</p><div class="prof-dashboard"><div class="prof-card"><h3>Total Open Actions</h3><div class="prof-kpi" id="acTotal">—</div></div><div class="prof-card"><h3>High Priority</h3><div class="prof-kpi" id="acHigh">—</div></div><div class="prof-card"><h3>Training</h3><div class="prof-kpi" id="acTraining">—</div></div><div class="prof-card"><h3>Re-audits</h3><div class="prof-kpi" id="acReaudits">—</div></div></div><p><button onclick="loadActionCentre()">Refresh</button></p><table><thead><tr><th>Priority</th><th>Engineer</th><th>Action</th><th>Audit / Ref</th><th>Due</th><th>Status</th><th>Details</th><th>Open</th></tr></thead><tbody id="actionRows"></tbody></table><p id="actionMsg" class="muted"></p>');
+ try{
+   const j=await api('/api/actions?role='+encodeURIComponent(user.role)+'&engineer='+encodeURIComponent(user.name));
+   const s=j.summary||{};
+   $('acTotal').textContent=s.total||0; $('acHigh').textContent=s.high||0; $('acTraining').textContent=s.training||0; $('acReaudits').textContent=s.reaudits||0;
+   const rows=(j.actions||[]).map(a=>'<tr><td><span class="status-chip '+(a.priority==='high'?'red':a.priority==='medium'?'amber':'green')+'">'+safe(a.priority||'normal')+'</span></td><td>'+safe(a.engineer_name)+'</td><td>'+safe(a.title||a.type)+'</td><td>'+safe(a.audit_ref)+'</td><td>'+safe(a.due_date)+'</td><td>'+safe(a.status)+'</td><td>'+safe(a.detail)+'</td><td><button onclick="openComplianceAction(\''+safe(a.source)+'\','+Number(a.audit_id||a.id||0)+')">Open</button></td></tr>').join('');
+   $('actionRows').innerHTML=rows||'<tr><td colspan="8">No open compliance actions.</td></tr>';
+ }catch(e){$('actionMsg').textContent=e.message;}
+}
+async function openComplianceAction(source,id){
+ if(source==='audit' && id){show('auditHistory');await loadAuditHistory();viewAuditDetail(id);return;}
+ if(source==='paperwork'){show('paperwork');loadPaperworkAudits();return;}
+ show('training');loadTraining();
+}
+
 async function loadDashboard(){
- setHtml('dashboard','<h2>Professional Dashboard</h2><p class="muted">Role-based operational overview for audits, compliance actions, paperwork quality, training, tightness testing and document control.</p><div class="prof-dashboard"><div class="prof-card"><h3>Compliance Actions</h3><div class="prof-kpi" id="profActions">—</div><p class="muted">Training and re-audits requiring attention</p></div><div class="prof-card"><h3>Paperwork Audits</h3><div class="prof-kpi" id="profPaper">New</div><p class="muted">Dedicated document quality module</p></div><div class="prof-card"><h3>Knowledge Library</h3><div class="prof-kpi">R2</div><p class="muted">Large file document management</p></div></div><p><button onclick="loadDashboard()">Refresh</button></p><h3>Company Compliance</h3><div class="statgrid"><div class="stat"><b>Company Compliance Score</b><br><b id="stAvg">0%</b></div><div class="stat"><b>Total Audits</b><br><b id="stTotal">0</b></div><div class="stat"><b>Pass Rate</b><br><b id="stPassRate">0%</b></div><div class="stat"><b>Excellent</b><br><b id="stExcellent">0</b></div><div class="stat"><b>Pass</b><br><b id="stPass">0</b></div><div class="stat"><b>Improvement Required</b><br><b id="stImprovement">0</b></div><div class="stat"><b>Failed Audits</b><br><b id="stFail">0</b></div><div class="stat"><b>Open Training / Re-audits</b><br><b id="stOpen">0 / 0</b></div></div><h3>Recent Activity</h3><table><thead><tr><th>Date</th><th>Engineer</th><th>Site</th><th>Activity</th><th>Score</th><th>Result</th><th>Action</th></tr></thead><tbody id="auditRows"></tbody></table><h3>Engineer League Table</h3><table><thead><tr><th>Rank</th><th>Engineer</th><th>Audits</th><th>Avg Score</th><th>Excellent</th><th>Improvement</th><th>Fails</th></tr></thead><tbody id="leagueRows"></tbody></table><p id="dashMsg" class="muted"></p>');
+ setHtml('dashboard','<h2>Professional Dashboard</h2><p class="muted">Role-based operational overview for audits, compliance actions, paperwork quality, training, tightness testing and document control.</p><div class="prof-dashboard"><div class="prof-card"><h3>Compliance Actions</h3><div class="prof-kpi" id="profActions">—</div><p class="muted">Training and re-audits requiring attention</p><button onclick="show('actions');loadActionCentre()">Open Action Centre</button></div><div class="prof-card"><h3>Paperwork Audits</h3><div class="prof-kpi" id="profPaper">New</div><p class="muted">Dedicated document quality module</p></div><div class="prof-card"><h3>Knowledge Library</h3><div class="prof-kpi">R2</div><p class="muted">Large file document management</p></div></div><p><button onclick="loadDashboard()">Refresh</button></p><h3>Company Compliance</h3><div class="statgrid"><div class="stat"><b>Company Compliance Score</b><br><b id="stAvg">0%</b></div><div class="stat"><b>Total Audits</b><br><b id="stTotal">0</b></div><div class="stat"><b>Pass Rate</b><br><b id="stPassRate">0%</b></div><div class="stat"><b>Excellent</b><br><b id="stExcellent">0</b></div><div class="stat"><b>Pass</b><br><b id="stPass">0</b></div><div class="stat"><b>Improvement Required</b><br><b id="stImprovement">0</b></div><div class="stat"><b>Failed Audits</b><br><b id="stFail">0</b></div><div class="stat"><b>Open Training / Re-audits</b><br><b id="stOpen">0 / 0</b></div></div><h3>Recent Activity</h3><table><thead><tr><th>Date</th><th>Engineer</th><th>Site</th><th>Activity</th><th>Score</th><th>Result</th><th>Action</th></tr></thead><tbody id="auditRows"></tbody></table><h3>Engineer League Table</h3><table><thead><tr><th>Rank</th><th>Engineer</th><th>Audits</th><th>Avg Score</th><th>Excellent</th><th>Improvement</th><th>Fails</th></tr></thead><tbody id="leagueRows"></tbody></table><p id="dashMsg" class="muted"></p>');
  try{const j=await api('/api/dashboard');const s=j.summary||{};$('stTotal').textContent=s.total_audits||0;$('stAvg').textContent=(s.average_score||0)+'%';$('stPassRate').textContent=(s.pass_rate||0)+'%';$('stExcellent').textContent=s.excellent||0;$('stPass').textContent=s.pass||0;$('stImprovement').textContent=s.improvement||0;$('stFail').textContent=s.fail||0;$('stOpen').textContent=(s.open_training||0)+' / '+(s.open_reaudits||0);$('leagueRows').innerHTML=(j.league||[]).filter(r=>isEngineerName(r.engineer)).map((r,i)=>'<tr><td>'+(i+1)+'</td><td>'+safe(r.engineer)+'</td><td>'+safe(r.audits)+'</td><td>'+safe(r.avg_score)+'%</td><td>'+safe(r.excellent)+'</td><td>'+safe(r.improvement)+'</td><td>'+safe(r.fails)+'</td></tr>').join('');$('auditRows').innerHTML=(j.audits||[]).map(a=>'<tr><td>'+safe(a.ref)+'</td><td>'+safe(a.date)+'</td><td>'+safe(a.engineer)+'</td><td>'+safe(a.site)+'</td><td>'+safe(a.manufacturer)+'</td><td>'+safe(a.model)+'</td><td>'+safe(a.score)+'</td><td>'+safe(a.result)+'</td><td><button onclick="openAuditFromDashboard(\''+safe(a.id||String(a.ref).replace('HBS-',''))+'\')">Review</button></td></tr>').join('')}catch(e){$('dashMsg').textContent=e.message}}
 async function openAuditFromDashboard(id){show('auditHistory');await loadAuditHistory();viewAuditDetail(id)}
 
