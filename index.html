@@ -745,9 +745,10 @@ async function signoffTest(id){await api('/api/toolbox-test',{method:'PUT',heade
 // The old iframe/Open Calculator version has been removed to prevent regressions.
 async function loadKnowledge(){
  const manufacturerOptions=MANUFACTURERS.filter(m=>m!=='Other').map(m=>'<option>'+m+'</option>').join('');
+ const canUpload=isManager();
  setHtml('knowledge',`
   <h2>Knowledge Centre</h2>
-  <p class="muted">Search manufacturer manuals, IGEM documents, Gas Safe guidance and HBS technical information.</p>
+  <p class="muted">Search manufacturer manuals, IGEM documents, Gas Safe guidance, Gas Installer Magazine issues, HBS forms and technical information.</p>
 
   <div class="toolbar">
     <button onclick="setKC('')">All Documents</button>
@@ -755,9 +756,37 @@ async function loadKnowledge(){
     <button onclick="setKC('Manufacturer Manuals')">Manufacturer Manuals</button>
     <button onclick="setKC('Gas Safe Guidance')">Gas Safe Guidance</button>
     <button onclick="setKC('Gas Installer Magazine')">Gas Installer Magazine</button>
+    <button onclick="setKC('Forms & Templates')">Forms & Templates</button>
+    <button onclick="setKC('HBS Bulletins')">HBS Bulletins</button>
   </div>
 
-  <h3>Manufacturer Search</h3>
+  ${canUpload?`<div class="card" style="margin-top:14px;border-left:5px solid #0b3d70">
+    <h3>Upload Document to Knowledge Centre</h3>
+    <p class="muted">Manager-only upload. Large files are stored in Cloudflare R2; D1 stores searchable document metadata.</p>
+    <div class="grid">
+      <label>Title<br><input id="kuTitle" placeholder="e.g. CP15 Completion Guide"></label>
+      <label>Category<br><select id="kuCategory">
+        <option>IGEM Standards</option>
+        <option>Manufacturer Manuals</option>
+        <option>Gas Safe Guidance</option>
+        <option>Gas Installer Magazine</option>
+        <option>Forms & Templates</option>
+        <option>HBS Bulletins</option>
+        <option>Technical Images</option>
+        <option>Training Videos</option>
+        <option>Fault Library</option>
+      </select></label>
+      <label>Reference<br><input id="kuReference" placeholder="e.g. UP/1 Ed.2, May/June 2026, CP15 v1"></label>
+      <label>Issue / Month-Year<br><input id="kuIssue" placeholder="e.g. May / June 2026"></label>
+      <label>Version<br><input id="kuVersion" placeholder="e.g. v1.0"></label>
+      <label>Keywords<br><input id="kuKeywords" placeholder="Search words, appliance, manufacturer, form type"></label>
+      <label>Document File<br><input id="kuFile" type="file"></label>
+    </div>
+    <p><button onclick="uploadKnowledgeDocument()">Upload Document</button></p>
+    <p id="kuMsg" class="muted"></p>
+  </div>`:''}
+
+  <h3>Search Library</h3>
   <div class="grid">
     <label>Manufacturer<br>
       <select id="kcManufacturer">
@@ -767,7 +796,7 @@ async function loadKnowledge(){
       </select>
     </label>
     <label>Search Text<br>
-      <input id="kcQ" placeholder="Search title, reference, keywords or file name">
+      <input id="kcQ" placeholder="Search title, reference, issue, keywords or file name">
     </label>
     <label>Category<br>
       <select id="kcCat">
@@ -777,6 +806,7 @@ async function loadKnowledge(){
         <option>HBS Bulletins</option>
         <option>Gas Safe Guidance</option>
         <option>Gas Installer Magazine</option>
+        <option>Forms & Templates</option>
         <option>Technical Images</option>
         <option>Training Videos</option>
         <option>Fault Library</option>
@@ -796,8 +826,9 @@ async function loadKnowledge(){
       <tr>
         <th>Title</th>
         <th>Category</th>
-        <th>Reference</th>
+        <th>Reference / Issue</th>
         <th>Keywords</th>
+        <th>Size</th>
         <th>Uploaded</th>
         <th>Action</th>
       </tr>
@@ -811,8 +842,30 @@ function setKC(c){$('kcCat').value=c;$('kcManufacturer').value='';loadKnowledgeR
 function applyManufacturerSearch(){const m=$('kcManufacturer').value;if(m)$('kcQ').value=m;loadKnowledgeRows()}
 function clearKnowledgeSearch(){$('kcManufacturer').value='';$('kcQ').value='';$('kcCat').value='';loadKnowledgeRows()}
 function kcMan(m){$('kcQ').value=m;if($('kcManufacturer'))$('kcManufacturer').value=m;loadKnowledgeRows()}
-async function loadKnowledgeRows(){try{const j=await api('/api/library?q='+encodeURIComponent($('kcQ')?.value||'')+'&category='+encodeURIComponent($('kcCat')?.value||''));const docs=j.documents||[];$('kcMsg').textContent=docs.length+' document(s) found.';$('kcRows').innerHTML=docs.length?docs.map(d=>'<tr><td>'+safe(d.title)+'</td><td>'+safe(d.category)+'</td><td>'+safe(d.reference)+'</td><td>'+safe(d.keywords)+'</td><td>'+safe(d.created_at)+'</td><td><button onclick="openDoc('+d.id+')">Open</button></td></tr>').join(''):'<tr><td colspan="6">No documents found.</td></tr>'}catch(e){$('kcMsg').textContent=e.message;$('kcRows').innerHTML=''}}
+function kcSize(n){n=Number(n||0);if(!n)return '';if(n>1024*1024)return (n/1024/1024).toFixed(1)+' MB';if(n>1024)return (n/1024).toFixed(1)+' KB';return n+' B'}
+async function loadKnowledgeRows(){try{const j=await api('/api/library?q='+encodeURIComponent($('kcQ')?.value||'')+'&category='+encodeURIComponent($('kcCat')?.value||''));const docs=j.documents||[];$('kcMsg').textContent=docs.length+' document(s) found.';$('kcRows').innerHTML=docs.length?docs.map(d=>'<tr><td>'+safe(d.title)+'</td><td>'+safe(d.category)+'</td><td>'+safe([d.reference,d.issue].filter(Boolean).join(' / '))+'</td><td>'+safe(d.keywords)+'</td><td>'+safe(kcSize(d.file_size))+'</td><td>'+safe(d.created_at)+'</td><td><button onclick="openDoc('+d.id+')">Open</button></td></tr>').join(''):'<tr><td colspan="7">No documents found.</td></tr>'}catch(e){$('kcMsg').textContent=e.message;$('kcRows').innerHTML=''}}
 async function openDoc(id){const j=await api('/api/library?id='+id+'&open_by='+encodeURIComponent(user.name));if(j.document&&j.document.file_url)window.open(j.document.file_url,'_blank')}
+async function uploadKnowledgeDocument(){
+ try{
+  const f=$('kuFile')?.files?.[0];
+  if(!f)throw new Error('Select a file to upload.');
+  if(!$('kuTitle').value.trim())throw new Error('Enter a document title.');
+  const fd=new FormData();
+  fd.append('file',f);
+  fd.append('title',$('kuTitle').value.trim());
+  fd.append('category',$('kuCategory').value);
+  fd.append('reference',$('kuReference').value.trim());
+  fd.append('issue',$('kuIssue').value.trim());
+  fd.append('version',$('kuVersion').value.trim());
+  fd.append('keywords',$('kuKeywords').value.trim());
+  fd.append('uploaded_by',user.name||'');
+  $('kuMsg').textContent='Uploading '+f.name+'...';
+  const j=await api('/api/library-upload',{method:'POST',body:fd});
+  $('kuMsg').textContent='Uploaded document ID '+j.id+' ('+kcSize(j.size)+')';
+  $('kuTitle').value='';$('kuReference').value='';$('kuIssue').value='';$('kuVersion').value='';$('kuKeywords').value='';$('kuFile').value='';
+  loadKnowledgeRows();
+ }catch(e){$('kuMsg').textContent=e.message}
+}
 
 async function loadUsers(){show('users');setHtml('users','<h2>Administration</h2><p><button onclick="loadUsers()">Users</button> <button onclick="loadRecords()">Record Management</button> <button onclick="loadBackup()">Backup</button></p><p class="muted">User access only. No engineer profiles, qualifications, ACS expiry, LPG, OFTEC, G3, driving licence, medical restriction or regional allocation records are held in this system.</p><h3>Users & Permissions</h3><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Title</th><th>PIN</th></tr></thead><tbody id="uRows"></tbody></table>');const j=await api('/api/users');$('uRows').innerHTML=(j.users||[]).map(u=>'<tr><td>'+safe(u.name)+'</td><td>'+safe(u.email)+'</td><td>'+safe(u.role)+'</td><td>'+safe(u.title)+'</td><td>'+safe(u.pin)+'</td></tr>').join('')}
 async function loadRecords(){show('records');setHtml('records','<h2>Record Management</h2><p><button onclick="loadUsers()">Back to Administration</button><button onclick="loadBackup()">Backup</button></p><p class="notice card"><b>Manager only:</b> Delete old/test records. Take a backup first.</p><div class="grid"><label>Record Type<br><select id="delType"><option value="audit">Audit</option><option value="training">Training</option><option value="reaudit">Re-audit</option><option value="toolbox">Toolbox/Test Result</option><option value="tightness">Tightness Test</option><option value="library">Knowledge Library Document</option></select></label><label>Record ID<br><input id="delId" placeholder="Enter numeric ID"></label></div><p><button class="danger" onclick="deleteRecord()">Delete Selected Record</button></p><p id="delMsg" class="muted"></p>')}
