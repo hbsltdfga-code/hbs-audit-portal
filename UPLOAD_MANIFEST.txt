@@ -1,4 +1,4 @@
-README.md
+README.md.
 css/portal.css
 functions/api/admin-delete.js
 functions/api/audit.js
