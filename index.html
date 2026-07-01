@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HBS Compliance Manager v14.2</title>
+<title>HBS Compliance Manager v14.3.3</title>
 <style>
 :root{--blue:#123f6d;--blue2:#2369a7;--bg:#f4f7fb;--line:#d3dfed;--muted:#52677f;--danger:#8b1e1e;--ok:#ddf5e4;--warn:#fff1c9}
 *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;margin:0;background:var(--bg);color:#071b34}
@@ -87,6 +87,22 @@ table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidde
 
 /* v14.2 Performance Engine */
 .performance-grade{display:inline-block;border-radius:999px;padding:5px 10px;font-weight:800;font-size:12px;background:#e8f7ee;color:#17643a}.performance-grade.silver{background:#eef5ff;color:#123f6d}.performance-grade.bronze{background:#fff5d6;color:#805300}.performance-grade.improve{background:#fff0f0;color:#8b1e1e}.restore-panel{border:1px dashed #b8c8d8;border-radius:14px;background:#fbfdff;padding:14px;margin-top:14px}.print-only{display:none}@media print{header,#nav,.toolbar,button,.no-print{display:none!important}.card,.section{box-shadow:none!important;border:0!important;margin:0!important}.print-only{display:block!important}body{background:#fff!important}}
+
+
+/* v14.3.3 Compact Professional UI */
+:root{--compact-pad:10px;--compact-gap:8px;--font-base:14px}
+body{font-size:var(--font-base);line-height:1.32}
+header{padding:16px 22px}header h1{font-size:23px;margin-bottom:4px}.version{font-size:12px;padding:3px 8px;margin-top:4px}
+main{max-width:1360px;padding:0 8px 16px}.card{margin:10px;padding:12px;border-radius:10px}.section.card{margin-top:12px;padding:14px}
+h2{font-size:21px;margin:0 0 8px}h3{font-size:16px;margin:12px 0 8px}h4{font-size:14px;margin:10px 0 6px}.muted{font-size:12px}
+input,select,textarea,button{font-size:13px;padding:7px 9px;border-radius:7px}textarea{min-height:58px}button{box-shadow:none;margin:2px}.toolbar{gap:4px}
+#nav button{padding:7px 10px;font-size:13px}.grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+th,td{padding:6px 7px;font-size:12.5px}.statgrid{grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}.stat{padding:10px}.stat b:last-child{font-size:17px}
+.prof-dashboard{gap:10px}.prof-card{padding:12px;border-radius:12px}.prof-kpi{font-size:25px}.action-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.action-card{padding:12px;border-radius:11px}.action-card h3{font-size:15px}
+.audit-hero{padding:12px;border-radius:12px}.audit-step{margin:10px 0;border-radius:12px}.audit-step-head{padding:10px 12px}.audit-step-body{padding:12px}.step-no{width:28px;height:28px}.audit-q-head{padding:10px 12px;grid-template-columns:minmax(220px,1fr) 180px}.audit-q-body{padding:10px 12px;gap:8px}.audit-q-body textarea{min-height:52px}.summary-bar{padding:9px;border-radius:12px}.mini-stat{padding:8px}.mini-stat b:last-child{font-size:16px}
+.test-builder{border:1px solid #d7e6f5;background:#fbfdff;border-radius:10px;padding:10px;margin:10px 0}.test-builder textarea{font-family:Consolas,monospace;font-size:12px;min-height:130px}.pill-mini{display:inline-block;background:#eef5ff;border:1px solid #cfe0f2;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:700;color:#123f6d}
+@media(max-width:760px){header{padding:14px 16px}.section.card{padding:11px;margin:8px 6px}#nav button{padding:8px}.audit-q-head,.audit-q-body{grid-template-columns:1fr}table{font-size:12px}}
+
 </style>
 </head>
 <body>
@@ -809,7 +825,41 @@ async function viewCompetencyProfile(engineer){
   $('competencyProfile').scrollIntoView({behavior:'smooth',block:'start'});
  }catch(e){$('competencyProfile').innerHTML='<h3>Engineer Profile</h3><p class="muted">'+compEsc(e.message)+'</p>'}
 }
-async function loadToolbox(){setHtml('toolbox','<h2>Toolbox Tests</h2><p><button onclick="loadToolbox()">Refresh</button></p><table><thead><tr><th>ID</th><th>Engineer</th><th>Test</th><th>Score</th><th>Result</th><th>Status</th><th>Action</th></tr></thead><tbody id="tbRows"></tbody></table>');const j=await api('/api/toolbox-test?role='+user.role+'&engineer='+encodeURIComponent(user.name));$('tbRows').innerHTML=(j.results||[]).map(r=>'<tr><td>'+safe(r.id)+'</td><td>'+safe(r.engineer_name)+'</td><td>'+safe(r.test_type)+'</td><td>'+safe(r.score)+'</td><td>'+safe(r.result)+'</td><td>'+safe(r.status)+'</td><td>'+(isManager()?'<button onclick="signoffTest('+r.id+')">Complete</button>':'')+'</td></tr>').join('')}
+
+async function loadToolbox(){
+ setHtml('toolbox',`<h2>Toolbox Tests</h2>
+ <p class="muted">Toolbox Tests are used to prove engineer understanding after toolbox talks, failed audits or targeted refresher training. Managers can create tests below or import questions in CSV format.</p>
+ <div class="prof-dashboard">
+  <div class="prof-card"><h3>Purpose</h3><p class="muted">Create structured competency checks linked to training, audit findings and the Engineer Performance Engine.</p></div>
+  <div class="prof-card"><h3>Engineer Use</h3><p class="muted">Engineers complete available tests. Scores are recorded for manager sign-off.</p></div>
+  <div class="prof-card"><h3>Manager Use</h3><p class="muted">Managers create tests, import questions and sign off completed results.</p></div>
+ </div>
+ ${isManager()?toolboxManagerPanel():''}
+ <h3>Available Tests</h3><p><button onclick="loadToolbox()">Refresh</button></p><div id="tbAvailable"><p class="muted">Loading available tests...</p></div>
+ <h3>Completed / Submitted Test Results</h3><table><thead><tr><th>ID</th><th>Engineer</th><th>Test</th><th>Score</th><th>Result</th><th>Status</th><th>Action</th></tr></thead><tbody id="tbRows"></tbody></table>
+ <div id="tbTakePanel"></div>`);
+ try{
+  const [defs,res]=await Promise.all([
+   api('/api/toolbox-test?mode=definitions&role='+encodeURIComponent(user.role)).catch(e=>({tests:[]})),
+   api('/api/toolbox-test?role='+user.role+'&engineer='+encodeURIComponent(user.name)).catch(e=>({results:[]}))
+  ]);
+  renderToolboxDefinitions(defs.tests||[]);
+  $('tbRows').innerHTML=(res.results||[]).map(r=>'<tr><td>'+safe(r.id)+'</td><td>'+safe(r.engineer_name)+'</td><td>'+safe(r.test_type)+'</td><td>'+safe(r.score)+'%</td><td>'+safe(r.result)+'</td><td>'+safe(r.status)+'</td><td>'+(isManager()?'<button onclick="signoffTest('+r.id+')">Complete</button>':'')+'</td></tr>').join('')||'<tr><td colspan="7">No toolbox test results yet.</td></tr>';
+ }catch(e){$('tbAvailable').innerHTML='<p class="muted">'+safe(e.message)+'</p>'}
+}
+function toolboxManagerPanel(){return `<div class="test-builder"><h3>Manage Toolbox Test Library</h3>
+ <p class="muted"><b>CSV format:</b> Test,Pass Mark,Question,A,B,C,D,Correct,Explanation. Correct can be A, B, C, D or the exact answer text. One row per question.</p>
+ <div class="grid"><label>Test Title<br><input id="tbTitle" placeholder="CP15 Completion Assessment"></label><label>Pass Mark %<br><input id="tbPass" type="number" min="0" max="100" value="90"></label></div>
+ <label>Questions CSV<br><textarea id="tbCsv" placeholder="CP15 Completion Assessment,90,What must be recorded on a CP15?,Local Gas Tightness Test,Client name only,Weather,Engineer mileage,A,This confirms local gas installation tightness was checked."></textarea></label>
+ <p><button onclick="saveToolboxCsv()">Import / Save Test</button><button class="secondary" onclick="insertToolboxTemplate()">Insert Template</button></p><p id="tbAdminMsg" class="muted"></p></div>`}
+function insertToolboxTemplate(){const t='CP15 Completion Assessment,90,What wording should engineers use when only the local appliance section has been tested?,Local Gas Installation Tightness Test Carried Out,Full installation tested by others,N/A,No gas test required,A,This avoids implying a whole-site test has been completed.
+CP15 Completion Assessment,90,What should be done if combustion readings cannot be taken?,Record the reason and supporting safety checks,Leave blank,Enter zero,Mark pass automatically,A,Blank or false entries weaken compliance evidence.';$('tbCsv').value=t;$('tbTitle').value='CP15 Completion Assessment';$('tbPass').value='90'}
+function parseToolboxCsv(text){return String(text||'').split(/?
+/).map(l=>l.trim()).filter(Boolean).map(line=>{const parts=[];let cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){q=!q;continue}if(c===','&&!q){parts.push(cur.trim());cur='';continue}cur+=c}parts.push(cur.trim());return parts})}
+async function saveToolboxCsv(){try{const rows=parseToolboxCsv($('tbCsv').value);if(!rows.length)throw new Error('Paste at least one CSV question row.');const title=$('tbTitle').value||rows[0][0]||'Toolbox Test';const pass=Number($('tbPass').value||rows[0][1]||90);const questions=rows.map(r=>({question:r[2]||'',options:[r[3]||'',r[4]||'',r[5]||'',r[6]||''].filter(Boolean),correct:r[7]||'',explanation:r[8]||''})).filter(q=>q.question&&q.options.length>=2&&q.correct);if(!questions.length)throw new Error('No valid questions found. Check CSV column order.');await api('/api/toolbox-test?mode=definitions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({role:user.role,manager_name:user.name,title,pass_mark:pass,questions})});$('tbAdminMsg').textContent='Saved '+questions.length+' questions to '+title+'.';loadToolbox()}catch(e){$('tbAdminMsg').textContent=e.message}}
+function renderToolboxDefinitions(tests){if(!tests.length){$('tbAvailable').innerHTML='<div class="test-library-note"><b>No custom tests have been created yet.</b><br>Managers can use the import box above. Existing audit-triggered Level 1 and Level 2 tests remain available through assigned Training Centre actions.</div>';return} $('tbAvailable').innerHTML='<div class="action-grid">'+tests.map(t=>'<div class="action-card"><h3>'+safe(t.title)+'</h3><div class="meta"><span class="pill-mini">Pass '+safe(t.pass_mark)+'%</span> <span class="pill-mini">'+safe(t.question_count)+' questions</span></div><p class="muted">'+safe(t.description||'Custom HBS toolbox assessment')+'</p><button onclick="startCustomToolboxTest('+Number(t.id)+')">Take Test</button></div>').join('')+'</div>'}
+async function startCustomToolboxTest(id){try{const j=await api('/api/toolbox-test?mode=definitions&id='+id+'&role='+encodeURIComponent(user.role));const t=(j.tests||[])[0];if(!t)throw new Error('Test not found.');window._activeCustomToolbox=t;const qs=t.questions||[];$('tbTakePanel').innerHTML='<div class="card"><h3>'+safe(t.title)+'</h3><p class="muted">Pass mark: '+safe(t.pass_mark)+'% | Questions: '+qs.length+'</p><table><thead><tr><th>No</th><th>Question</th><th>Answer</th></tr></thead><tbody>'+qs.map((q,i)=>'<tr><td>'+(i+1)+'</td><td>'+safe(q.question)+'</td><td><select class="customTbAns" data-i="'+i+'"><option value="">Select</option>'+q.options.map(o=>'<option value="'+safe(o).replace(/"/g,'&quot;')+'">'+safe(o)+'</option>').join('')+'</select></td></tr>').join('')+'</tbody></table><p><button onclick="submitCustomToolboxTest()">Submit Test</button><button class="secondary" onclick="$(\'tbTakePanel\').innerHTML=\'\'">Close</button></p><p id="customTbMsg" class="muted"></p></div>';$('tbTakePanel').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){$('tbTakePanel').innerHTML='<p class="muted">'+safe(e.message)+'</p>'}}
+async function submitCustomToolboxTest(){const t=window._activeCustomToolbox;if(!t)return;const selects=[...document.querySelectorAll('#tbTakePanel .customTbAns')];const answers=selects.map(x=>x.value);if(answers.some(x=>!x)){$('customTbMsg').textContent='Please answer every question.';return}let correct=0;const detailed=(t.questions||[]).map((q,i)=>{const correctValue=String(q.correct||'');const letterMap={A:q.options[0],B:q.options[1],C:q.options[2],D:q.options[3]};const expected=letterMap[correctValue.toUpperCase()]||correctValue;const ok=String(answers[i]).trim().toLowerCase()===String(expected).trim().toLowerCase();if(ok)correct++;return{question:q.question,selected:answers[i],correct:expected,pass:ok,explanation:q.explanation||''}});const score=Math.round((correct/(t.questions||[]).length)*100);const result=score>=Number(t.pass_mark||90)?'Pass':'Fail';await api('/api/toolbox-test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({engineer_name:user.name,test_type:t.title,score,result,status:result==='Pass'?'Pending Manager Review':'Repeat Required',answers_json:JSON.stringify({test_id:t.id,answers:detailed,correct,total:(t.questions||[]).length,pass_mark:t.pass_mark,submitted_at:new Date().toISOString()}),manager_name:isManager()?user.name:''})});$('customTbMsg').textContent='Submitted. Score '+score+'% - '+result+'.';setTimeout(loadToolbox,900)}
 async function signoffTest(id){await api('/api/toolbox-test',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'Completed',manager_name:user.name})});loadToolbox()}
 
 // v10.5.4: Tightness Test Centre is provided by js/tightness.js.
