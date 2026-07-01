@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HBS Compliance Manager v14.3.3</title>
+<title>HBS Compliance Manager v14.3.4</title>
 <style>
 :root{--blue:#123f6d;--blue2:#2369a7;--bg:#f4f7fb;--line:#d3dfed;--muted:#52677f;--danger:#8b1e1e;--ok:#ddf5e4;--warn:#fff1c9}
 *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;margin:0;background:var(--bg);color:#071b34}
@@ -103,13 +103,16 @@ th,td{padding:6px 7px;font-size:12.5px}.statgrid{grid-template-columns:repeat(au
 .test-builder{border:1px solid #d7e6f5;background:#fbfdff;border-radius:10px;padding:10px;margin:10px 0}.test-builder textarea{font-family:Consolas,monospace;font-size:12px;min-height:130px}.pill-mini{display:inline-block;background:#eef5ff;border:1px solid #cfe0f2;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:700;color:#123f6d}
 @media(max-width:760px){header{padding:14px 16px}.section.card{padding:11px;margin:8px 6px}#nav button{padding:8px}.audit-q-head,.audit-q-body{grid-template-columns:1fr}table{font-size:12px}}
 
+
+/* v14.3.4 Deployment Health Centre */
+.health-ok{color:#17643a;font-weight:800}.health-warn{color:#805300;font-weight:800}.health-fail{color:#8b1e1e;font-weight:800}.health-code{font-family:Consolas,monospace;background:#f5f7fa;border:1px solid #dce8f4;border-radius:6px;padding:2px 5px}.deploy-box{border:1px solid #d7e6f5;background:#fbfdff;border-radius:10px;padding:10px;margin:8px 0}
 </style>
 </head>
 <body>
 <header>
   <h1>HBS Compliance Manager</h1>
   <div>Commercial Gas Compliance Management System</div>
-  <div class="version">Professional Edition · Version 14.2</div>
+  <div class="version">Professional Edition · Version 14.3.4</div>
 </header>
 
 <section id="loginCard" class="card">
@@ -127,7 +130,7 @@ th,td{padding:6px 7px;font-size:12.5px}.statgrid{grid-template-columns:repeat(au
     <p id="loginMsg" class="login-help">Enter your HBS email address and PIN to access the Compliance Manager.</p>
     <div class="login-footer">
       <span>Forgotten PIN? Contact the Compliance Manager.</span>
-      <span>Version 14.2</span>
+      <span>Version 14.3.4</span>
     </div>
   </div>
 </section>
@@ -147,13 +150,14 @@ th,td{padding:6px 7px;font-size:12.5px}.statgrid{grid-template-columns:repeat(au
     <section id="users" class="card section hide"></section>
     <section id="records" class="card section hide"></section>
     <section id="backup" class="card section hide"></section>
+    <section id="health" class="card section hide"></section>
   </main>
 </section>
 
 <script>
 // v10.5.4: embedded Base64 tightness calculator removed; native module loaded from js/tightness.js
 let user=null;
-const SECTIONS=['dashboard','conductAudit','auditHistory','paperwork','training','competency','toolbox','tightness','knowledge','users','records','backup'];
+const SECTIONS=['dashboard','conductAudit','auditHistory','paperwork','training','competency','toolbox','tightness','knowledge','users','records','backup','health'];
 const NON_ENGINEERS=['Peter Taylor','Eward Richards','Lucy Coppage','Russell Haines'];
 const MANUFACTURERS=['ACV','Adveco','Andrews','AO Smith','Atag','Baxi','Buderus','Carrier','De Dietrich','Elco','Ferroli','Hamworthy','Hoval','Ideal','Intergas','Keston','Lochinvar','MHS','Nu-Way','Potterton','Powrmatic','Remeha','Riello','Robur','Stokvis','Strebel','Vaillant','Viessmann','Worcester Bosch','Wolf','Other'];
 const AUDIT_QUESTIONS=[
@@ -202,7 +206,7 @@ function buildNav(){
   ]],
   ['Engineering', [['Tightness Test Centre','tightness',loadTightness,'all']]],
   ['Knowledge', [['Knowledge Centre','knowledge',loadKnowledge,'all']]],
-  ['Administration', [['Administration','users',loadUsers,'manager']]],
+  ['Administration', [['Administration','users',loadUsers,'manager'], ['System Health','health',loadHealth,'manager']]],
   ['Account', [['Logout','logout',logout,'all']]]
  ];
  $('nav').innerHTML='';
@@ -1066,6 +1070,42 @@ async function downloadBackup(){try{const j=await api('/api/backup?role='+encode
 async function readRestoreFile(){const f=$('restoreFile')?.files?.[0];if(!f)throw new Error('Select a JSON backup file first.');return JSON.parse(await f.text())}
 async function previewRestore(){try{const payload=await readRestoreFile();const j=await api('/api/restore?dryRun=1',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({role:user.role,manager:user.name,overwrite:$('restoreOverwrite')?.checked,backup:payload})});$('backupOut').textContent=JSON.stringify(j,null,2)}catch(e){$('backupOut').textContent=e.message}}
 async function confirmRestore(){try{if(!confirm('Restore selected JSON backup? Take a fresh backup first.'))return;const payload=await readRestoreFile();const j=await api('/api/restore',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({role:user.role,manager:user.name,overwrite:$('restoreOverwrite')?.checked,backup:payload})});$('backupOut').textContent=JSON.stringify(j,null,2)}catch(e){$('backupOut').textContent=e.message}}
+
+
+async function loadHealth(){
+ if(!isManager()){alert('Manager access only.');return}
+ show('health');
+ setHtml('health',`<h2>System Health</h2><p class="muted">Deployment checks for Cloudflare Pages functions, database availability and common API routes. Use this after every upload before asking engineers to use the live site.</p><div class="deploy-box"><b>Recommended after upload:</b> open this page, click Run Health Check, then confirm Login, Dashboard, Users, Backup and Restore all report OK.</div><p><button onclick="runHealthCheck()">Run Health Check</button> <button onclick="copyHealthReport()">Copy Report</button></p><div class="statgrid"><div class="stat"><b>Overall</b><br><b id="healthOverall">Not checked</b></div><div class="stat"><b>Version</b><br><b id="healthVersion">14.3.4</b></div><div class="stat"><b>APIs Checked</b><br><b id="healthCount">0</b></div><div class="stat"><b>Failures</b><br><b id="healthFails">0</b></div></div><h3>API Status</h3><table><thead><tr><th>Function</th><th>Route</th><th>Status</th><th>Details</th></tr></thead><tbody id="healthRows"><tr><td colspan="4">Not checked yet.</td></tr></tbody></table><h3>Deployment Notes</h3><pre id="healthReport"></pre>`);
+}
+async function probeRoute(name,route){
+ const started=Date.now();
+ try{
+  const r=await fetch(route,{cache:'no-store'});
+  const text=await r.text();
+  let data=null; try{data=JSON.parse(text)}catch(e){}
+  const ok=r.ok && !(data&&data.ok===false&&r.status>=400);
+  return {name,route,ok,status:r.status,ms:Date.now()-started,detail:(data&&(data.message||data.error||JSON.stringify(data).slice(0,120)))||text.slice(0,120)||'OK'};
+ }catch(e){return {name,route,ok:false,status:'ERR',ms:Date.now()-started,detail:e.message};}
+}
+async function runHealthCheck(){
+ const routes=[
+  ['Health','/api/health'],['Login','/api/login'],['Users','/api/users'],['Dashboard','/api/dashboard'],['Audits','/api/audits'],['Audit','/api/audit'],['Actions','/api/actions'],['Performance','/api/performance'],['Paperwork Audits','/api/paperwork-audits'],['Training','/api/training'],['Toolbox Test','/api/toolbox-test'],['Competency','/api/competency'],['Re-audits','/api/reaudits'],['Tightness','/api/tightness'],['Knowledge Library','/api/library'],['Backup','/api/backup?role=manager&manager='+encodeURIComponent(user.name||'Manager')]
+ ];
+ $('healthRows').innerHTML='<tr><td colspan="4">Checking...</td></tr>';
+ const results=[];
+ for(const [name,route] of routes){results.push(await probeRoute(name,route));}
+ const fails=results.filter(x=>!x.ok).length;
+ $('healthCount').textContent=results.length; $('healthFails').textContent=fails;
+ $('healthOverall').innerHTML=fails?'<span class="health-fail">Action Required</span>':'<span class="health-ok">OK</span>';
+ $('healthRows').innerHTML=results.map(x=>`<tr><td>${htmlSafe(x.name)}</td><td><span class="health-code">${htmlSafe(x.route)}</span></td><td>${x.ok?'<span class="health-ok">OK</span>':'<span class="health-fail">FAIL</span>'} <span class="muted">${x.status} / ${x.ms}ms</span></td><td>${htmlSafe(x.detail)}</td></tr>`).join('');
+ const report=['HBS Compliance Manager System Health','Version: 14.3.4','Checked: '+new Date().toLocaleString(),'Overall: '+(fails?'ACTION REQUIRED':'OK'),'Failures: '+fails,'',...results.map(x=>`${x.ok?'OK':'FAIL'} | ${x.name} | ${x.route} | ${x.status} | ${x.detail}`)];
+ $('healthReport').textContent=report.join('\n');
+}
+function copyHealthReport(){
+ const t=$('healthReport')?.textContent||''; if(!t){alert('Run the health check first.');return}
+ navigator.clipboard?.writeText(t); alert('Health report copied.');
+}
+
 $('loginPin').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 </script>
 <script src="js/tightness.js?v=10.5.4"></script>
