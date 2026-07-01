@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HBS Compliance Manager v11.3.2</title>
+<title>HBS Compliance Manager v14.0</title>
 <style>
 :root{--blue:#123f6d;--blue2:#2369a7;--bg:#f4f7fb;--line:#d3dfed;--muted:#52677f;--danger:#8b1e1e;--ok:#ddf5e4;--warn:#fff1c9}
 *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;margin:0;background:var(--bg);color:#071b34}
@@ -76,13 +76,21 @@ table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidde
 
 /* v12.0 Compliance Workflow UX */
 .action-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:14px 0}.action-card{background:#fff;border:1px solid #cfe0f2;border-radius:14px;padding:16px;box-shadow:0 8px 20px #0b2a4a10}.action-card h3{margin:0 0 8px;color:#0b3768;font-size:17px}.action-card .meta{color:#385470;font-size:13px;line-height:1.45}.action-card.level2{border-left:6px solid #9b1c1c}.action-card.level1{border-left:6px solid #d99200}.action-card.complete{border-left:6px solid #207245}.workflow-banner{background:linear-gradient(135deg,#f7fbff,#fff);border:1px solid #cfe0f2;border-radius:14px;padding:16px;margin:12px 0}.workflow-banner h3{margin:0 0 6px}.workflow-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.test-library-note{background:#f8fbff;border:1px solid #d7e6f5;border-radius:12px;padding:14px;margin:12px 0}.status-chip{display:inline-block;border-radius:999px;padding:4px 10px;font-weight:700;font-size:12px;background:#eef5ff;color:#0b3768}.status-chip.red{background:#fff0f0;color:#8b1e1e}.status-chip.amber{background:#fff5d6;color:#805300}.status-chip.green{background:#e8f7ee;color:#17643a}
+
+
+/* v14 Professional Edition shell */
+.nav-group{display:inline-flex;align-items:center;gap:4px;margin:4px 8px 4px 0;padding:5px;border:1px solid #dce8f4;border-radius:16px;background:#f8fbff}
+.nav-title{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#52677f;font-weight:800;padding:0 6px}
+.prof-dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:14px 0}.prof-card{background:#fff;border:1px solid #dce8f4;border-radius:16px;padding:16px;box-shadow:0 6px 20px rgba(9,35,63,.06)}.prof-card h3{margin:0 0 6px}.prof-kpi{font-size:28px;font-weight:900;color:#09233f}.paper-score{font-size:24px;font-weight:900;color:#123f6d}.paper-section{border:1px solid #dce8f4;border-radius:14px;padding:12px;margin:12px 0;background:#fbfdff}.paper-section h3{margin-top:0}
+@media(max-width:760px){.nav-group{display:flex;flex-direction:column;align-items:stretch;width:100%;}.nav-title{padding:4px 8px}.nav-group button{width:100%;}}
+
 </style>
 </head>
 <body>
 <header>
   <h1>HBS Compliance Manager</h1>
   <div>Commercial Gas Compliance Management System</div>
-  <div class="version">Development Release 7 · Version 12.2</div>
+  <div class="version">Professional Edition · Version 14.0</div>
 </header>
 
 <section id="loginCard" class="card">
@@ -100,7 +108,7 @@ table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidde
     <p id="loginMsg" class="login-help">Enter your HBS email address and PIN to access the Compliance Manager.</p>
     <div class="login-footer">
       <span>Forgotten PIN? Contact the Compliance Manager.</span>
-      <span>Version 11.3.2</span>
+      <span>Version 14.0</span>
     </div>
   </div>
 </section>
@@ -111,6 +119,7 @@ table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidde
     <section id="dashboard" class="card section hide"></section>
     <section id="conductAudit" class="card section hide"></section>
     <section id="auditHistory" class="card section hide"></section>
+    <section id="paperwork" class="card section hide"></section>
     <section id="training" class="card section hide"></section>
     <section id="competency" class="card section hide"></section>
     <section id="toolbox" class="card section hide"></section>
@@ -125,7 +134,7 @@ table{background:#fff;border:1px solid #e4edf6;border-radius:12px;overflow:hidde
 <script>
 // v10.5.4: embedded Base64 tightness calculator removed; native module loaded from js/tightness.js
 let user=null;
-const SECTIONS=['dashboard','conductAudit','auditHistory','training','competency','toolbox','tightness','knowledge','users','records','backup'];
+const SECTIONS=['dashboard','conductAudit','auditHistory','paperwork','training','competency','toolbox','tightness','knowledge','users','records','backup'];
 const NON_ENGINEERS=['Peter Taylor','Eward Richards','Lucy Coppage','Russell Haines'];
 const MANUFACTURERS=['ACV','Adveco','Andrews','AO Smith','Atag','Baxi','Buderus','Carrier','De Dietrich','Elco','Ferroli','Hamworthy','Hoval','Ideal','Intergas','Keston','Lochinvar','MHS','Nu-Way','Potterton','Powrmatic','Remeha','Riello','Robur','Stokvis','Strebel','Vaillant','Viessmann','Worcester Bosch','Wolf','Other'];
 const AUDIT_QUESTIONS=[
@@ -160,24 +169,37 @@ async function login(){try{const l=$('loginEmail').value.trim(),p=$('loginPin').
 function logout(){user=null;$('app').classList.add('hide');$('loginCard').classList.remove('hide');$('loginPin').value=''}
 function startApp(){$('loginCard').classList.add('hide');$('app').classList.remove('hide');$('loginStatus').textContent='Logged in: '+user.name+' ('+roleLabel(user.role)+')';buildNav();if(isManager()){show('dashboard');loadDashboard()}else{show('training');loadTraining()}}
 function buildNav(){
- const base=[
- ['Dashboard','dashboard',loadDashboard,'manager'],
- ['New Audit','conductAudit',loadConductAudit,'audit'],
- ['Audit History','auditHistory',loadAuditHistory,'all'],
- ['Engineer Performance','competency',loadCompetency,'manager'],
- ['Training Centre','training',loadTraining,'all'],
- ['Tightness Test Centre','tightness',loadTightness,'all'],
- ['Knowledge Centre','knowledge',loadKnowledge,'all'],
- ['Administration','users',loadUsers,'manager'],
- ['Logout','logout',logout,'all']
+ const groups=[
+  ['Dashboard', [['Dashboard','dashboard',loadDashboard,'all']]],
+  ['Compliance', [
+    ['New Audit','conductAudit',loadConductAudit,'audit'],
+    ['Audit History','auditHistory',loadAuditHistory,'all'],
+    ['Paperwork Audits','paperwork',loadPaperworkAudits,'manager'],
+    ['Engineer Performance','competency',loadCompetency,'manager']
+  ]],
+  ['Competency', [
+    ['Training Centre','training',loadTraining,'all'],
+    ['Toolbox Tests','toolbox',loadToolbox,'manager']
+  ]],
+  ['Engineering', [['Tightness Test Centre','tightness',loadTightness,'all']]],
+  ['Knowledge', [['Knowledge Centre','knowledge',loadKnowledge,'all']]],
+  ['Administration', [['Administration','users',loadUsers,'manager']]],
+  ['Account', [['Logout','logout',logout,'all']]]
  ];
  $('nav').innerHTML='';
- base.forEach(([label,id,fn,perm])=>{if(perm==='manager'&&!isManager())return;if(perm==='audit'&&!(isManager()||isSenior()))return;const b=document.createElement('button');b.textContent=label;b.onclick=()=>{if(id==='logout')fn();else{show(id);fn()}};$('nav').appendChild(b)})
+ groups.forEach(([group,items])=>{
+   const visible=items.filter(([label,id,fn,perm])=>!(perm==='manager'&&!isManager()) && !(perm==='audit'&&!(isManager()||isSenior())));
+   if(!visible.length) return;
+   const wrap=document.createElement('span'); wrap.className='nav-group';
+   const title=document.createElement('span'); title.className='nav-title'; title.textContent=group; wrap.appendChild(title);
+   visible.forEach(([label,id,fn,perm])=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>{if(id==='logout')fn();else{show(id);fn()}};wrap.appendChild(b)});
+   $('nav').appendChild(wrap);
+ });
 }
 async function loadEngineersInto(ids){const j=await api('/api/users');const eng=(j.users||[]).filter(u=>isEngineerName(u.name));ids.forEach(id=>{if($(id))$(id).innerHTML=eng.map(u=>'<option>'+u.name+'</option>').join('')});return eng}
 
 async function loadDashboard(){
- setHtml('dashboard','<h2>Dashboard</h2><p class="muted">Company compliance overview and current actions.</p><p><button onclick="loadDashboard()">Refresh</button></p><h3>Company Compliance</h3><div class="statgrid"><div class="stat"><b>Company Compliance Score</b><br><b id="stAvg">0%</b></div><div class="stat"><b>Total Audits</b><br><b id="stTotal">0</b></div><div class="stat"><b>Pass Rate</b><br><b id="stPassRate">0%</b></div><div class="stat"><b>Excellent</b><br><b id="stExcellent">0</b></div><div class="stat"><b>Pass</b><br><b id="stPass">0</b></div><div class="stat"><b>Improvement Required</b><br><b id="stImprovement">0</b></div><div class="stat"><b>Failed Audits</b><br><b id="stFail">0</b></div><div class="stat"><b>Open Training / Re-audits</b><br><b id="stOpen">0 / 0</b></div></div><h3>Recent Activity</h3><table><thead><tr><th>Date</th><th>Engineer</th><th>Site</th><th>Activity</th><th>Score</th><th>Result</th><th>Action</th></tr></thead><tbody id="auditRows"></tbody></table><h3>Engineer League Table</h3><table><thead><tr><th>Rank</th><th>Engineer</th><th>Audits</th><th>Avg Score</th><th>Excellent</th><th>Improvement</th><th>Fails</th></tr></thead><tbody id="leagueRows"></tbody></table><p id="dashMsg" class="muted"></p>');
+ setHtml('dashboard','<h2>Professional Dashboard</h2><p class="muted">Role-based operational overview for audits, compliance actions, paperwork quality, training, tightness testing and document control.</p><div class="prof-dashboard"><div class="prof-card"><h3>Compliance Actions</h3><div class="prof-kpi" id="profActions">—</div><p class="muted">Training and re-audits requiring attention</p></div><div class="prof-card"><h3>Paperwork Audits</h3><div class="prof-kpi" id="profPaper">New</div><p class="muted">Dedicated document quality module</p></div><div class="prof-card"><h3>Knowledge Library</h3><div class="prof-kpi">R2</div><p class="muted">Large file document management</p></div></div><p><button onclick="loadDashboard()">Refresh</button></p><h3>Company Compliance</h3><div class="statgrid"><div class="stat"><b>Company Compliance Score</b><br><b id="stAvg">0%</b></div><div class="stat"><b>Total Audits</b><br><b id="stTotal">0</b></div><div class="stat"><b>Pass Rate</b><br><b id="stPassRate">0%</b></div><div class="stat"><b>Excellent</b><br><b id="stExcellent">0</b></div><div class="stat"><b>Pass</b><br><b id="stPass">0</b></div><div class="stat"><b>Improvement Required</b><br><b id="stImprovement">0</b></div><div class="stat"><b>Failed Audits</b><br><b id="stFail">0</b></div><div class="stat"><b>Open Training / Re-audits</b><br><b id="stOpen">0 / 0</b></div></div><h3>Recent Activity</h3><table><thead><tr><th>Date</th><th>Engineer</th><th>Site</th><th>Activity</th><th>Score</th><th>Result</th><th>Action</th></tr></thead><tbody id="auditRows"></tbody></table><h3>Engineer League Table</h3><table><thead><tr><th>Rank</th><th>Engineer</th><th>Audits</th><th>Avg Score</th><th>Excellent</th><th>Improvement</th><th>Fails</th></tr></thead><tbody id="leagueRows"></tbody></table><p id="dashMsg" class="muted"></p>');
  try{const j=await api('/api/dashboard');const s=j.summary||{};$('stTotal').textContent=s.total_audits||0;$('stAvg').textContent=(s.average_score||0)+'%';$('stPassRate').textContent=(s.pass_rate||0)+'%';$('stExcellent').textContent=s.excellent||0;$('stPass').textContent=s.pass||0;$('stImprovement').textContent=s.improvement||0;$('stFail').textContent=s.fail||0;$('stOpen').textContent=(s.open_training||0)+' / '+(s.open_reaudits||0);$('leagueRows').innerHTML=(j.league||[]).filter(r=>isEngineerName(r.engineer)).map((r,i)=>'<tr><td>'+(i+1)+'</td><td>'+safe(r.engineer)+'</td><td>'+safe(r.audits)+'</td><td>'+safe(r.avg_score)+'%</td><td>'+safe(r.excellent)+'</td><td>'+safe(r.improvement)+'</td><td>'+safe(r.fails)+'</td></tr>').join('');$('auditRows').innerHTML=(j.audits||[]).map(a=>'<tr><td>'+safe(a.ref)+'</td><td>'+safe(a.date)+'</td><td>'+safe(a.engineer)+'</td><td>'+safe(a.site)+'</td><td>'+safe(a.manufacturer)+'</td><td>'+safe(a.model)+'</td><td>'+safe(a.score)+'</td><td>'+safe(a.result)+'</td><td><button onclick="openAuditFromDashboard(\''+safe(a.id||String(a.ref).replace('HBS-',''))+'\')">Review</button></td></tr>').join('')}catch(e){$('dashMsg').textContent=e.message}}
 async function openAuditFromDashboard(id){show('auditHistory');await loadAuditHistory();viewAuditDetail(id)}
 
@@ -743,6 +765,39 @@ async function signoffTest(id){await api('/api/toolbox-test',{method:'PUT',heade
 
 // v10.5.4: Tightness Test Centre is provided by js/tightness.js.
 // The old iframe/Open Calculator version has been removed to prevent regressions.
+
+const PAPERWORK_QUESTIONS=[
+ ['Joblogic Record','Job details and site information completed correctly'],
+ ['Joblogic Record','Correct appliance / plant identified'],
+ ['Joblogic Record','Manufacturer, model and serial / asset reference recorded'],
+ ['CP15 / Service Record','CP15 or service sheet fully completed'],
+ ['CP15 / Service Record','Combustion readings recorded or justified'],
+ ['CP15 / Service Record','Gas working pressure / inlet pressure recorded or justified'],
+ ['CP15 / Service Record','Gas rate / burner input recorded where applicable'],
+ ['CP15 / Service Record','Local tightness test / Regulation 26(9) evidence recorded where applicable'],
+ ['Safety Documentation','Warning notices / unsafe situations recorded correctly where applicable'],
+ ['Safety Documentation','Defects and recommendations clearly documented'],
+ ['Evidence','Photographs attached where required'],
+ ['Evidence','Client signature / handover evidence completed where required']
+];
+function paperScoreFrom(v){if(v==='pass')return 10;if(v==='minor')return 7;if(v==='improve')return 5;if(v==='fail')return 0;return null}
+function paperLabel(v){return {pass:'Pass',minor:'Minor Issue',improve:'Improvement Required',fail:'Fail',na:'N/A'}[v]||''}
+async function loadPaperworkAudits(){
+ if(!isManager()){setHtml('paperwork','<h2>Paperwork Audits</h2><p>Manager access only.</p>');return}
+ setHtml('paperwork',`<h2>Paperwork Compliance</h2><p class="muted">Audit the quality of engineers paperwork separately from technical competence. This module is for Joblogic, CP15, evidence, notes and handover quality.</p>
+ <div class="prof-dashboard"><div class="prof-card"><h3>Purpose</h3><p>Identify engineers who are technically competent but require support with documentation.</p></div><div class="prof-card"><h3>Scoring</h3><p><b>Pass 10</b> · Minor 7 · Improvement 5 · Fail 0 · N/A excluded</p></div><div class="prof-card"><h3>Output</h3><p>Paperwork score can be compared with technical audit score.</p></div></div>
+ <div class="paper-section"><h3>New Paperwork Audit</h3><div class="grid"><label>Engineer<br><select id="pEngineer"></select></label><label>Site / Client<br><input id="pSite"></label><label>Joblogic / Job Ref<br><input id="pJobRef"></label><label>Audit Date<br><input id="pDate" type="date"></label><label>Auditor<br><input id="pAuditor"></label></div></div>
+ <div id="paperRows"></div>
+ <div class="summary-bar"><div class="summary-card"><div class="mini-stat"><b>Applicable</b><br><b id="pApplicable">0</b></div><div class="mini-stat"><b>Paperwork Score</b><br><b id="pScore">0%</b></div><div class="mini-stat"><b>Outcome</b><br><b id="pOutcome">Awaiting completion</b></div><div class="summary-actions"><button onclick="calcPaperworkScore()">Recalculate</button><button onclick="savePaperworkAudit()">Save Paperwork Audit</button><button class="secondary" onclick="loadPaperworkAudits()">Reset</button></div></div><p id="paperMsg" class="muted"></p></div>
+ <h3>Recent Paperwork Audits</h3><p><button class="secondary" onclick="loadPaperworkAuditRows()">Refresh</button></p><table><thead><tr><th>ID</th><th>Date</th><th>Engineer</th><th>Site</th><th>Score</th><th>Outcome</th><th>Action</th></tr></thead><tbody id="paperHistRows"></tbody></table><div id="paperDetail"></div>`);
+ await loadEngineersInto(['pEngineer']); $('pDate').value=new Date().toISOString().slice(0,10); $('pAuditor').value=user.name; renderPaperworkQuestions(); calcPaperworkScore(); await loadPaperworkAuditRows();
+}
+function renderPaperworkQuestions(){ $('paperRows').innerHTML=PAPERWORK_QUESTIONS.map(([sec,q],i)=>`<div class="audit-question" id="pCard${i}"><div class="audit-q-head"><div><div class="audit-q-title">${i+1}. ${q}</div><div class="audit-q-section">${sec}</div></div><label>Assessment<br><select class="pResponse assessment-select" onchange="calcPaperworkScore()"><option value="">Select</option><option value="pass">Pass</option><option value="minor">Minor Issue</option><option value="improve">Improvement Required</option><option value="fail">Fail</option><option value="na">N/A</option></select></label></div><div class="audit-q-body"><label>Finding<br><textarea class="pFinding" placeholder="What was missing, unclear or incorrect?"></textarea></label><label>Corrective Action<br><textarea class="pCorrective" placeholder="Engineer action, coaching or manager follow-up"></textarea></label><label>Evidence / Ref<br><input class="pEvidence" placeholder="Joblogic, CP15, Photo, FGA"></label><label>Reference<br><input class="pReference" placeholder="HBS procedure, CP15 guidance"></label></div></div>`).join('') }
+function calcPaperworkScore(){const rs=[...document.querySelectorAll('.pResponse')];rs.forEach((x,i)=>{const c=$('pCard'+i);if(c)c.className='audit-question '+(x.value==='pass'?'pass':x.value==='minor'||x.value==='improve'?'improve':x.value==='fail'?'failed':x.value==='na'?'na':'')});const app=rs.filter(x=>x.value&&x.value!=='na');const total=app.reduce((a,x)=>a+(paperScoreFrom(x.value)||0),0);const max=app.length*10;const score=app.length?Math.round((total/max)*100):0;let out='Awaiting completion';if(app.length){out=score>=90?'Excellent':score>=80?'Pass':score>=70?'Improvement Required':'Fail'}$('pApplicable').textContent=app.length;$('pScore').textContent=score+'%';$('pOutcome').textContent=out;return{score,outcome:out,applicable:app.length}}
+async function savePaperworkAudit(){try{const c=calcPaperworkScore();const questions=[...document.querySelectorAll('#paperRows .audit-question')].map((card,i)=>{const v=card.querySelector('.pResponse').value;return{section:PAPERWORK_QUESTIONS[i][0],question:PAPERWORK_QUESTIONS[i][1],response:paperLabel(v),response_value:v,score:v==='na'?'na':String(paperScoreFrom(v)??''),finding:card.querySelector('.pFinding').value,corrective_action:card.querySelector('.pCorrective').value,evidence:card.querySelector('.pEvidence').value,reference:card.querySelector('.pReference').value}});const body={role:user.role,engineer_name:$('pEngineer').value,site_name:$('pSite').value,job_ref:$('pJobRef').value,audit_date:$('pDate').value,auditor:$('pAuditor').value,score:c.score,outcome:c.outcome,questions};if(!body.engineer_name||!body.site_name)throw new Error('Engineer and site/client are required.');const j=await api('/api/paperwork-audits',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});$('paperMsg').textContent='Saved paperwork audit ID '+j.id;await loadPaperworkAuditRows()}catch(e){$('paperMsg').textContent=e.message}}
+async function loadPaperworkAuditRows(){try{const j=await api('/api/paperwork-audits?role='+user.role+'&engineer='+encodeURIComponent(user.name));const rows=j.audits||[];$('paperHistRows').innerHTML=rows.map(a=>`<tr><td>${safe(a.id)}</td><td>${safe(a.audit_date||a.created_at)}</td><td>${safe(a.engineer_name)}</td><td>${safe(a.site_name)}</td><td>${safe(a.score)}%</td><td>${safe(a.outcome)}</td><td><button onclick="viewPaperworkAudit(${Number(a.id)})">Review</button></td></tr>`).join('')||'<tr><td colspan="7">No paperwork audits recorded.</td></tr>'}catch(e){$('paperHistRows').innerHTML='<tr><td colspan="7">'+safe(e.message)+'</td></tr>'}}
+async function viewPaperworkAudit(id){try{const j=await api('/api/paperwork-audits?id='+id);const a=j.audit||{};let d={};try{d=JSON.parse(a.details_json||'{}')}catch(e){}const qs=d.questions||[];$('paperDetail').innerHTML=`<h3>Paperwork Audit Detail</h3><table><tr><th>Engineer</th><td>${safe(a.engineer_name)}</td></tr><tr><th>Site</th><td>${safe(a.site_name)}</td></tr><tr><th>Job Ref</th><td>${safe(a.job_ref)}</td></tr><tr><th>Score</th><td>${safe(a.score)}% - ${safe(a.outcome)}</td></tr></table><h4>Questions</h4><table><thead><tr><th>Section</th><th>Question</th><th>Response</th><th>Finding</th><th>Action</th></tr></thead><tbody>${qs.map(q=>`<tr><td>${safe(q.section)}</td><td>${safe(q.question)}</td><td>${safe(q.response)}</td><td>${safe(q.finding)}</td><td>${safe(q.corrective_action)}</td></tr>`).join('')}</tbody></table>`}catch(e){$('paperDetail').textContent=e.message}}
+
 async function loadKnowledge(){
  const manufacturerOptions=MANUFACTURERS.filter(m=>m!=='Other').map(m=>'<option>'+m+'</option>').join('');
  const canUpload=isManager();
