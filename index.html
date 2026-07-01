@@ -843,8 +843,19 @@ function applyManufacturerSearch(){const m=$('kcManufacturer').value;if(m)$('kcQ
 function clearKnowledgeSearch(){$('kcManufacturer').value='';$('kcQ').value='';$('kcCat').value='';loadKnowledgeRows()}
 function kcMan(m){$('kcQ').value=m;if($('kcManufacturer'))$('kcManufacturer').value=m;loadKnowledgeRows()}
 function kcSize(n){n=Number(n||0);if(!n)return '';if(n>1024*1024)return (n/1024/1024).toFixed(1)+' MB';if(n>1024)return (n/1024).toFixed(1)+' KB';return n+' B'}
-async function loadKnowledgeRows(){try{const j=await api('/api/library?q='+encodeURIComponent($('kcQ')?.value||'')+'&category='+encodeURIComponent($('kcCat')?.value||''));const docs=j.documents||[];$('kcMsg').textContent=docs.length+' document(s) found.';$('kcRows').innerHTML=docs.length?docs.map(d=>'<tr><td>'+safe(d.title)+'</td><td>'+safe(d.category)+'</td><td>'+safe([d.reference,d.issue].filter(Boolean).join(' / '))+'</td><td>'+safe(d.keywords)+'</td><td>'+safe(kcSize(d.file_size))+'</td><td>'+safe(d.created_at)+'</td><td><button onclick="openDoc('+d.id+')">Open</button></td></tr>').join(''):'<tr><td colspan="7">No documents found.</td></tr>'}catch(e){$('kcMsg').textContent=e.message;$('kcRows').innerHTML=''}}
+async function loadKnowledgeRows(){try{const j=await api('/api/library?q='+encodeURIComponent($('kcQ')?.value||'')+'&category='+encodeURIComponent($('kcCat')?.value||''));const docs=j.documents||[];$('kcMsg').textContent=docs.length+' document(s) found.';$('kcRows').innerHTML=docs.length?docs.map(d=>'<tr><td>'+safe(d.title)+'</td><td>'+safe(d.category)+'</td><td>'+safe([d.reference,d.issue].filter(Boolean).join(' / '))+'</td><td>'+safe(d.keywords)+'</td><td>'+safe(kcSize(d.file_size))+'</td><td>'+safe(d.created_at)+'</td><td><button onclick="openDoc('+d.id+')">Open</button>'+(isManager()?' <button class="danger" onclick="deleteKnowledgeDocument('+d.id+', `'+safe(d.title).replace(/`/g,'')+'`)">Delete</button>':'')+'</td></tr>').join(''):'<tr><td colspan="7">No documents found.</td></tr>'}catch(e){$('kcMsg').textContent=e.message;$('kcRows').innerHTML=''}}
 async function openDoc(id){const j=await api('/api/library?id='+id+'&open_by='+encodeURIComponent(user.name));if(j.document&&j.document.file_url)window.open(j.document.file_url,'_blank')}
+
+async function deleteKnowledgeDocument(id,title){
+ if(!isManager()){alert('Manager access only.');return}
+ if(!confirm('Delete document?\n\n'+(title||'Selected document')+'\n\nThis removes the file from R2 and marks the document as deleted in the Knowledge Centre.'))return;
+ try{
+  await api('/api/library?id='+encodeURIComponent(id)+'&role='+encodeURIComponent(user.role||'manager')+'&deleted_by='+encodeURIComponent(user.name||''),{method:'DELETE'});
+  $('kcMsg').textContent='Document deleted.';
+  loadKnowledgeRows();
+ }catch(e){$('kcMsg').textContent=e.message}
+}
+
 async function uploadKnowledgeDocument(){
  try{
   const f=$('kuFile')?.files?.[0];
