@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HBS Compliance Manager v14.3.4</title>
+<title>HBS Compliance Manager v14.3.5</title>
 <style>
 :root{--blue:#123f6d;--blue2:#2369a7;--bg:#f4f7fb;--line:#d3dfed;--muted:#52677f;--danger:#8b1e1e;--ok:#ddf5e4;--warn:#fff1c9}
 *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;margin:0;background:var(--bg);color:#071b34}
@@ -104,15 +104,31 @@ th,td{padding:6px 7px;font-size:12.5px}.statgrid{grid-template-columns:repeat(au
 @media(max-width:760px){header{padding:14px 16px}.section.card{padding:11px;margin:8px 6px}#nav button{padding:8px}.audit-q-head,.audit-q-body{grid-template-columns:1fr}table{font-size:12px}}
 
 
-/* v14.3.4 Deployment Health Centre */
+/* v14.3.5 Deployment Health Centre */
 .health-ok{color:#17643a;font-weight:800}.health-warn{color:#805300;font-weight:800}.health-fail{color:#8b1e1e;font-weight:800}.health-code{font-family:Consolas,monospace;background:#f5f7fa;border:1px solid #dce8f4;border-radius:6px;padding:2px 5px}.deploy-box{border:1px solid #d7e6f5;background:#fbfdff;border-radius:10px;padding:10px;margin:8px 0}
+
+/* v14.3.5 Stabilisation: refined compact layout and clearer health status */
+body{font-size:13.5px}
+header{padding:13px 20px}
+header h1{font-size:21px}
+.card{margin:8px;padding:10px}
+.section.card{padding:12px;margin-top:10px}
+#app>.card:first-child{padding:8px 10px}
+#nav button{padding:6px 9px}
+input,select,textarea,button{padding:6px 8px}
+th{position:sticky;top:50px;z-index:2}
+.statgrid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.stat{min-height:58px}
+.health-pass{color:#17643a;font-weight:900}.health-expected{color:#17643a;font-weight:900}.health-warning{color:#805300;font-weight:900}.health-action{color:#8b1e1e;font-weight:900}
+.schema-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin:8px 0}.schema-item{border:1px solid #dce8f4;background:#fff;border-radius:8px;padding:8px}.schema-item b{display:block}
+@media(max-width:760px){th{position:static}.card{margin:6px}.section.card{padding:10px}}
+
 </style>
 </head>
 <body>
 <header>
   <h1>HBS Compliance Manager</h1>
   <div>Commercial Gas Compliance Management System</div>
-  <div class="version">Professional Edition · Version 14.3.4</div>
+  <div class="version">Professional Edition · Version 14.3.5</div>
 </header>
 
 <section id="loginCard" class="card">
@@ -130,7 +146,7 @@ th,td{padding:6px 7px;font-size:12.5px}.statgrid{grid-template-columns:repeat(au
     <p id="loginMsg" class="login-help">Enter your HBS email address and PIN to access the Compliance Manager.</p>
     <div class="login-footer">
       <span>Forgotten PIN? Contact the Compliance Manager.</span>
-      <span>Version 14.3.4</span>
+      <span>Version 14.3.5</span>
     </div>
   </div>
 </section>
@@ -1075,30 +1091,49 @@ async function confirmRestore(){try{if(!confirm('Restore selected JSON backup? T
 async function loadHealth(){
  if(!isManager()){alert('Manager access only.');return}
  show('health');
- setHtml('health',`<h2>System Health</h2><p class="muted">Deployment checks for Cloudflare Pages functions, database availability and common API routes. Use this after every upload before asking engineers to use the live site.</p><div class="deploy-box"><b>Recommended after upload:</b> open this page, click Run Health Check, then confirm Login, Dashboard, Users, Backup and Restore all report OK.</div><p><button onclick="runHealthCheck()">Run Health Check</button> <button onclick="copyHealthReport()">Copy Report</button></p><div class="statgrid"><div class="stat"><b>Overall</b><br><b id="healthOverall">Not checked</b></div><div class="stat"><b>Version</b><br><b id="healthVersion">14.3.4</b></div><div class="stat"><b>APIs Checked</b><br><b id="healthCount">0</b></div><div class="stat"><b>Failures</b><br><b id="healthFails">0</b></div></div><h3>API Status</h3><table><thead><tr><th>Function</th><th>Route</th><th>Status</th><th>Details</th></tr></thead><tbody id="healthRows"><tr><td colspan="4">Not checked yet.</td></tr></tbody></table><h3>Deployment Notes</h3><pre id="healthReport"></pre>`);
+ setHtml('health',`<h2>System Health</h2><p class="muted">Deployment checks for Cloudflare Pages functions, database availability, expected API responses and schema warnings. Use this after every upload before asking engineers to use the live site.</p><div class="deploy-box"><b>v14.3.5 improvement:</b> endpoints that correctly require a parameter, such as <span class="health-code">/api/audit</span>, are now marked as healthy when they return the expected 400 response.</div><p><button onclick="runHealthCheck()">Run Health Check</button> <button onclick="copyHealthReport()">Copy Report</button></p><div class="statgrid"><div class="stat"><b>Overall</b><br><b id="healthOverall">Not checked</b></div><div class="stat"><b>Version</b><br><b id="healthVersion">14.3.5</b></div><div class="stat"><b>APIs Checked</b><br><b id="healthCount">0</b></div><div class="stat"><b>Failures</b><br><b id="healthFails">0</b></div><div class="stat"><b>Warnings</b><br><b id="healthWarnings">0</b></div></div><h3>API Status</h3><table><thead><tr><th>Function</th><th>Route</th><th>Status</th><th>Details</th></tr></thead><tbody id="healthRows"><tr><td colspan="4">Not checked yet.</td></tr></tbody></table><h3>Database / Schema Status</h3><div id="schemaRows" class="schema-list"><div class="schema-item">Run the health check to view required and optional table status.</div></div><h3>Deployment Notes</h3><pre id="healthReport"></pre>`);
 }
-async function probeRoute(name,route){
+async function probeRoute(name,route,opts={}){
  const started=Date.now();
  try{
   const r=await fetch(route,{cache:'no-store'});
   const text=await r.text();
   let data=null; try{data=JSON.parse(text)}catch(e){}
-  const ok=r.ok && !(data&&data.ok===false&&r.status>=400);
-  return {name,route,ok,status:r.status,ms:Date.now()-started,detail:(data&&(data.message||data.error||JSON.stringify(data).slice(0,120)))||text.slice(0,120)||'OK'};
- }catch(e){return {name,route,ok:false,status:'ERR',ms:Date.now()-started,detail:e.message};}
+  const expected=opts.expectedStatus&&r.status===opts.expectedStatus;
+  const ok=(r.ok && !(data&&data.ok===false&&r.status>=400)) || expected;
+  const warn=(data&&data.ok===false&&r.ok) || false;
+  let detail=(data&&(data.message||data.error||JSON.stringify(data).slice(0,160)))||text.slice(0,160)||'OK';
+  if(expected) detail=(opts.expectedDetail||'Expected response received')+' · '+detail;
+  return {name,route,ok,warn,expected,status:r.status,ms:Date.now()-started,detail,data};
+ }catch(e){return {name,route,ok:false,warn:false,expected:false,status:'ERR',ms:Date.now()-started,detail:e.message,data:null};}
+}
+function healthStatusCell(x){
+ if(x.ok&&x.expected)return '<span class="health-expected">OK</span> <span class="muted">expected '+x.status+' / '+x.ms+'ms</span>';
+ if(x.ok&&x.warn)return '<span class="health-warning">WARN</span> <span class="muted">'+x.status+' / '+x.ms+'ms</span>';
+ if(x.ok)return '<span class="health-pass">OK</span> <span class="muted">'+x.status+' / '+x.ms+'ms</span>';
+ return '<span class="health-action">FAIL</span> <span class="muted">'+x.status+' / '+x.ms+'ms</span>';
+}
+function renderSchemaStatus(healthData){
+ const checks=(healthData&&healthData.checks)||[];
+ if(!checks.length){$('schemaRows').innerHTML='<div class="schema-item"><b>No schema detail returned</b><span class="muted">The Health API is online but did not return table details.</span></div>';return;}
+ $('schemaRows').innerHTML=checks.map(c=>'<div class="schema-item"><b>'+htmlSafe(c.name)+'</b>'+(c.ok?'<span class="health-pass">OK</span> <span class="muted">records: '+htmlSafe(String(c.count??0))+'</span>':(c.required?'<span class="health-action">MISSING REQUIRED</span>':'<span class="health-warning">Optional / not installed</span>')+'<br><span class="muted">'+htmlSafe(c.error||'Table not available')+'</span>')+'</div>').join('');
 }
 async function runHealthCheck(){
  const routes=[
-  ['Health','/api/health'],['Login','/api/login'],['Users','/api/users'],['Dashboard','/api/dashboard'],['Audits','/api/audits'],['Audit','/api/audit'],['Actions','/api/actions'],['Performance','/api/performance'],['Paperwork Audits','/api/paperwork-audits'],['Training','/api/training'],['Toolbox Test','/api/toolbox-test'],['Competency','/api/competency'],['Re-audits','/api/reaudits'],['Tightness','/api/tightness'],['Knowledge Library','/api/library'],['Backup','/api/backup?role=manager&manager='+encodeURIComponent(user.name||'Manager')]
+  ['Health','/api/health'],['Login','/api/login'],['Users','/api/users'],['Dashboard','/api/dashboard'],['Audits','/api/audits'],['Audit','/api/audit',{expectedStatus:400,expectedDetail:'Endpoint online; audit id required'}],['Actions','/api/actions'],['Performance','/api/performance'],['Paperwork Audits','/api/paperwork-audits'],['Training','/api/training'],['Toolbox Test','/api/toolbox-test'],['Competency','/api/competency'],['Re-audits','/api/reaudits'],['Tightness','/api/tightness'],['Knowledge Library','/api/library'],['Backup','/api/backup?role=manager&manager='+encodeURIComponent(user.name||'Manager')]
  ];
  $('healthRows').innerHTML='<tr><td colspan="4">Checking...</td></tr>';
  const results=[];
- for(const [name,route] of routes){results.push(await probeRoute(name,route));}
+ for(const item of routes){results.push(await probeRoute(item[0],item[1],item[2]||{}));}
  const fails=results.filter(x=>!x.ok).length;
- $('healthCount').textContent=results.length; $('healthFails').textContent=fails;
- $('healthOverall').innerHTML=fails?'<span class="health-fail">Action Required</span>':'<span class="health-ok">OK</span>';
- $('healthRows').innerHTML=results.map(x=>`<tr><td>${htmlSafe(x.name)}</td><td><span class="health-code">${htmlSafe(x.route)}</span></td><td>${x.ok?'<span class="health-ok">OK</span>':'<span class="health-fail">FAIL</span>'} <span class="muted">${x.status} / ${x.ms}ms</span></td><td>${htmlSafe(x.detail)}</td></tr>`).join('');
- const report=['HBS Compliance Manager System Health','Version: 14.3.4','Checked: '+new Date().toLocaleString(),'Overall: '+(fails?'ACTION REQUIRED':'OK'),'Failures: '+fails,'',...results.map(x=>`${x.ok?'OK':'FAIL'} | ${x.name} | ${x.route} | ${x.status} | ${x.detail}`)];
+ const warns=results.filter(x=>x.warn || (x.name==='Health'&&x.data&&x.data.warnings&&x.data.warnings.length)).length;
+ $('healthCount').textContent=results.length; $('healthFails').textContent=fails; $('healthWarnings').textContent=warns;
+ $('healthOverall').innerHTML=fails?'<span class="health-action">Action Required</span>':(warns?'<span class="health-warning">OK with warnings</span>':'<span class="health-pass">OK</span>');
+ $('healthRows').innerHTML=results.map(x=>`<tr><td>${htmlSafe(x.name)}</td><td><span class="health-code">${htmlSafe(x.route)}</span></td><td>${healthStatusCell(x)}</td><td>${htmlSafe(x.detail)}</td></tr>`).join('');
+ const health=results.find(x=>x.name==='Health'); renderSchemaStatus(health&&health.data);
+ const missing=(health&&health.data&&health.data.missing_tables)||[];
+ const warnings=(health&&health.data&&health.data.warnings)||[];
+ const report=['HBS Compliance Manager System Health','Version: 14.3.5','Checked: '+new Date().toLocaleString(),'Overall: '+(fails?'ACTION REQUIRED':(warns?'OK WITH WARNINGS':'OK')),'Failures: '+fails,'Warnings: '+warns, missing.length?'Missing optional/required tables: '+missing.join(', '):'Missing tables: none reported', warnings.length?'Health warnings: '+warnings.join(' | '):'Health warnings: none','',...results.map(x=>`${x.ok?'OK':'FAIL'}${x.expected?' (EXPECTED RESPONSE)':''} | ${x.name} | ${x.route} | ${x.status} | ${x.detail}`)];
  $('healthReport').textContent=report.join('\n');
 }
 function copyHealthReport(){
