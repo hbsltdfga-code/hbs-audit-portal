@@ -1,4 +1,4 @@
-# HBS Compliance Manager v8 Clean Repository
+# HBS Compliance Manager v8 Clean Repository.
 
 Replace the whole GitHub repository with this package.
 
